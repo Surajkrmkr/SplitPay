@@ -1,5 +1,5 @@
 import { prisma } from '../../prisma/client';
-import { Activity, ActivityType } from '@prisma/client';
+import { Activity, ActivityType, Prisma } from '@prisma/client';
 
 export interface CreateActivityData {
   groupId: string;
@@ -15,7 +15,12 @@ export type ActivityWithUser = Activity & {
 };
 
 export async function createActivity(data: CreateActivityData): Promise<Activity> {
-  return prisma.activity.create({ data });
+  return prisma.activity.create({
+    data: {
+      ...data,
+      metadata: data.metadata as Prisma.InputJsonValue | undefined,
+    },
+  });
 }
 
 export async function findGroupActivities(

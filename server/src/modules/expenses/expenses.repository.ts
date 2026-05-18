@@ -96,7 +96,7 @@ export async function updateExpense(
     splitType?: string;
     notes?: string | null;
     date?: Date;
-    participants?: { userId: string; share: number; percentage?: number }[];
+    participants?: { userId: string; share?: number; percentage?: number }[];
   }
 ): Promise<ExpenseWithDetails> {
   const { participants, ...expenseData } = data;
@@ -105,7 +105,7 @@ export async function updateExpense(
     if (participants) {
       await tx.expenseParticipant.deleteMany({ where: { expenseId } });
       await tx.expenseParticipant.createMany({
-        data: participants.map((p) => ({ expenseId, userId: p.userId, share: p.share, percentage: p.percentage ?? null })),
+        data: participants.map((p) => ({ expenseId, userId: p.userId, share: p.share ?? 0, percentage: p.percentage ?? null })),
       });
     }
 

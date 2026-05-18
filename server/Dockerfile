@@ -1,7 +1,7 @@
 # ============================================================
 # Stage 1: Builder
 # ============================================================
-FROM node:20.20.0-alpine3.19 AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
@@ -21,7 +21,7 @@ RUN npm run db:generate
 # ============================================================
 # Stage 2: Production
 # ============================================================
-FROM node:20.20.0-alpine3.19 AS production
+FROM node:22-alpine3.19 AS production
 
 WORKDIR /app
 
