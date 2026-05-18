@@ -95,8 +95,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                             ],
                           ),
-                          child: const Center(
-                            child: Text('💸', style: TextStyle(fontSize: 48)),
+                          child: Padding(
+                            padding: const EdgeInsets.all(18),
+                            child: Image.asset('assets/icon/app_icon.png'),
                           ),
                         )
                             .animate()

@@ -100,28 +100,57 @@ class _SpendingPieChartState extends ConsumerState<SpendingPieChart> {
           // Chart
           SizedBox(
             height: 200,
-            child: PieChart(
-              PieChartData(
-                sections: sections,
-                sectionsSpace: 2,
-                centerSpaceRadius: 50,
-                pieTouchData: PieTouchData(
-                  touchCallback: (event, response) {
-                    setState(() {
-                      if (!event.isInterestedForInteractions ||
-                          response == null ||
-                          response.touchedSection == null) {
-                        _touchedIndex = -1;
-                        return;
-                      }
-                      _touchedIndex =
-                          response.touchedSection!.touchedSectionIndex;
-                    });
-                  },
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                PieChart(
+                  PieChartData(
+                    sections: sections,
+                    sectionsSpace: 2,
+                    centerSpaceRadius: 50,
+                    pieTouchData: PieTouchData(
+                      touchCallback: (event, response) {
+                        setState(() {
+                          if (!event.isInterestedForInteractions ||
+                              response == null ||
+                              response.touchedSection == null) {
+                            _touchedIndex = -1;
+                            return;
+                          }
+                          _touchedIndex =
+                              response.touchedSection!.touchedSectionIndex;
+                        });
+                      },
+                    ),
+                  ),
+                  swapAnimationDuration: 400.ms,
+                  swapAnimationCurve: Curves.easeInOutCubic,
                 ),
-              ),
-              swapAnimationDuration: 400.ms,
-              swapAnimationCurve: Curves.easeInOutCubic,
+                IgnorePointer(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Total',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        CurrencyFormatter.format(total, symbol: currency),
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: isDark ? Colors.white : AppColors.textLight,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ).animate().fadeIn(duration: 600.ms).scale(
                 begin: const Offset(0.8, 0.8),

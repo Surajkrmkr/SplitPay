@@ -31,6 +31,92 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     context.push(route);
   }
 
+  Future<void> _confirmClearAll(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 40),
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkSurface : Colors.white,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFF6B6B),
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                  ),
+                  child: Column(children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
+                      child: const Icon(Icons.delete_sweep_rounded, color: Colors.white, size: 26),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text('Clear All Notifications', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 4),
+                    Text('This cannot be undone', style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13)),
+                  ]),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'All notifications will be permanently removed.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 14, color: isDark ? Colors.white70 : AppColors.textLight, height: 1.4),
+                      ),
+                      const SizedBox(height: 20),
+                      Row(children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => ctx.pop(false),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              side: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                            ),
+                            child: Text('Cancel', style: TextStyle(color: isDark ? AppColors.textSecondary : AppColors.textLightSecondary, fontWeight: FontWeight.w600)),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () => ctx.pop(true),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.expense,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                            child: const Text('Clear All', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                          ),
+                        ),
+                      ]),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (confirmed == true) {
+      ref.read(notificationsProvider.notifier).deleteAll();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -101,6 +187,13 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 fontWeight: FontWeight.w600,
               ),
             ),
+          ),
+        if (async.valueOrNull?.isNotEmpty == true)
+          IconButton(
+            icon: const Icon(Icons.delete_sweep_rounded),
+            color: AppColors.expense,
+            tooltip: 'Clear all',
+            onPressed: () => _confirmClearAll(context),
           ),
       ],
     );

@@ -115,6 +115,24 @@ final monthlyTrendProvider = Provider<List<double>>((ref) {
   return months;
 });
 
+final monthlyIncomeTrendProvider = Provider<List<double>>((ref) {
+  final txs = ref.watch(transactionProvider);
+  final now = DateTime.now();
+
+  final months = List.filled(6, 0.0);
+  for (var i = 0; i < 6; i++) {
+    final month = DateTime(now.year, now.month - (5 - i), 1);
+    final total = txs
+        .where((t) =>
+            t.type == TransactionType.income &&
+            t.date.year == month.year &&
+            t.date.month == month.month)
+        .fold(0.0, (sum, t) => sum + t.amount);
+    months[i] = total;
+  }
+  return months;
+});
+
 // Filter providers
 enum TransactionFilter { all, today, week, month }
 

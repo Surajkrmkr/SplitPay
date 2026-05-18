@@ -141,7 +141,7 @@ class NotificationService {
           channelDescription: _channelDesc,
           importance: Importance.high,
           priority: Priority.high,
-          icon: '@mipmap/ic_launcher',
+          icon: '@mipmap/launcher_icon',
           color: const Color(0xFF00D09C),
         ),
         iOS: const DarwinNotificationDetails(

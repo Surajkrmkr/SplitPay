@@ -26,16 +26,18 @@ class SettlementModel {
   });
 
   factory SettlementModel.fromJson(Map<String, dynamic> json) {
+    final payer = json['payer'] as Map<String, dynamic>?;
+    final payee = json['payee'] as Map<String, dynamic>?;
     return SettlementModel(
       id: json['id'] as String,
       groupId: json['groupId'] as String,
       payerId: json['payerId'] as String,
-      payerName: json['payerName'] as String,
-      payerAvatar: json['payerAvatar'] as String?,
+      payerName: payer?['name'] as String? ?? json['payerName'] as String? ?? '',
+      payerAvatar: payer?['avatar'] as String? ?? json['payerAvatar'] as String?,
       payeeId: json['payeeId'] as String,
-      payeeName: json['payeeName'] as String,
-      payeeAvatar: json['payeeAvatar'] as String?,
-      amount: (json['amount'] as num).toDouble(),
+      payeeName: payee?['name'] as String? ?? json['payeeName'] as String? ?? '',
+      payeeAvatar: payee?['avatar'] as String? ?? json['payeeAvatar'] as String?,
+      amount: double.parse(json['amount'].toString()),
       notes: json['notes'] as String?,
       settledAt: DateTime.parse(json['settledAt'] as String),
     );

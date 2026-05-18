@@ -165,6 +165,7 @@ class GroupApiService {
     required String splitType,
     required List<Map<String, dynamic>> participants,
     String? notes,
+    String? date,
   }) async {
     if (_useMock) {
       final now = DateTime.now();
@@ -180,7 +181,7 @@ class GroupApiService {
             .map((p) => ExpenseParticipantModel.fromJson(p))
             .toList(),
         notes: notes,
-        date: now,
+        date: date != null ? DateTime.parse(date) : now,
         createdAt: now,
       );
     }
@@ -195,6 +196,7 @@ class GroupApiService {
         'splitType': splitType,
         'participants': participants,
         if (notes != null) 'notes': notes,
+        if (date != null) 'date': date,
       },
     );
     return GroupExpenseModel.fromJson(

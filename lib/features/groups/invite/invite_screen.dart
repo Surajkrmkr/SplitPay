@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../data/services/group_api_service.dart';
 import '../../../providers/group_provider.dart';
@@ -59,15 +62,19 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
   Future<void> _generateCode() async {
     setState(() => _generating = true);
     try {
-      final result = await ref.read(groupApiServiceProvider).generateInvite(widget.groupId!);
+      final result =
+          await ref.read(groupApiServiceProvider).generateInvite(widget.groupId!);
       setState(() {
         _generatedCode = result['code'] as String?;
         final expiresStr = result['expiresAt'] as String?;
-        _expiresAt = expiresStr != null ? DateTime.parse(expiresStr) : null;
+        _expiresAt =
+            expiresStr != null ? DateTime.parse(expiresStr) : null;
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.expense));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: AppColors.expense));
       }
     } finally {
       if (mounted) setState(() => _generating = false);
@@ -82,20 +89,23 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
         content: const Text('Code copied to clipboard'),
         backgroundColor: AppColors.income,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
 
   void _shareCode() {
     if (_generatedCode == null) return;
-    Clipboard.setData(ClipboardData(text: 'Join my SplitPay group with invite code: $_generatedCode'));
+    Clipboard.setData(ClipboardData(
+        text: 'Join my SplitPay group with invite code: $_generatedCode'));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text('Share text copied — paste it anywhere!'),
         backgroundColor: AppColors.primary,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -104,11 +114,17 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
 
   Future<void> _previewInvite(String code) async {
     if (code.length < 6) return;
-    setState(() { _loadingPreview = true; _joinPreview = null; });
+    setState(() {
+      _loadingPreview = true;
+      _joinPreview = null;
+    });
     try {
-      final info = await ref.read(groupApiServiceProvider).getInviteInfo(code.trim().toUpperCase());
+      final info = await ref
+          .read(groupApiServiceProvider)
+          .getInviteInfo(code.trim().toUpperCase());
       if (mounted) {
-        setState(() => _joinPreview = '${info['groupName']} · ${info['memberCount']} members · invited by ${info['invitedBy']}');
+        setState(() => _joinPreview =
+            '${info['groupName']} · ${info['memberCount']} members · invited by ${info['invitedBy']}');
       }
     } catch (_) {
       if (mounted) setState(() => _joinPreview = null);
@@ -122,24 +138,43 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
     if (code.isEmpty) return;
     setState(() => _joining = true);
     try {
-      final group = await ref.read(groupApiServiceProvider).joinViaInvite(code);
+      final group =
+          await ref.read(groupApiServiceProvider).joinViaInvite(code);
       ref.invalidate(groupsProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Joined "${group.name}" successfully!'),
           backgroundColor: AppColors.income,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ));
         Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.expense));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: AppColors.expense));
       }
     } finally {
       if (mounted) setState(() => _joining = false);
     }
+  }
+
+  void _openQrScanner() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      useRootNavigator: true,
+      builder: (_) => _QrScannerSheet(
+        onCodeDetected: (code) {
+          _codeController.text = code;
+          _previewInvite(code);
+        },
+      ),
+    );
   }
 
   @override
@@ -162,8 +197,12 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
                 unselectedLabelColor: AppColors.textSecondary,
                 indicatorColor: AppColors.primary,
                 indicatorSize: TabBarIndicatorSize.label,
-                dividerColor: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                tabs: const [Tab(text: 'Generate Code'), Tab(text: 'Join Group')],
+                dividerColor:
+                    isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                tabs: const [
+                  Tab(text: 'Generate Code'),
+                  Tab(text: 'Join Group')
+                ],
               ),
       ),
       body: _joinOnly
@@ -175,6 +214,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
               joining: _joining,
               onCodeChanged: _previewInvite,
               onJoin: _joinGroup,
+              onScanQr: _openQrScanner,
             )
           : TabBarView(
               controller: _tabs,
@@ -196,6 +236,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
                   joining: _joining,
                   onCodeChanged: _previewInvite,
                   onJoin: _joinGroup,
+                  onScanQr: _openQrScanner,
                 ),
               ],
             ),
@@ -226,47 +267,97 @@ class _GenerateTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(24),
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(
+          24, 24, 24, MediaQuery.of(context).viewPadding.bottom + 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: 12),
           Text(
             'Generate a unique invite code and share it with anyone you want to add to this group. The code is valid for 7 days.',
-            style: TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.5),
+            style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+                height: 1.5),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 28),
           if (generatedCode != null) ...[
+            // Code card
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [AppColors.primary.withValues(alpha: 0.1), AppColors.secondary.withValues(alpha: 0.05)],
+                  colors: [
+                    AppColors.primary.withValues(alpha: 0.1),
+                    AppColors.secondary.withValues(alpha: 0.05)
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.3)),
               ),
               child: Column(
                 children: [
                   Text(
                     generatedCode!,
                     style: const TextStyle(
-                      fontSize: 40,
+                      fontSize: 38,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 8,
                       color: AppColors.primary,
                     ),
                   ),
                   if (expiresAt != null) ...[
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Text(
                       'Expires ${_formatExpiry(expiresAt!)}',
-                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary),
                     ),
                   ],
+                  const SizedBox(height: 20),
+                  // QR Code
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.15),
+                          blurRadius: 20,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: QrImageView(
+                      data: 'dimeflow://join/$generatedCode',
+                      version: QrVersions.auto,
+                      size: 180,
+                      backgroundColor: Colors.white,
+                      eyeStyle: const QrEyeStyle(
+                        eyeShape: QrEyeShape.square,
+                        color: AppColors.primary,
+                      ),
+                      dataModuleStyle: const QrDataModuleStyle(
+                        dataModuleShape: QrDataModuleShape.square,
+                        color: Color(0xFF1A1A2E),
+                      ),
+                    ),
+                  ).animate().scale(
+                        duration: 400.ms,
+                        curve: Curves.easeOutBack,
+                      ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Scan to join',
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary),
+                  ),
                   const SizedBox(height: 20),
                   Row(
                     children: [
@@ -274,8 +365,11 @@ class _GenerateTab extends StatelessWidget {
                         child: OutlinedButton.icon(
                           onPressed: onCopy,
                           icon: const Icon(Icons.copy_rounded, size: 16),
-                          label: const Text('Copy Code'),
-                          style: OutlinedButton.styleFrom(foregroundColor: AppColors.primary, side: const BorderSide(color: AppColors.primary)),
+                          label: const Text('Copy'),
+                          style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.primary,
+                              side: const BorderSide(
+                                  color: AppColors.primary)),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -284,7 +378,8 @@ class _GenerateTab extends StatelessWidget {
                           onPressed: onShare,
                           icon: const Icon(Icons.share_rounded, size: 16),
                           label: const Text('Share'),
-                          style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+                          style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.primary),
                         ),
                       ),
                     ],
@@ -292,36 +387,57 @@ class _GenerateTab extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             TextButton.icon(
               onPressed: onGenerate,
               icon: const Icon(Icons.refresh_rounded),
               label: const Text('Generate New Code'),
-              style: TextButton.styleFrom(foregroundColor: AppColors.textSecondary),
+              style: TextButton.styleFrom(
+                  foregroundColor: AppColors.textSecondary),
             ),
           ] else ...[
-            const Spacer(),
+            const SizedBox(height: 32),
             Container(
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
                 color: isDark ? AppColors.darkCard : AppColors.lightCard,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                border: Border.all(
+                    color: isDark
+                        ? AppColors.darkBorder
+                        : AppColors.lightBorder),
               ),
               child: Column(
                 children: [
-                  Icon(Icons.link_rounded, size: 56, color: AppColors.primary.withValues(alpha: 0.6)),
+                  Icon(Icons.qr_code_2_rounded,
+                      size: 64,
+                      color: AppColors.primary.withValues(alpha: 0.5)),
                   const SizedBox(height: 16),
-                  Text('No active invite code', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: isDark ? Colors.white : AppColors.textLight)),
+                  Text(
+                    'No active invite code',
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white : AppColors.textLight),
+                  ),
                   const SizedBox(height: 8),
-                  Text('Tap below to generate one', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                  Text(
+                    'Tap below to generate a code + QR',
+                    style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary),
+                  ),
                 ],
               ),
             ),
-            const Spacer(),
-            SpButton(label: 'Generate Invite Code', onTap: generating ? null : onGenerate, isLoading: generating, icon: Icons.add_link_rounded),
+            const SizedBox(height: 32),
+            SpButton(
+              label: 'Generate Invite Code',
+              onTap: generating ? null : onGenerate,
+              isLoading: generating,
+              icon: Icons.add_link_rounded,
+            ),
           ],
-          SizedBox(height: MediaQuery.of(context).viewPadding.bottom + 16),
         ],
       ),
     );
@@ -329,8 +445,12 @@ class _GenerateTab extends StatelessWidget {
 
   String _formatExpiry(DateTime dt) {
     final diff = dt.difference(DateTime.now());
-    if (diff.inDays > 0) return 'in ${diff.inDays} day${diff.inDays == 1 ? '' : 's'}';
-    if (diff.inHours > 0) return 'in ${diff.inHours} hour${diff.inHours == 1 ? '' : 's'}';
+    if (diff.inDays > 0) {
+      return 'in ${diff.inDays} day${diff.inDays == 1 ? '' : 's'}';
+    }
+    if (diff.inHours > 0) {
+      return 'in ${diff.inHours} hour${diff.inHours == 1 ? '' : 's'}';
+    }
     return 'soon';
   }
 }
@@ -345,6 +465,7 @@ class _JoinTab extends StatelessWidget {
   final bool joining;
   final ValueChanged<String> onCodeChanged;
   final VoidCallback onJoin;
+  final VoidCallback onScanQr;
 
   const _JoinTab({
     required this.isDark,
@@ -354,57 +475,98 @@ class _JoinTab extends StatelessWidget {
     required this.joining,
     required this.onCodeChanged,
     required this.onJoin,
+    required this.onScanQr,
   });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).viewPadding.bottom + 24),
+      padding: EdgeInsets.fromLTRB(
+          24, 24, 24, MediaQuery.of(context).viewPadding.bottom + 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: 12),
           Text(
-            'Enter an invite code you received from a group admin to join their group.',
-            style: TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.5),
+            'Enter an invite code or scan a QR code to join a group.',
+            style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+                height: 1.5),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 28),
           TextField(
             controller: controller,
             textCapitalization: TextCapitalization.characters,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: 6),
+            style: const TextStyle(
+                fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: 6),
             maxLength: 8,
             decoration: InputDecoration(
               hintText: 'XXXXXX',
-              hintStyle: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: 6, color: AppColors.textSecondary.withValues(alpha: 0.4)),
+              hintStyle: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 6,
+                  color: AppColors.textSecondary.withValues(alpha: 0.4)),
               counterText: '',
               filled: true,
               fillColor: isDark ? AppColors.darkCard : AppColors.lightCard,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none),
+              focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide:
+                      const BorderSide(color: AppColors.primary, width: 2)),
               contentPadding: const EdgeInsets.symmetric(vertical: 20),
             ),
             onChanged: onCodeChanged,
+          ),
+          const SizedBox(height: 12),
+          // QR scan button
+          OutlinedButton.icon(
+            onPressed: onScanQr,
+            icon: const Icon(Icons.qr_code_scanner_rounded, size: 20),
+            label: const Text('Scan QR Code'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              side: const BorderSide(color: AppColors.primary),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
+            ),
           ),
           const SizedBox(height: 16),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
             child: loadingPreview
-                ? const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)))
+                ? const Center(
+                    child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: AppColors.primary)))
                 : preview != null
                     ? Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
                           color: AppColors.income.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.income.withValues(alpha: 0.3)),
+                          border: Border.all(
+                              color:
+                                  AppColors.income.withValues(alpha: 0.3)),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.check_circle_outline_rounded, color: AppColors.income, size: 18),
+                            const Icon(Icons.check_circle_outline_rounded,
+                                color: AppColors.income, size: 18),
                             const SizedBox(width: 8),
-                            Expanded(child: Text(preview!, style: const TextStyle(fontSize: 13, color: AppColors.income))),
+                            Expanded(
+                                child: Text(preview!,
+                                    style: const TextStyle(
+                                        fontSize: 13,
+                                        color: AppColors.income))),
                           ],
                         ),
                       )
@@ -413,7 +575,9 @@ class _JoinTab extends StatelessWidget {
           const Spacer(),
           SpButton(
             label: 'Join Group',
-            onTap: (controller.text.trim().isNotEmpty && !joining) ? onJoin : null,
+            onTap: (controller.text.trim().isNotEmpty && !joining)
+                ? onJoin
+                : null,
             isLoading: joining,
             icon: Icons.group_add_rounded,
           ),
@@ -421,4 +585,198 @@ class _JoinTab extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── QR Scanner Sheet ─────────────────────────────────────────
+
+class _QrScannerSheet extends StatefulWidget {
+  final ValueChanged<String> onCodeDetected;
+  const _QrScannerSheet({required this.onCodeDetected});
+
+  @override
+  State<_QrScannerSheet> createState() => _QrScannerSheetState();
+}
+
+class _QrScannerSheetState extends State<_QrScannerSheet> {
+  bool _scanned = false;
+  final MobileScannerController _controller = MobileScannerController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onDetect(BarcodeCapture capture) {
+    if (_scanned) return;
+    final raw = capture.barcodes.firstOrNull?.rawValue;
+    if (raw == null || raw.isEmpty) return;
+    _scanned = true;
+    _controller.stop();
+    final code = raw.startsWith('dimeflow://join/')
+        ? raw.substring('dimeflow://join/'.length)
+        : raw;
+    Navigator.of(context).pop();
+    widget.onCodeDetected(code.toUpperCase());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenH = MediaQuery.of(context).size.height;
+    return Container(
+      height: screenH * 0.72,
+      decoration: const BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        child: Stack(
+          children: [
+            // Camera
+            MobileScanner(
+              controller: _controller,
+              onDetect: _onDetect,
+            ),
+            // Dark overlay with cutout
+            _ScannerOverlay(),
+            // Drag handle
+            Positioned(
+              top: 12,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+            ),
+            // Close button
+            Positioned(
+              top: 20,
+              right: 20,
+              child: GestureDetector(
+                onTap: () => Navigator.of(context).pop(),
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.close_rounded,
+                      color: Colors.white, size: 18),
+                ),
+              ),
+            ),
+            // Bottom label
+            Positioned(
+              bottom: 40,
+              left: 0,
+              right: 0,
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text(
+                      'Point camera at a QR code',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ScannerOverlay extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _OverlayPainter(),
+      child: const SizedBox.expand(),
+    );
+  }
+}
+
+class _OverlayPainter extends CustomPainter {
+  static const double _cutoutSize = 220;
+  static const double _cornerRadius = 16;
+  static const double _cornerLength = 28;
+  static const double _cornerWidth = 4;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2;
+    final cy = size.height / 2 - 20;
+    final rect = Rect.fromCenter(
+      center: Offset(cx, cy),
+      width: _cutoutSize,
+      height: _cutoutSize,
+    );
+
+    // Semi-transparent overlay
+    final overlayPath = Path()
+      ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
+      ..addRRect(RRect.fromRectAndRadius(rect, const Radius.circular(_cornerRadius)))
+      ..fillType = PathFillType.evenOdd;
+
+    canvas.drawPath(
+      overlayPath,
+      Paint()..color = Colors.black.withValues(alpha: 0.55),
+    );
+
+    // Corner accents
+    final cornerPaint = Paint()
+      ..color = AppColors.primary
+      ..strokeWidth = _cornerWidth
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+
+    final l = rect.left, t = rect.top, r = rect.right, b = rect.bottom;
+    const cr = _cornerRadius;
+    const cl = _cornerLength;
+
+    // Top-left
+    canvas.drawLine(Offset(l + cr, t), Offset(l + cr + cl, t), cornerPaint);
+    canvas.drawLine(Offset(l, t + cr), Offset(l, t + cr + cl), cornerPaint);
+    canvas.drawArc(Rect.fromLTWH(l, t, cr * 2, cr * 2), 3.14, 1.57, false,
+        cornerPaint);
+    // Top-right
+    canvas.drawLine(Offset(r - cr - cl, t), Offset(r - cr, t), cornerPaint);
+    canvas.drawLine(Offset(r, t + cr), Offset(r, t + cr + cl), cornerPaint);
+    canvas.drawArc(Rect.fromLTWH(r - cr * 2, t, cr * 2, cr * 2), -1.57, 1.57,
+        false, cornerPaint);
+    // Bottom-left
+    canvas.drawLine(Offset(l + cr, b), Offset(l + cr + cl, b), cornerPaint);
+    canvas.drawLine(Offset(l, b - cr - cl), Offset(l, b - cr), cornerPaint);
+    canvas.drawArc(Rect.fromLTWH(l, b - cr * 2, cr * 2, cr * 2), 1.57, 1.57,
+        false, cornerPaint);
+    // Bottom-right
+    canvas.drawLine(Offset(r - cr - cl, b), Offset(r - cr, b), cornerPaint);
+    canvas.drawLine(Offset(r, b - cr - cl), Offset(r, b - cr), cornerPaint);
+    canvas.drawArc(Rect.fromLTWH(r - cr * 2, b - cr * 2, cr * 2, cr * 2), 0,
+        1.57, false, cornerPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

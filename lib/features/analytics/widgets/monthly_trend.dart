@@ -13,16 +13,22 @@ class MonthlyTrendChart extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final monthly = ref.watch(monthlyTrendProvider);
+    final expenses = ref.watch(monthlyTrendProvider);
+    final incomes = ref.watch(monthlyIncomeTrendProvider);
     final currency = ref.watch(currencyProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final maxVal = monthly.reduce((a, b) => a > b ? a : b);
+
+    final allValues = [...expenses, ...incomes];
+    final maxVal = allValues.reduce((a, b) => a > b ? a : b);
     final chartMax = maxVal == 0 ? 100.0 : maxVal * 1.25;
 
     final bgColor = isDark ? AppColors.darkCard : AppColors.lightSurface;
     final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
 
-    final spots = monthly.asMap().entries
+    final expenseSpots = expenses.asMap().entries
+        .map((e) => FlSpot(e.key.toDouble(), e.value))
+        .toList();
+    final incomeSpots = incomes.asMap().entries
         .map((e) => FlSpot(e.key.toDouble(), e.value))
         .toList();
 
@@ -52,21 +58,12 @@ class MonthlyTrendChart extends ConsumerWidget {
                       fontWeight: FontWeight.w700,
                     ),
               ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.expense.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  'Expenses',
-                  style: TextStyle(
-                    color: AppColors.expense,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+              Row(
+                children: [
+                  _LegendDot(color: AppColors.income, label: 'Income'),
+                  const SizedBox(width: 10),
+                  _LegendDot(color: AppColors.expense, label: 'Expense'),
+                ],
               ),
             ],
           ),
@@ -78,8 +75,40 @@ class MonthlyTrendChart extends ConsumerWidget {
                 minY: 0,
                 maxY: chartMax,
                 lineBarsData: [
+                  // Income line
                   LineChartBarData(
-                    spots: spots,
+                    spots: incomeSpots,
+                    isCurved: true,
+                    curveSmoothness: 0.35,
+                    color: AppColors.income,
+                    barWidth: 2.5,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, pct, bar, index) =>
+                          FlDotCirclePainter(
+                        radius: index == 5 ? 5 : 3,
+                        color: index == 5
+                            ? AppColors.income
+                            : AppColors.income.withValues(alpha: 0.5),
+                        strokeWidth: index == 5 ? 2 : 0,
+                        strokeColor: Colors.white,
+                      ),
+                    ),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          AppColors.income.withValues(alpha: 0.12),
+                          AppColors.income.withValues(alpha: 0.0),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Expense line
+                  LineChartBarData(
+                    spots: expenseSpots,
                     isCurved: true,
                     curveSmoothness: 0.35,
                     color: AppColors.expense,
@@ -102,7 +131,7 @@ class MonthlyTrendChart extends ConsumerWidget {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          AppColors.expense.withValues(alpha: 0.2),
+                          AppColors.expense.withValues(alpha: 0.12),
                           AppColors.expense.withValues(alpha: 0.0),
                         ],
                       ),
@@ -156,16 +185,18 @@ class MonthlyTrendChart extends ConsumerWidget {
                     getTooltipColor: (_) =>
                         isDark ? AppColors.darkElevated : Colors.white,
                     tooltipRoundedRadius: 8,
-                    getTooltipItems: (spots) => spots
-                        .map((s) => LineTooltipItem(
-                              CurrencyFormatter.format(s.y, symbol: currency),
-                              const TextStyle(
-                                color: AppColors.expense,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 12,
-                              ),
-                            ))
-                        .toList(),
+                    getTooltipItems: (touchedSpots) =>
+                        touchedSpots.map((s) {
+                          final isIncome = s.barIndex == 0;
+                          return LineTooltipItem(
+                            '${isIncome ? 'Income' : 'Expense'}: ${CurrencyFormatter.format(s.y, symbol: currency)}',
+                            TextStyle(
+                              color: isIncome ? AppColors.income : AppColors.expense,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
+                            ),
+                          );
+                        }).toList(),
                   ),
                 ),
               ),
@@ -175,6 +206,35 @@ class MonthlyTrendChart extends ConsumerWidget {
           ).animate().fadeIn(duration: 500.ms, delay: 200.ms),
         ],
       ),
+    );
+  }
+}
+
+class _LegendDot extends StatelessWidget {
+  final Color color;
+  final String label;
+  const _LegendDot({required this.color, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: TextStyle(
+            color: color,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 }

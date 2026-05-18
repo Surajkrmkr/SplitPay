@@ -457,7 +457,7 @@ class _CurrencyTile extends StatelessWidget {
                         ref
                             .read(currencyProvider.notifier)
                             .setCurrency(e.value);
-                        Navigator.of(context).pop();
+                        Navigator.of(context, rootNavigator: true).pop();
                       },
                     );
                   }).toList(),
@@ -1033,8 +1033,9 @@ class _AppBadge extends StatelessWidget {
                 ),
               ],
             ),
-            child: const Center(
-              child: Text('💸', style: TextStyle(fontSize: 28)),
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Image.asset('assets/icon/app_icon.png'),
             ),
           ),
           const SizedBox(height: 12),

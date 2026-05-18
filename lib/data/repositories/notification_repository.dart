@@ -90,6 +90,13 @@ class NotificationRepository {
     } catch (_) {}
   }
 
+  Future<void> deleteAll() async {
+    await HiveService.clearAllNotifications();
+    try {
+      await _dio.delete(ApiConstants.notifications);
+    } catch (_) {}
+  }
+
   /// Prepend a locally-received FCM notification to the cache.
   Future<void> cacheIncoming(NotificationModel notification) async {
     await HiveService.saveNotification(notification);

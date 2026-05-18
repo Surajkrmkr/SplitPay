@@ -25,7 +25,7 @@ class BalanceModel {
       toUserId: json['toUserId'] as String,
       toUserName: json['toUserName'] as String,
       toUserAvatar: json['toUserAvatar'] as String?,
-      amount: (json['amount'] as num).toDouble(),
+      amount: double.parse(json['amount'].toString()),
     );
   }
 
@@ -76,10 +76,10 @@ class GroupBalanceSummary {
     return GroupBalanceSummary(
       balances: rawBalances,
       totalOwed: json['totalOwed'] != null
-          ? (json['totalOwed'] as num).toDouble()
+          ? double.parse(json['totalOwed'].toString())
           : owed,
       totalLent: json['totalLent'] != null
-          ? (json['totalLent'] as num).toDouble()
+          ? double.parse(json['totalLent'].toString())
           : lent,
     );
   }

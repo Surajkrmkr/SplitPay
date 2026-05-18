@@ -197,6 +197,17 @@ export async function joinViaInvite(code: string, userId: string): Promise<Group
   });
 
   const group = await groupsRepository.findGroupById(invite.groupId);
+
+  // Notify the joining user that they were added to the group
+  notificationsService
+    .notifyAddedToGroup({
+      userId,
+      groupId: invite.groupId,
+      groupName: invite.group.name,
+      addedByName: invite.createdBy.name,
+    })
+    .catch(() => {});
+
   return group!;
 }
 

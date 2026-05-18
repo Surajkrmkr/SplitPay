@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../data/models/group_model.dart';
 import '../../../data/models/member_model.dart';
 import '../../../data/services/group_api_service.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../providers/group_provider.dart';
 import '../../../providers/settings_provider.dart';
 import '../../../shared/widgets/avatar_widget.dart';
@@ -22,6 +24,7 @@ class AddExpenseSheet extends ConsumerStatefulWidget {
 class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
     with SingleTickerProviderStateMixin {
   final _amountController = TextEditingController();
+  final _amountFocusNode = FocusNode();
   final _titleController = TextEditingController();
   final _noteController = TextEditingController();
 
@@ -29,7 +32,9 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
 
   String _splitType = 'EQUAL';
   late String _paidById;
+  late String _currentUserId;
   late List<String> _selectedParticipantIds;
+  DateTime _selectedDate = DateTime.now();
 
   // For percentage split: map userId -> %
   final Map<String, TextEditingController> _percentControllers = {};
@@ -47,7 +52,14 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
         _splitType = ['EQUAL', 'PERCENTAGE', 'EXACT'][_splitTabController.index];
       });
     });
-    _paidById = widget.group.members.first.userId;
+
+    // Fix #5: default paidBy to the currently logged-in user
+    _currentUserId = ref.read(currentUserProvider)?.id ?? '';
+    final selfMember = widget.group.members
+        .where((m) => m.userId == _currentUserId)
+        .firstOrNull;
+    _paidById = selfMember?.userId ?? widget.group.members.first.userId;
+
     _selectedParticipantIds =
         widget.group.members.map((m) => m.userId).toList();
 
@@ -60,6 +72,7 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
   @override
   void dispose() {
     _amountController.dispose();
+    _amountFocusNode.dispose();
     _titleController.dispose();
     _noteController.dispose();
     _splitTabController.dispose();
@@ -143,6 +156,7 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
             notes: _noteController.text.trim().isEmpty
                 ? null
                 : _noteController.text.trim(),
+            date: _selectedDate.toUtc().toIso8601String(),
           );
       ref.invalidate(groupExpensesProvider(widget.group.id));
       ref.invalidate(groupBalancesProvider(widget.group.id));
@@ -228,9 +242,10 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
                   controller: scrollController,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   children: [
-                    // Amount — large display
+                    // Amount — large display (tap anywhere to focus)
                     AmountDisplay(
                       controller: _amountController,
+                      focusNode: _amountFocusNode,
                       isDark: isDark,
                       currency: currency,
                       onChanged: (_) => setState(() {}),
@@ -248,12 +263,23 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
                     ),
                     const SizedBox(height: 16),
 
+                    // Date
+                    _label('Date', isDark),
+                    const SizedBox(height: 8),
+                    _DatePickerTile(
+                      selectedDate: _selectedDate,
+                      isDark: isDark,
+                      onChanged: (d) => setState(() => _selectedDate = d),
+                    ),
+                    const SizedBox(height: 16),
+
                     // Paid by
                     _label('Paid by', isDark),
                     const SizedBox(height: 8),
                     PaidByDropdown(
                       members: widget.group.members,
                       selectedUserId: _paidById,
+                      currentUserId: _currentUserId,
                       isDark: isDark,
                       onChanged: (id) => setState(() => _paidById = id),
                     ),
@@ -454,6 +480,7 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
 
 class AmountDisplay extends StatelessWidget {
   final TextEditingController controller;
+  final FocusNode? focusNode;
   final bool isDark;
   final String currency;
   final ValueChanged<String> onChanged;
@@ -461,6 +488,7 @@ class AmountDisplay extends StatelessWidget {
   const AmountDisplay({
     super.key,
     required this.controller,
+    this.focusNode,
     required this.isDark,
     required this.currency,
     required this.onChanged,
@@ -468,65 +496,145 @@ class AmountDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : AppColors.lightCard,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+    return GestureDetector(
+      onTap: focusNode != null ? () => FocusScope.of(context).requestFocus(focusNode) : null,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkCard : AppColors.lightCard,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+          ),
+        ),
+        child: Column(
+          children: [
+            Text(
+              'Total Amount',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  currency,
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                  ),
+                ),
+                IntrinsicWidth(
+                  child: TextField(
+                    controller: controller,
+                    focusNode: focusNode,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(
+                          RegExp(r'^\d+\.?\d{0,2}')),
+                    ],
+                    onChanged: onChanged,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 40,
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? Colors.white : AppColors.textLight,
+                    ),
+                    decoration: const InputDecoration(
+                      hintText: '0',
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.zero,
+                      isDense: true,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
-      child: Column(
-        children: [
-          Text(
-            'Total Amount',
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.textSecondary,
-              letterSpacing: 0.5,
+    );
+  }
+}
+
+class _DatePickerTile extends StatelessWidget {
+  final DateTime selectedDate;
+  final bool isDark;
+  final ValueChanged<DateTime> onChanged;
+
+  const _DatePickerTile({
+    required this.selectedDate,
+    required this.isDark,
+    required this.onChanged,
+  });
+
+  Future<void> _pick(BuildContext context) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(
+          colorScheme: Theme.of(ctx).colorScheme.copyWith(
+                primary: AppColors.primary,
+                onPrimary: Colors.white,
+              ),
+        ),
+        child: child!,
+      ),
+    );
+    if (picked != null) onChanged(picked);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final label = DateFormat('EEE, d MMM yyyy').format(selectedDate);
+    final isToday = DateFormat('yyyyMMdd').format(selectedDate) ==
+        DateFormat('yyyyMMdd').format(DateTime.now());
+
+    return GestureDetector(
+      onTap: () => _pick(context),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkCard : AppColors.lightCard,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.calendar_today_rounded,
+              size: 18,
+              color: AppColors.primary,
             ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                currency,
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
-                ),
+            const SizedBox(width: 10),
+            Text(
+              isToday ? 'Today, ${DateFormat('d MMM').format(selectedDate)}' : label,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: isDark ? Colors.white : AppColors.textLight,
               ),
-              IntrinsicWidth(
-                child: TextField(
-                  controller: controller,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(
-                        RegExp(r'^\d+\.?\d{0,2}')),
-                  ],
-                  onChanged: onChanged,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 40,
-                    fontWeight: FontWeight.w800,
-                    color: isDark ? Colors.white : AppColors.textLight,
-                  ),
-                  decoration: const InputDecoration(
-                    hintText: '0',
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.zero,
-                    isDense: true,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
+            ),
+            const Spacer(),
+            Icon(
+              Icons.keyboard_arrow_down_rounded,
+              color: AppColors.textSecondary,
+              size: 20,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -535,6 +643,7 @@ class AmountDisplay extends StatelessWidget {
 class PaidByDropdown extends StatelessWidget {
   final List<MemberModel> members;
   final String selectedUserId;
+  final String currentUserId;
   final bool isDark;
   final ValueChanged<String> onChanged;
 
@@ -542,6 +651,7 @@ class PaidByDropdown extends StatelessWidget {
     super.key,
     required this.members,
     required this.selectedUserId,
+    this.currentUserId = '',
     required this.isDark,
     required this.onChanged,
   });
@@ -562,25 +672,23 @@ class PaidByDropdown extends StatelessWidget {
           value: selectedUserId,
           isExpanded: true,
           dropdownColor: isDark ? AppColors.darkCard : Colors.white,
-          icon: Icon(
+          icon: const Icon(
             Icons.keyboard_arrow_down_rounded,
             color: AppColors.textSecondary,
           ),
           items: members.map((m) {
+            final isYou = m.userId == currentUserId;
             return DropdownMenuItem(
               value: m.userId,
               child: Row(
                 children: [
-                  AvatarWidget(
-                    name: m.name,
-                    imageUrl: m.avatar,
-                    size: 28,
-                  ),
+                  AvatarWidget(name: m.name, imageUrl: m.avatar, size: 28),
                   const SizedBox(width: 10),
                   Text(
-                    m.userId == selectedUserId ? '${m.name} (you?)' : m.name,
+                    isYou ? '${m.name} (You)' : m.name,
                     style: TextStyle(
                       fontSize: 14,
+                      fontWeight: isYou ? FontWeight.w600 : FontWeight.w400,
                       color: isDark ? Colors.white : AppColors.textLight,
                     ),
                   ),

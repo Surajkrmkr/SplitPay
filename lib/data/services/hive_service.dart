@@ -95,6 +95,10 @@ class HiveService {
     await _notifications.delete(id);
   }
 
+  static Future<void> clearAllNotifications() async {
+    await _notifications.clear();
+  }
+
   static int getUnreadCount() {
     return _notifications.values
         .where((v) => (v as Map)['isRead'] == false)

@@ -86,15 +86,40 @@ class GroupDetailScreen extends ConsumerWidget {
                   ),
                 ),
                 actions: [
-                  IconButton(
-                    icon: const Icon(Icons.group_add_rounded),
-                    tooltip: 'Invite',
-                    onPressed: () => context.push('/groups/$groupId/invite'),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.settings_rounded),
-                    tooltip: 'Settings',
-                    onPressed: () => context.push('/groups/$groupId/settings'),
+                  Container(
+                    margin: const EdgeInsets.only(right: 16),
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkCard : AppColors.lightCard,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                        width: 0.5,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _AppBarIconBtn(
+                          icon: Icons.people_alt_rounded,
+                          tooltip: 'Invite',
+                          onTap: () => context.push('/groups/$groupId/invite'),
+                          isDark: isDark,
+                        ),
+                        Container(
+                          width: 0.5,
+                          height: 20,
+                          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                          margin: const EdgeInsets.symmetric(horizontal: 2),
+                        ),
+                        _AppBarIconBtn(
+                          icon: Icons.tune_rounded,
+                          tooltip: 'Settings',
+                          onTap: () => context.push('/groups/$groupId/settings'),
+                          isDark: isDark,
+                        ),
+                      ],
+                    ),
                   ),
                 ],
                 bottom: TabBar(
@@ -172,17 +197,36 @@ class _BalancesTab extends ConsumerWidget {
           ),
         ),
       ),
-      error: (e, _) => EmptyState(
-        icon: Icons.error_outline_rounded,
-        title: 'Error loading balances',
-        subtitle: e.toString(),
+      error: (e, _) => RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: () async => ref.invalidate(groupBalancesProvider(groupId)),
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            EmptyState(
+              icon: Icons.error_outline_rounded,
+              title: 'Error loading balances',
+              subtitle: e.toString(),
+            ),
+          ],
+        ),
       ),
       data: (summary) {
         if (summary.balances.isEmpty) {
-          return const EmptyState(
-            icon: Icons.check_circle_outline_rounded,
-            title: 'All settled up!',
-            subtitle: 'No outstanding balances in this group.',
+          return RefreshIndicator(
+            color: AppColors.primary,
+            onRefresh: () async =>
+                ref.invalidate(groupBalancesProvider(groupId)),
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: const [
+                EmptyState(
+                  icon: Icons.check_circle_outline_rounded,
+                  title: 'All settled up!',
+                  subtitle: 'No outstanding balances in this group.',
+                ),
+              ],
+            ),
           );
         }
 
@@ -232,71 +276,172 @@ class _BalanceSummaryCard extends ConsumerWidget {
     final currency = ref.watch(currencyProvider);
     final net = summary.net as double;
     final isPositive = net >= 0;
+    final accentColor = isPositive ? AppColors.income : AppColors.expense;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: isPositive
               ? [
-                  AppColors.income.withValues(alpha: 0.15),
-                  AppColors.income.withValues(alpha: 0.05),
+                  AppColors.income.withValues(alpha: 0.18),
+                  AppColors.income.withValues(alpha: 0.04),
                 ]
               : [
-                  AppColors.expense.withValues(alpha: 0.15),
-                  AppColors.expense.withValues(alpha: 0.05),
+                  AppColors.expense.withValues(alpha: 0.18),
+                  AppColors.expense.withValues(alpha: 0.04),
                 ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isPositive
-              ? AppColors.income.withValues(alpha: 0.3)
-              : AppColors.expense.withValues(alpha: 0.3),
+          color: accentColor.withValues(alpha: 0.25),
+          width: 1.5,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: accentColor.withValues(alpha: 0.1),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: accentColor.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    isPositive
+                        ? Icons.trending_up_rounded
+                        : Icons.trending_down_rounded,
+                    color: accentColor,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isPositive ? "You're owed overall" : "You owe overall",
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Text(
+                      '$currency${net.abs().toStringAsFixed(0)}',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        color: accentColor,
+                        height: 1.1,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Container(
+              height: 0.5,
+              color: accentColor.withValues(alpha: 0.2),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _StatChip(
+                    label: 'Total Lent',
+                    value:
+                        '$currency${(summary.totalLent as double).toStringAsFixed(0)}',
+                    color: AppColors.income,
+                    icon: Icons.arrow_upward_rounded,
+                    isDark: isDark,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _StatChip(
+                    label: 'Total Borrowed',
+                    value:
+                        '$currency${(summary.totalOwed as double).toStringAsFixed(0)}',
+                    color: AppColors.expense,
+                    icon: Icons.arrow_downward_rounded,
+                    isDark: isDark,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatChip extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  final IconData icon;
+  final bool isDark;
+
+  const _StatChip({
+    required this.label,
+    required this.value,
+    required this.color,
+    required this.icon,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isPositive ? "You're owed overall" : "You owe overall",
+                  label,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 10,
                     color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(height: 4),
                 Text(
-                  '$currency${net.abs().toStringAsFixed(0)}',
+                  value,
                   style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w800,
-                    color: isPositive ? AppColors.income : AppColors.expense,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: color,
                   ),
                 ),
               ],
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              _MiniStat(
-                label: "Lent",
-                value: '$currency${(summary.totalLent as double).toStringAsFixed(0)}',
-                color: AppColors.income,
-              ),
-              const SizedBox(height: 4),
-              _MiniStat(
-                label: "Borrowed",
-                value: '$currency${(summary.totalOwed as double).toStringAsFixed(0)}',
-                color: AppColors.expense,
-              ),
-            ],
           ),
         ],
       ),
@@ -304,31 +449,6 @@ class _BalanceSummaryCard extends ConsumerWidget {
   }
 }
 
-class _MiniStat extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color color;
-  const _MiniStat(
-      {required this.label, required this.value, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          '$label ',
-          style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-              fontSize: 13, fontWeight: FontWeight.w700, color: color),
-        ),
-      ],
-    );
-  }
-}
 
 Future<void> _confirmDeleteExpense(
     BuildContext context, WidgetRef ref, String expenseId) async {
@@ -396,17 +516,36 @@ class _ExpensesTab extends ConsumerWidget {
           (_) => const SkeletonExpenseTile(),
         ),
       ),
-      error: (e, _) => EmptyState(
-        icon: Icons.error_outline_rounded,
-        title: 'Could not load expenses',
-        subtitle: e.toString(),
+      error: (e, _) => RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: () async => ref.invalidate(groupExpensesProvider(groupId)),
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            EmptyState(
+              icon: Icons.error_outline_rounded,
+              title: 'Could not load expenses',
+              subtitle: e.toString(),
+            ),
+          ],
+        ),
       ),
       data: (expenses) {
         if (expenses.isEmpty) {
-          return const EmptyState(
-            icon: Icons.receipt_long_rounded,
-            title: 'No expenses yet',
-            subtitle: 'Add an expense to start tracking.',
+          return RefreshIndicator(
+            color: AppColors.primary,
+            onRefresh: () async =>
+                ref.invalidate(groupExpensesProvider(groupId)),
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: const [
+                EmptyState(
+                  icon: Icons.receipt_long_rounded,
+                  title: 'No expenses yet',
+                  subtitle: 'Add an expense to start tracking.',
+                ),
+              ],
+            ),
           );
         }
 
@@ -458,21 +597,40 @@ class _ActivityTab extends ConsumerWidget {
           (_) => const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: SkeletonBox(
-                width: double.infinity, height: 56, borderRadius: 12),
+                width: double.infinity, height: 72, borderRadius: 12),
           ),
         ),
       ),
-      error: (e, _) => EmptyState(
-        icon: Icons.error_outline_rounded,
-        title: 'Could not load activity',
-        subtitle: e.toString(),
+      error: (e, _) => RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: () async => ref.invalidate(groupActivityProvider(groupId)),
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            EmptyState(
+              icon: Icons.error_outline_rounded,
+              title: 'Could not load activity',
+              subtitle: e.toString(),
+            ),
+          ],
+        ),
       ),
       data: (activities) {
         if (activities.isEmpty) {
-          return const EmptyState(
-            icon: Icons.history_rounded,
-            title: 'No activity yet',
-            subtitle: 'Activity will appear here as the group evolves.',
+          return RefreshIndicator(
+            color: AppColors.primary,
+            onRefresh: () async =>
+                ref.invalidate(groupActivityProvider(groupId)),
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: const [
+                EmptyState(
+                  icon: Icons.history_rounded,
+                  title: 'No activity yet',
+                  subtitle: 'Activity will appear here as the group evolves.',
+                ),
+              ],
+            ),
           );
         }
 
@@ -480,13 +638,16 @@ class _ActivityTab extends ConsumerWidget {
           color: AppColors.primary,
           onRefresh: () async => ref.invalidate(groupActivityProvider(groupId)),
           child: ListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
             itemCount: activities.length,
-            itemBuilder: (context, i) =>
-                _ActivityTile(activity: activities[i], isDark: isDark)
-                    .animate(delay: (i * 40).ms)
-                    .fadeIn(duration: 300.ms)
-                    .slideY(begin: 0.05),
+            itemBuilder: (context, i) => _ActivityTile(
+              activity: activities[i],
+              isDark: isDark,
+              isLast: i == activities.length - 1,
+            )
+                .animate(delay: (i * 40).ms)
+                .fadeIn(duration: 300.ms)
+                .slideY(begin: 0.05),
           ),
         );
       },
@@ -497,13 +658,18 @@ class _ActivityTab extends ConsumerWidget {
 class _ActivityTile extends StatelessWidget {
   final ActivityModel activity;
   final bool isDark;
+  final bool isLast;
 
-  const _ActivityTile({required this.activity, required this.isDark});
+  const _ActivityTile({
+    required this.activity,
+    required this.isDark,
+    this.isLast = false,
+  });
 
   IconData _iconForType(ActivityType type) {
     switch (type) {
       case ActivityType.expenseAdded:
-        return Icons.add_circle_outline_rounded;
+        return Icons.receipt_long_rounded;
       case ActivityType.expenseDeleted:
         return Icons.delete_outline_rounded;
       case ActivityType.settlementCompleted:
@@ -538,50 +704,168 @@ class _ActivityTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = _colorForType(activity.type);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+    return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(_iconForType(activity.type), size: 18, color: color),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
+          // Timeline column
+          SizedBox(
+            width: 44,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  activity.description,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: isDark ? Colors.white : AppColors.textLight,
-                    fontWeight: FontWeight.w500,
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: color.withValues(alpha: 0.3),
+                      width: 1.5,
+                    ),
                   ),
+                  child: Icon(_iconForType(activity.type), size: 18, color: color),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  DateFormat('d MMM, h:mm a').format(activity.createdAt),
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textTertiary,
+                if (!isLast)
+                  Expanded(
+                    child: Container(
+                      width: 2,
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            color.withValues(alpha: 0.25),
+                            Colors.transparent,
+                          ],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                        borderRadius: BorderRadius.circular(1),
+                      ),
+                    ),
                   ),
-                ),
               ],
             ),
           ),
-          AvatarWidget(
-            name: activity.userName,
-            imageUrl: activity.userAvatar,
-            size: 28,
+          const SizedBox(width: 10),
+          // Content card
+          Expanded(
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkCard : Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                  width: 0.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.04),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          activity.description,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: isDark ? Colors.white : AppColors.textLight,
+                            fontWeight: FontWeight.w600,
+                            height: 1.3,
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.access_time_rounded,
+                              size: 11,
+                              color: AppColors.textTertiary,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              DateFormat('d MMM, h:mm a')
+                                  .format(activity.createdAt),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textTertiary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Column(
+                    children: [
+                      AvatarWidget(
+                        name: activity.userName,
+                        imageUrl: activity.userAvatar,
+                        size: 30,
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        activity.userName.split(' ').first,
+                        style: const TextStyle(
+                          fontSize: 9,
+                          color: AppColors.textTertiary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _AppBarIconBtn extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+  final bool isDark;
+
+  const _AppBarIconBtn({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(9),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(7),
+            child: Icon(
+              icon,
+              size: 18,
+              color: isDark ? AppColors.textSecondary : AppColors.textLightSecondary,
+            ),
+          ),
+        ),
       ),
     );
   }

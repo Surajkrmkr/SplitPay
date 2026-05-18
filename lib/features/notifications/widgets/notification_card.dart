@@ -113,7 +113,7 @@ class _CardBody extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       Text(
                         _formatTime(notification.createdAt),
                         style: TextStyle(
@@ -124,6 +124,17 @@ class _CardBody extends StatelessWidget {
                           fontWeight: FontWeight.w400,
                         ),
                       ),
+                      if (isUnread) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          width: 7,
+                          height: 7,
+                          decoration: BoxDecoration(
+                            color: type.color,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 3),

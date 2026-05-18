@@ -122,54 +122,150 @@ class _RenameGroupTile extends StatelessWidget {
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
-        title: const Text('Rename Group'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(labelText: 'Group name', border: OutlineInputBorder()),
-              autofocus: true,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: descController,
-              decoration: const InputDecoration(labelText: 'Description (optional)', border: OutlineInputBorder()),
-              maxLines: 2,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => ctx.pop(), child: const Text('Cancel')),
-          FilledButton(
-            onPressed: () async {
-              final name = nameController.text.trim();
-              if (name.isEmpty) return;
-              ctx.pop();
-              try {
-                await ref.read(groupApiServiceProvider).updateGroup(
-                  group.id,
-                  name: name,
-                  description: descController.text.trim().isEmpty ? null : descController.text.trim(),
-                );
-                ref.invalidate(groupDetailProvider(group.id));
-                ref.invalidate(groupsProvider);
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: const Text('Group updated'), backgroundColor: AppColors.income, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.expense));
-                }
-              }
-            },
-            child: const Text('Save'),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.darkSurface : Colors.white,
+            borderRadius: BorderRadius.circular(24),
           ),
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                decoration: const BoxDecoration(
+                  gradient: AppColors.primaryGradient,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.edit_rounded, color: Colors.white, size: 24),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Edit Group Info',
+                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Update your group name and description',
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        labelText: 'Group Name',
+                        prefixIcon: const Icon(Icons.group_rounded, size: 20),
+                        filled: true,
+                        fillColor: isDark ? AppColors.darkCard : AppColors.lightBg,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: descController,
+                      maxLines: 2,
+                      decoration: InputDecoration(
+                        labelText: 'Description (optional)',
+                        prefixIcon: const Padding(
+                          padding: EdgeInsets.only(bottom: 24),
+                          child: Icon(Icons.notes_rounded, size: 20),
+                        ),
+                        filled: true,
+                        fillColor: isDark ? AppColors.darkCard : AppColors.lightBg,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => ctx.pop(),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              side: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                            ),
+                            child: Text(
+                              'Cancel',
+                              style: TextStyle(
+                                color: isDark ? AppColors.textSecondary : AppColors.textLightSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: AppColors.primaryGradient,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: ElevatedButton(
+                              onPressed: () async {
+                                final name = nameController.text.trim();
+                                if (name.isEmpty) return;
+                                ctx.pop();
+                                try {
+                                  await ref.read(groupApiServiceProvider).updateGroup(
+                                    group.id,
+                                    name: name,
+                                    description: descController.text.trim().isEmpty ? null : descController.text.trim(),
+                                  );
+                                  ref.invalidate(groupDetailProvider(group.id));
+                                  ref.invalidate(groupsProvider);
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: const Text('Group updated'), backgroundColor: AppColors.income, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.expense));
+                                  }
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              ),
+                              child: const Text('Save Changes', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -271,14 +367,99 @@ class _MemberTile extends StatelessWidget {
     } else if (action == 'remove') {
       final confirmed = await showDialog<bool>(
         context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Remove Member'),
-          content: Text('Remove ${member.name} from the group?'),
-          actions: [
-            TextButton(onPressed: () => ctx.pop(false), child: const Text('Cancel')),
-            FilledButton(style: FilledButton.styleFrom(backgroundColor: AppColors.expense), onPressed: () => ctx.pop(true), child: const Text('Remove')),
-          ],
-        ),
+        builder: (ctx) {
+          final isDark = Theme.of(ctx).brightness == Brightness.dark;
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurface : Colors.white,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFF6B6B),
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                    ),
+                    child: Column(children: [
+                      Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
+                        child: const Icon(Icons.person_remove_alt_1_rounded, color: Colors.white, size: 24),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text('Remove Member', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+                    ]),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.expense.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: AppColors.expense.withValues(alpha: 0.2)),
+                          ),
+                          child: Row(children: [
+                            const Icon(Icons.warning_amber_rounded, color: AppColors.expense, size: 20),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: RichText(
+                                text: TextSpan(
+                                  style: TextStyle(fontSize: 14, color: isDark ? Colors.white70 : AppColors.textLight),
+                                  children: [
+                                    TextSpan(text: member.name, style: const TextStyle(fontWeight: FontWeight.w700)),
+                                    const TextSpan(text: ' will be removed from this group.'),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ]),
+                        ),
+                        const SizedBox(height: 20),
+                        Row(children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => ctx.pop(false),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                side: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                              ),
+                              child: Text('Cancel', style: TextStyle(color: isDark ? AppColors.textSecondary : AppColors.textLightSecondary, fontWeight: FontWeight.w600)),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () => ctx.pop(true),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.expense,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              ),
+                              child: const Text('Remove', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                            ),
+                          ),
+                        ]),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       );
       if (confirmed == true) {
         try {
@@ -328,18 +509,108 @@ class _DeleteGroupTile extends StatelessWidget {
   Future<void> _confirmDelete(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Group'),
-        content: const Text('This will permanently delete the group, all expenses, and all balances. This cannot be undone.'),
-        actions: [
-          TextButton(onPressed: () => ctx.pop(false), child: const Text('Cancel')),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.expense),
-            onPressed: () => ctx.pop(true),
-            child: const Text('Delete'),
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkSurface : Colors.white,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFF6B6B),
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                  ),
+                  child: Column(children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
+                      child: const Icon(Icons.delete_forever_rounded, color: Colors.white, size: 26),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text('Delete Group', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 4),
+                    Text('This action is irreversible', style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13)),
+                  ]),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.expense.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: AppColors.expense.withValues(alpha: 0.2)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(children: [
+                              const Icon(Icons.warning_amber_rounded, color: AppColors.expense, size: 18),
+                              const SizedBox(width: 8),
+                              Text('This will permanently delete:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.expense)),
+                            ]),
+                            const SizedBox(height: 10),
+                            ...['All group expenses', 'All balances and settlements', 'All group members and history'].map(
+                              (item) => Padding(
+                                padding: const EdgeInsets.only(bottom: 6),
+                                child: Row(children: [
+                                  const SizedBox(width: 4),
+                                  Container(width: 5, height: 5, decoration: const BoxDecoration(color: AppColors.expense, shape: BoxShape.circle)),
+                                  const SizedBox(width: 10),
+                                  Text(item, style: TextStyle(fontSize: 13, color: isDark ? Colors.white70 : AppColors.textLight)),
+                                ]),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Row(children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => ctx.pop(false),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              side: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                            ),
+                            child: Text('Cancel', style: TextStyle(color: isDark ? AppColors.textSecondary : AppColors.textLightSecondary, fontWeight: FontWeight.w600)),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () => ctx.pop(true),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.expense,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                            child: const Text('Delete Group', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                          ),
+                        ),
+                      ]),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-        ],
-      ),
+        );
+      },
     );
 
     if (confirmed == true && context.mounted) {

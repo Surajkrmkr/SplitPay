@@ -153,7 +153,7 @@ class _InsightCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkCard : AppColors.lightSurface,
         borderRadius: BorderRadius.circular(16),
@@ -161,37 +161,62 @@ class _InsightCard extends StatelessWidget {
           color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
           width: 0.5,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(6),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: color, size: 14),
+            child: Icon(icon, color: color, size: 16),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           Text(
             value,
             style: TextStyle(
               color: isDark ? Colors.white : AppColors.textLight,
               fontWeight: FontWeight.w800,
-              fontSize: 14,
+              fontSize: 15,
               letterSpacing: -0.3,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 3),
           Text(
             label,
             style: const TextStyle(
               color: AppColors.textSecondary,
-              fontSize: 10,
+              fontSize: 11,
               fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            height: 3,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(2),
+            ),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: 0.7,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
             ),
           ),
         ],
@@ -211,81 +236,130 @@ class _TopCategoryCard extends ConsumerWidget {
 
     if (breakdown.isEmpty) return const SizedBox.shrink();
 
-    final topEntry =
-        breakdown.entries.reduce((a, b) => a.value > b.value ? a : b);
+    final sorted = breakdown.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
     final total = breakdown.values.fold(0.0, (a, b) => a + b);
-    final pct = total > 0 ? topEntry.value / total * 100 : 0.0;
-    final color = topEntry.key.color;
+    final topItems = sorted.take(5).toList();
+
+    final bgColor = isDark ? AppColors.darkCard : AppColors.lightSurface;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            color.withValues(alpha: 0.15),
-            color.withValues(alpha: 0.04),
-          ],
-        ),
+        color: bgColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.3), width: 0.5),
+        border: Border.all(color: borderColor, width: 0.5),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(topEntry.key.icon, color: color, size: 26),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Top Spending',
-                  style: TextStyle(
-                    color: isDark
-                        ? AppColors.textSecondary
-                        : AppColors.textLightSecondary,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                  ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Spending Breakdown',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+              Text(
+                'This Month',
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  topEntry.key.label,
-                  style: TextStyle(
-                    color: isDark ? Colors.white : AppColors.textLight,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 18,
-                  ),
-                ),
-                Text(
-                  '${pct.toStringAsFixed(0)}% of total',
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-          Text(
-            CurrencyFormatter.format(topEntry.value, symbol: currency),
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.w800,
-              fontSize: 17,
-            ),
-          ),
+          const SizedBox(height: 16),
+          ...topItems.asMap().entries.map((entry) {
+            final rank = entry.key + 1;
+            final item = entry.value;
+            final pct = total > 0 ? item.value / total : 0.0;
+            final color = item.key.color;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: Row(
+                children: [
+                  // Rank badge
+                  SizedBox(
+                    width: 22,
+                    child: Text(
+                      '#$rank',
+                      style: const TextStyle(
+                        color: AppColors.textTertiary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  // Icon
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(item.key.icon, color: color, size: 18),
+                  ),
+                  const SizedBox(width: 12),
+                  // Label + progress bar
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              item.key.label,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? Colors.white : AppColors.textLight,
+                              ),
+                            ),
+                            Text(
+                              CurrencyFormatter.format(item.value, symbol: currency),
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: color,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(3),
+                          child: LinearProgressIndicator(
+                            value: pct,
+                            minHeight: 5,
+                            backgroundColor: color.withValues(alpha: 0.1),
+                            valueColor: AlwaysStoppedAnimation<Color>(color),
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          '${(pct * 100).toStringAsFixed(0)}% of total',
+                          style: const TextStyle(
+                            color: AppColors.textTertiary,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
         ],
       ),
     ).animate(delay: 400.ms).fadeIn().slideY(begin: 0.15);

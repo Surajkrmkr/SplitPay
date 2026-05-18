@@ -25,7 +25,7 @@ class MemberAvatarRow extends StatelessWidget {
     return GestureDetector(
       onTap: () => _showMemberList(context),
       child: SizedBox(
-        height: avatarSize,
+        height: avatarSize + 4, // +4 for 2px border top+bottom
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -33,7 +33,8 @@ class MemberAvatarRow extends StatelessWidget {
             SizedBox(
               width: visible.length * overlapOffset +
                   avatarSize * (1 - 0.65) +
-                  (overflow > 0 ? overlapOffset + 32 : 0),
+                  (overflow > 0 ? overlapOffset + avatarSize + 4 : 0) +
+                  4, // +4 for right border
               child: Stack(
                 children: [
                   ...visible.asMap().entries.map((e) {
@@ -102,8 +103,7 @@ class MemberAvatarRow extends StatelessWidget {
       builder: (_) => Container(
         decoration: BoxDecoration(
           color: isDark ? AppColors.darkSurface : Colors.white,
-          borderRadius:
-              const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
         child: Column(

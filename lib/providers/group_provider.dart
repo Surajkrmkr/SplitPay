@@ -51,7 +51,7 @@ final groupsProvider =
 // ──────────────────────────────────────────────
 
 class GroupDetailNotifier
-    extends AutoDisposeFamilyAsyncNotifier<GroupModel, String> {
+    extends FamilyAsyncNotifier<GroupModel, String> {
   @override
   Future<GroupModel> build(String arg) async {
     return ref.read(groupApiServiceProvider).getGroup(arg);
@@ -66,7 +66,7 @@ class GroupDetailNotifier
 }
 
 final groupDetailProvider =
-    AutoDisposeAsyncNotifierProviderFamily<GroupDetailNotifier, GroupModel,
+    AsyncNotifierProviderFamily<GroupDetailNotifier, GroupModel,
         String>(GroupDetailNotifier.new);
 
 // ──────────────────────────────────────────────
@@ -74,7 +74,7 @@ final groupDetailProvider =
 // ──────────────────────────────────────────────
 
 final groupExpensesProvider =
-    FutureProvider.autoDispose.family<List<GroupExpenseModel>, String>(
+    FutureProvider.family<List<GroupExpenseModel>, String>(
   (ref, groupId) async {
     return ref.read(groupApiServiceProvider).getGroupExpenses(groupId);
   },
@@ -85,7 +85,7 @@ final groupExpensesProvider =
 // ──────────────────────────────────────────────
 
 final groupBalancesProvider =
-    FutureProvider.autoDispose.family<GroupBalanceSummary, String>(
+    FutureProvider.family<GroupBalanceSummary, String>(
   (ref, groupId) async {
     final userId = ref.watch(currentUserProvider)?.id ?? 'user_1';
     return ref
@@ -99,7 +99,7 @@ final groupBalancesProvider =
 // ──────────────────────────────────────────────
 
 final groupActivityProvider =
-    FutureProvider.autoDispose.family<List<ActivityModel>, String>(
+    FutureProvider.family<List<ActivityModel>, String>(
   (ref, groupId) async {
     return ref.read(groupApiServiceProvider).getGroupActivity(groupId);
   },
@@ -110,7 +110,7 @@ final groupActivityProvider =
 // ──────────────────────────────────────────────
 
 final groupSettlementsProvider =
-    FutureProvider.autoDispose.family<List<SettlementModel>, String>(
+    FutureProvider.family<List<SettlementModel>, String>(
   (ref, groupId) async {
     return ref.read(groupApiServiceProvider).getGroupSettlements(groupId);
   },

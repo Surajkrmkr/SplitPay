@@ -22,5 +22,6 @@ services:
       RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-100}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      FIREBASE_SERVICE_ACCOUNT_KEY: ${FIREBASE_SERVICE_ACCOUNT_KEY}
     ports:
       - '${PORT:-3000}:3000'

@@ -115,71 +115,71 @@ class _CategoryCard extends StatelessWidget {
         border: Border.all(color: borderColor, width: 0.5),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(category.icon, color: color, size: 15),
+                    ),
+                    Text(
+                      '${(percentage * 100).toStringAsFixed(0)}%',
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
-                child: Icon(category.icon, color: color, size: 15),
-              ),
-              Text(
-                '${(percentage * 100).toStringAsFixed(0)}%',
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      category.label,
+                      style: TextStyle(
+                        color: isDark
+                            ? AppColors.textSecondary
+                            : AppColors.textLightSecondary,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      CurrencyFormatter.format(amount, symbol: currency),
+                      style: TextStyle(
+                        color: isDark ? Colors.white : AppColors.textLight,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: TweenAnimationBuilder<double>(
+                        duration: 800.ms,
+                        tween: Tween(begin: 0, end: percentage),
+                        curve: Curves.easeOutCubic,
+                        builder: (_, value, __) => LinearProgressIndicator(
+                          value: value,
+                          backgroundColor: color.withValues(alpha: 0.1),
+                          valueColor: AlwaysStoppedAnimation<Color>(color),
+                          minHeight: 4,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                category.label,
-                style: TextStyle(
-                  color: isDark
-                      ? AppColors.textSecondary
-                      : AppColors.textLightSecondary,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 1),
-              Text(
-                CurrencyFormatter.format(amount, symbol: currency),
-                style: TextStyle(
-                  color: isDark ? Colors.white : AppColors.textLight,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 5),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: TweenAnimationBuilder<double>(
-                  duration: 800.ms,
-                  tween: Tween(begin: 0, end: percentage),
-                  curve: Curves.easeOutCubic,
-                  builder: (_, value, __) => LinearProgressIndicator(
-                    value: value,
-                    backgroundColor: color.withValues(alpha: 0.1),
-                    valueColor: AlwaysStoppedAnimation<Color>(color),
-                    minHeight: 4,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+              ],
+            ),
     );
   }
 }

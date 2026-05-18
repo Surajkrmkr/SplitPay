@@ -20,6 +20,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   static const _pages = [
     _OnboardingData(
       emoji: '💸',
+      imagePath: 'assets/icon/app_icon.png',
       gradient: [Color(0xFF004E35), Color(0xFF002418)],
       accentColor: AppColors.primary,
       title: 'Track Every Penny',
@@ -101,6 +102,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
 class _OnboardingData {
   final String emoji;
+  final String? imagePath;
   final List<Color> gradient;
   final Color accentColor;
   final String title;
@@ -108,6 +110,7 @@ class _OnboardingData {
 
   const _OnboardingData({
     required this.emoji,
+    this.imagePath,
     required this.gradient,
     required this.accentColor,
     required this.title,
@@ -158,10 +161,15 @@ class _OnboardingPage extends StatelessWidget {
                   ),
                 ),
                 child: Center(
-                  child: Text(
-                    data.emoji,
-                    style: const TextStyle(fontSize: 80),
-                  ),
+                  child: data.imagePath != null
+                      ? Padding(
+                          padding: const EdgeInsets.all(36),
+                          child: Image.asset(data.imagePath!),
+                        )
+                      : Text(
+                          data.emoji,
+                          style: const TextStyle(fontSize: 80),
+                        ),
                 ),
               )
                   .animate()

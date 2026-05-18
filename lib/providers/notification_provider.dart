@@ -81,6 +81,11 @@ class NotificationsNotifier
     state = AsyncValue.data(current.where((n) => n.id != id).toList());
     await ref.read(notificationRepositoryProvider).delete(id);
   }
+
+  Future<void> deleteAll() async {
+    state = const AsyncValue.data([]);
+    await ref.read(notificationRepositoryProvider).deleteAll();
+  }
 }
 
 final notificationsProvider =

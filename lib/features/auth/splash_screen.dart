@@ -87,11 +87,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       ),
                     ],
                   ),
-                  child: const Center(
-                    child: Text(
-                      '💸',
-                      style: TextStyle(fontSize: 46),
-                    ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Image.asset('assets/icon/app_icon.png'),
                   ),
                 )
                     .animate(onPlay: (c) => c.repeat(reverse: true))

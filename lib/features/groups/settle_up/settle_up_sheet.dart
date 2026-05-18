@@ -49,6 +49,9 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
     final amount = double.tryParse(_amountController.text.trim());
     if (amount == null || amount <= 0) return;
 
+    // Capture navigator before any async gap to avoid null context errors
+    final nav = Navigator.of(context, rootNavigator: true);
+
     setState(() => _settling = true);
     try {
       await ref.read(groupApiServiceProvider).createSettlement(
@@ -60,27 +63,26 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
                 : _noteController.text.trim(),
           );
 
-      // Refresh balances
       ref.invalidate(groupBalancesProvider(widget.groupId));
       ref.invalidate(groupSettlementsProvider(widget.groupId));
 
+      if (!mounted) return;
       setState(() {
         _settling = false;
         _settled = true;
       });
 
       await Future.delayed(const Duration(milliseconds: 1500));
-      if (mounted) Navigator.of(context).pop();
+      nav.pop();
     } catch (e) {
+      if (!mounted) return;
       setState(() => _settling = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Settlement failed: $e'),
-            backgroundColor: AppColors.expense,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Settlement failed: $e'),
+          backgroundColor: AppColors.expense,
+        ),
+      );
     }
   }
 

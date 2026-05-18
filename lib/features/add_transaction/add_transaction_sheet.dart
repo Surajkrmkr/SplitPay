@@ -85,9 +85,6 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
     final hidden = ref.watch(hiddenCategoriesProvider);
     final customCats = ref.watch(customCategoriesProvider);
 
-    // Read here so AddTransactionSheet subscribes to keyboard changes
-    // and the DraggableScrollableSheet builder re-runs on open/close.
-    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final safeAreaBottom = MediaQuery.of(context).viewPadding.bottom;
 
     final visibleBuiltIn =
@@ -209,7 +206,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                 duration: const Duration(milliseconds: 150),
                 curve: Curves.easeOut,
                 padding: EdgeInsets.fromLTRB(
-                    24, 12, 24, safeAreaBottom + keyboardHeight + 16),
+                    24, 12, 24, safeAreaBottom + 16),
                 decoration: BoxDecoration(
                   color:
                       isDark ? AppColors.darkSurface : AppColors.lightSurface,
