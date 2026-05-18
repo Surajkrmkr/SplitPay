@@ -1,0 +1,35 @@
+class ApiConstants {
+  static const String baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://192.168.1.54:3000/api/v1',
+  );
+
+  // Auth
+  static const String authGoogle = '/auth/google';
+  static const String authRefresh = '/auth/refresh';
+  static const String authLogout = '/auth/logout';
+
+  // Users
+  static const String usersMe = '/users/me';
+  static const String usersSearch = '/users/search';
+
+  // Groups
+  static const String groups = '/groups';
+  static String groupById(String id) => '/groups/$id';
+  static String groupMembers(String id) => '/groups/$id/members';
+  static String groupMember(String gId, String mId) => '/groups/$gId/members/$mId';
+  static String groupExpenses(String id) => '/groups/$id/expenses';
+  static String groupBalances(String id) => '/groups/$id/balances';
+  static String groupSettlements(String id) => '/groups/$id/settlements';
+  static String groupActivity(String id) => '/groups/$id/activity';
+
+  // Expenses + Settlements
+  static const String expenses = '/expenses';
+  static String expenseById(String id) => '/expenses/$id';
+  static const String settlements = '/settlements';
+
+  // Invites
+  static String groupInvites(String id) => '/groups/$id/invites';
+  static String inviteByCode(String code) => '/invites/$code';
+  static String inviteJoin(String code) => '/invites/$code/join';
+}

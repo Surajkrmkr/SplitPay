@@ -1,0 +1,117 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../data/models/activity_model.dart';
+import '../data/models/balance_model.dart';
+import '../data/models/group_expense_model.dart';
+import '../data/models/group_model.dart';
+import '../data/models/settlement_model.dart';
+import '../data/services/group_api_service.dart';
+import 'auth_provider.dart';
+
+// ──────────────────────────────────────────────
+// Groups list
+// ──────────────────────────────────────────────
+
+class GroupsNotifier extends AsyncNotifier<List<GroupModel>> {
+  @override
+  Future<List<GroupModel>> build() async {
+    return ref.read(groupApiServiceProvider).getGroups();
+  }
+
+  Future<void> refresh() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(
+      () => ref.read(groupApiServiceProvider).getGroups(),
+    );
+  }
+
+  Future<GroupModel> createGroup(String name, {String? description}) async {
+    final service = ref.read(groupApiServiceProvider);
+    final group = await service.createGroup(name: name, description: description);
+    final current = state.valueOrNull ?? [];
+    state = AsyncValue.data([group, ...current]);
+    return group;
+  }
+
+  Future<void> addMemberToGroup(String groupId, String userId) async {
+    await ref.read(groupApiServiceProvider).addMember(groupId, userId);
+    await refresh();
+  }
+
+  Future<void> removeMemberFromGroup(String groupId, String memberId) async {
+    await ref.read(groupApiServiceProvider).removeMember(groupId, memberId);
+    await refresh();
+  }
+}
+
+final groupsProvider =
+    AsyncNotifierProvider<GroupsNotifier, List<GroupModel>>(GroupsNotifier.new);
+
+// ──────────────────────────────────────────────
+// Single group detail
+// ──────────────────────────────────────────────
+
+class GroupDetailNotifier
+    extends AutoDisposeFamilyAsyncNotifier<GroupModel, String> {
+  @override
+  Future<GroupModel> build(String arg) async {
+    return ref.read(groupApiServiceProvider).getGroup(arg);
+  }
+
+  Future<void> refresh() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(
+      () => ref.read(groupApiServiceProvider).getGroup(arg),
+    );
+  }
+}
+
+final groupDetailProvider =
+    AutoDisposeAsyncNotifierProviderFamily<GroupDetailNotifier, GroupModel,
+        String>(GroupDetailNotifier.new);
+
+// ──────────────────────────────────────────────
+// Group expenses
+// ──────────────────────────────────────────────
+
+final groupExpensesProvider =
+    FutureProvider.autoDispose.family<List<GroupExpenseModel>, String>(
+  (ref, groupId) async {
+    return ref.read(groupApiServiceProvider).getGroupExpenses(groupId);
+  },
+);
+
+// ──────────────────────────────────────────────
+// Group balances
+// ──────────────────────────────────────────────
+
+final groupBalancesProvider =
+    FutureProvider.autoDispose.family<GroupBalanceSummary, String>(
+  (ref, groupId) async {
+    final userId = ref.watch(currentUserProvider)?.id ?? 'user_1';
+    return ref
+        .read(groupApiServiceProvider)
+        .getGroupBalances(groupId, userId);
+  },
+);
+
+// ──────────────────────────────────────────────
+// Group activity
+// ──────────────────────────────────────────────
+
+final groupActivityProvider =
+    FutureProvider.autoDispose.family<List<ActivityModel>, String>(
+  (ref, groupId) async {
+    return ref.read(groupApiServiceProvider).getGroupActivity(groupId);
+  },
+);
+
+// ──────────────────────────────────────────────
+// Group settlements
+// ──────────────────────────────────────────────
+
+final groupSettlementsProvider =
+    FutureProvider.autoDispose.family<List<SettlementModel>, String>(
+  (ref, groupId) async {
+    return ref.read(groupApiServiceProvider).getGroupSettlements(groupId);
+  },
+);
