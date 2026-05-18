@@ -24,6 +24,8 @@ model User {
   receivedSettlements Settlement[]         @relation("payee")
   activities          Activity[]
   createdInvites      GroupInvite[]
+  fcmTokens           FcmToken[]
+  notifications       Notification[]
 
   @@map("users")
 }
@@ -50,11 +52,12 @@ model Group {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  members     GroupMember[]
-  expenses    Expense[]
-  settlements Settlement[]
-  activities  Activity[]
-  invites     GroupInvite[]
+  members       GroupMember[]
+  expenses      Expense[]
+  settlements   Settlement[]
+  activities    Activity[]
+  invites       GroupInvite[]
+  notifications Notification[]
 
   @@map("groups")
 }
@@ -182,6 +185,41 @@ model GroupInvite {
   @@map("group_invites")
 }
 
+model FcmToken {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  token      String   @unique
+  deviceType String   @map("device_type")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("fcm_tokens")
+}
+
+model Notification {
+  id          String           @id @default(uuid())
+  userId      String           @map("user_id")
+  type        NotificationType
+  title       String
+  body        String
+  groupId     String?          @map("group_id")
+  actorName   String?          @map("actor_name")
+  actorAvatar String?          @map("actor_avatar")
+  isRead      Boolean          @default(false) @map("is_read")
+  data        Json?
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
 enum ActivityType {
   EXPENSE_ADDED
   EXPENSE_DELETED
@@ -189,4 +227,12 @@ enum ActivityType {
   MEMBER_JOINED
   MEMBER_REMOVED
   GROUP_CREATED
+}
+
+enum NotificationType {
+  GROUP_EXPENSE_ADDED
+  SETTLEMENT_RECEIVED
+  ADDED_TO_GROUP
+  PAYMENT_REMINDER
+  GROUP_ACTIVITY
 }

@@ -26,6 +26,8 @@ const envSchema = z.object({
     .transform((v) => parseInt(v, 10)),
   ALLOWED_ORIGINS: z.string().default('http://localhost:3000'),
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
+  // Firebase Admin SDK service account (JSON string). Optional — FCM is skipped if absent.
+  FIREBASE_SERVICE_ACCOUNT_KEY: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

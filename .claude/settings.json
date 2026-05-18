@@ -9,7 +9,9 @@
       "WebFetch(domain:pub.dev)",
       "WebFetch(domain:github.com)",
       "Bash(python3 -c ' *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(npm install *)",
+      "Bash(npx tsc *)"
     ]
   }
 }

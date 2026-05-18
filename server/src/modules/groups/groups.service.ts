@@ -3,6 +3,7 @@ import { ForbiddenError, NotFoundError, ConflictError, BadRequestError } from '.
 import * as groupsRepository from './groups.repository';
 import { GroupWithMembers } from './groups.repository';
 import * as activityRepository from '../activity/activity.repository';
+import * as notificationsService from '../notifications/notifications.service';
 import { CreateGroupInput, AddMemberInput, UpdateGroupInput, UpdateMemberRoleInput } from '../../validations/group.validation';
 import crypto from 'crypto';
 
@@ -89,6 +90,17 @@ export async function addMember(
     type: 'MEMBER_JOINED',
     metadata: { addedUserId: userId },
   });
+
+  // Notify added user (fire-and-forget)
+  const requesterUser = group.members.find((m) => m.userId === requesterId)?.user;
+  notificationsService
+    .notifyAddedToGroup({
+      userId,
+      groupId,
+      groupName: group.name,
+      addedByName: requesterUser?.name ?? 'An admin',
+    })
+    .catch(() => {});
 }
 
 export async function updateGroup(

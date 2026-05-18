@@ -5,6 +5,7 @@ import { ExpenseWithDetails } from './expenses.repository';
 import * as groupsRepository from '../groups/groups.repository';
 import * as activityRepository from '../activity/activity.repository';
 import * as settlementsRepository from '../settlements/settlements.repository';
+import * as notificationsService from '../notifications/notifications.service';
 import { CreateExpenseInput, UpdateExpenseInput } from '../../validations/expense.validation';
 import {
   calculateNetBalances,
@@ -44,6 +45,23 @@ export async function createExpense(
     expenseId: expense.id,
     metadata: { title: expense.title, amount },
   });
+
+  // Notify group members (fire-and-forget)
+  const group = await groupsRepository.findGroupById(groupId);
+  if (group) {
+    const actor = group.members.find((m) => m.userId === userId)?.user;
+    notificationsService
+      .notifyGroupExpenseAdded({
+        groupId,
+        groupName: group.name,
+        actorId: userId,
+        actorName: actor?.name ?? 'Someone',
+        actorAvatar: actor?.avatar ?? null,
+        expenseTitle: expense.title,
+        amount: Number(expense.amount),
+      })
+      .catch(() => {});
+  }
 
   return expense;
 }

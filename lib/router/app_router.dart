@@ -11,9 +11,12 @@ import '../features/groups/group_settings/group_settings_screen.dart';
 import '../features/groups/invite/invite_screen.dart';
 import '../features/transactions/transactions_screen.dart';
 import '../features/analytics/analytics_screen.dart';
+import '../data/models/notification_model.dart';
+import '../features/notifications/notifications_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../features/main_shell/main_shell.dart';
 import '../providers/auth_provider.dart';
+import '../providers/notification_provider.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
@@ -68,6 +71,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
       // Group detail routes — outside the shell so the navbar is hidden
+      GoRoute(
+        path: '/notifications',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const NotificationsScreen(),
+          transitionsBuilder: _slideTransition,
+        ),
+      ),
       GoRoute(
         path: '/groups/join',
         pageBuilder: (context, state) => CustomTransitionPage(
@@ -150,9 +161,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     ],
   );
 
-  // Refresh the router (re-run redirect) when auth state changes,
-  // without recreating the GoRouter instance.
+  // Refresh router when auth state changes.
   ref.listen(authProvider, (_, __) => router.refresh());
+
+  // Navigate when a system notification is tapped (background/terminated).
+  ref.listen(notificationTapProvider, (_, next) {
+    next.whenData((notification) {
+      final route = notification.type.routeFor(notification.groupId);
+      router.push(route);
+    });
+  });
 
   return router;
 });

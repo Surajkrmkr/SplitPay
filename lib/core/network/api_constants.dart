@@ -32,4 +32,11 @@ class ApiConstants {
   static String groupInvites(String id) => '/groups/$id/invites';
   static String inviteByCode(String code) => '/invites/$code';
   static String inviteJoin(String code) => '/invites/$code/join';
+
+  // Notifications
+  static const String notifications = '/notifications';
+  static String notificationById(String id) => '/notifications/$id';
+  static String notificationRead(String id) => '/notifications/$id/read';
+  static const String notificationsReadAll = '/notifications/read-all';
+  static const String notificationsRegisterToken = '/notifications/register-token';
 }

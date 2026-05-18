@@ -4,7 +4,9 @@ import '../core/network/api_client.dart';
 import '../core/network/api_constants.dart';
 import '../core/storage/token_storage.dart';
 import '../data/models/auth_user_model.dart';
+import '../data/repositories/notification_repository.dart';
 import '../data/services/firebase_auth_service.dart';
+import '../data/services/notification_service.dart';
 
 enum AuthStatus { initial, loading, authenticated, unauthenticated, error }
 
@@ -117,17 +119,19 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       state = AsyncValue.data(
         AuthState(status: AuthStatus.authenticated, user: user),
       );
+
+      // Register FCM token with backend
+      await _registerFcmToken(user.id);
     } on DioException catch (e) {
       // Backend not available — use Firebase user directly (mock mode)
       final firebaseAuth = ref.read(firebaseAuthServiceProvider);
       final firebaseUser = firebaseAuth.currentUser;
       if (firebaseUser != null) {
+        final user = AuthUserModel.fromFirebaseUser(firebaseUser);
         state = AsyncValue.data(
-          AuthState(
-            status: AuthStatus.authenticated,
-            user: AuthUserModel.fromFirebaseUser(firebaseUser),
-          ),
+          AuthState(status: AuthStatus.authenticated, user: user),
         );
+        await _registerFcmToken(user.id);
       } else {
         state = AsyncValue.data(
           AuthState(
@@ -153,6 +157,10 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       final firebaseAuth = ref.read(firebaseAuthServiceProvider);
       final dio = ref.read(dioProvider);
 
+      // Unregister FCM token before logout
+      await ref.read(notificationRepositoryProvider).unregisterToken();
+      await NotificationService.instance.deleteToken();
+
       try {
         final refreshToken = await tokenStorage.getRefreshToken();
         await dio.post(
@@ -176,6 +184,24 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         AuthState(status: AuthStatus.error, error: e.toString()),
       );
     }
+  }
+
+  Future<void> _registerFcmToken(String userId) async {
+    try {
+      final token = await NotificationService.instance.getToken();
+      if (token == null) return;
+      await ref.read(notificationRepositoryProvider).registerToken(
+            userId: userId,
+            fcmToken: token,
+          );
+      // Re-register if token rotates
+      NotificationService.instance.onTokenRefresh.listen((newToken) {
+        ref.read(notificationRepositoryProvider).registerToken(
+              userId: userId,
+              fcmToken: newToken,
+            );
+      });
+    } catch (_) {}
   }
 }
 

@@ -1,0 +1,190 @@
+import * as notificationsRepository from './notifications.repository';
+import { sendPushNotification } from '../../utils/fcm';
+import { RegisterTokenInput, GetNotificationsQuery } from '../../validations/notification.validation';
+import { NotFoundError } from '../../utils/app-error';
+
+// ── Token Management ──────────────────────────────────────────────────────────
+
+export async function registerToken(input: RegisterTokenInput): Promise<void> {
+  await notificationsRepository.upsertFcmToken(
+    input.userId,
+    input.fcmToken,
+    input.deviceType
+  );
+}
+
+export async function unregisterToken(token: string): Promise<void> {
+  await notificationsRepository.deleteFcmToken(token);
+}
+
+export async function unregisterAllTokens(userId: string): Promise<void> {
+  await notificationsRepository.deleteUserFcmTokens(userId);
+}
+
+// ── Notifications CRUD ────────────────────────────────────────────────────────
+
+export async function getNotifications(
+  userId: string,
+  query: GetNotificationsQuery
+) {
+  const { page, limit } = query;
+  const { items, total } = await notificationsRepository.findUserNotifications(
+    userId,
+    page,
+    limit
+  );
+  return {
+    notifications: items,
+    meta: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+}
+
+export async function markRead(
+  notificationId: string,
+  userId: string
+): Promise<void> {
+  await notificationsRepository.markNotificationRead(notificationId, userId);
+}
+
+export async function markAllRead(userId: string): Promise<void> {
+  await notificationsRepository.markAllNotificationsRead(userId);
+}
+
+export async function deleteNotification(
+  notificationId: string,
+  userId: string
+): Promise<void> {
+  await notificationsRepository.deleteNotification(notificationId, userId);
+}
+
+// ── Push Notification Senders ─────────────────────────────────────────────────
+// These are called fire-and-forget from other service modules.
+
+/**
+ * Notify all group members (except the actor) that a new expense was added.
+ */
+export async function notifyGroupExpenseAdded(opts: {
+  groupId: string;
+  groupName: string;
+  actorId: string;
+  actorName: string;
+  actorAvatar: string | null;
+  expenseTitle: string;
+  amount: number;
+  currency?: string;
+}): Promise<void> {
+  const { groupId, groupName, actorId, actorName, actorAvatar, expenseTitle, amount } = opts;
+  const currency = opts.currency ?? '₹';
+  const title = groupName;
+  const body = `${actorName} added ${currency}${amount} for "${expenseTitle}"`;
+
+  const [recipientIds, tokens] = await Promise.all([
+    notificationsRepository.getGroupMemberUserIds(groupId, actorId),
+    notificationsRepository.getGroupMemberTokens(groupId, actorId),
+  ]);
+
+  // Persist in-app notifications for each recipient
+  await notificationsRepository.createNotifications(
+    recipientIds.map((userId) => ({
+      userId,
+      type: 'GROUP_EXPENSE_ADDED' as const,
+      title,
+      body,
+      groupId,
+      actorName,
+      actorAvatar: actorAvatar ?? undefined,
+      data: { type: 'GROUP_EXPENSE_ADDED', groupId },
+    }))
+  );
+
+  // Fire FCM (best-effort, non-blocking)
+  if (tokens.length > 0) {
+    sendPushNotification({
+      tokens,
+      title,
+      body,
+      data: { type: 'GROUP_EXPENSE_ADDED', groupId, actorName },
+    }).catch(() => {});
+  }
+}
+
+/**
+ * Notify the payee that a settlement was received.
+ */
+export async function notifySettlementReceived(opts: {
+  groupId: string;
+  groupName: string;
+  payerId: string;
+  payerName: string;
+  payerAvatar: string | null;
+  payeeId: string;
+  amount: number;
+  currency?: string;
+}): Promise<void> {
+  const { groupId, groupName, payerId, payerName, payerAvatar, payeeId, amount } = opts;
+  const currency = opts.currency ?? '₹';
+  const title = groupName;
+  const body = `${payerName} settled ${currency}${amount} with you`;
+
+  const tokens = await notificationsRepository.getUserFcmTokens(payeeId);
+
+  await notificationsRepository.createNotification({
+    userId: payeeId,
+    type: 'SETTLEMENT_RECEIVED',
+    title,
+    body,
+    groupId,
+    actorName: payerName,
+    actorAvatar: payerAvatar ?? undefined,
+    data: { type: 'SETTLEMENT_RECEIVED', groupId, payerId },
+  });
+
+  if (tokens.length > 0) {
+    sendPushNotification({
+      tokens,
+      title,
+      body,
+      data: { type: 'SETTLEMENT_RECEIVED', groupId, actorName: payerName },
+    }).catch(() => {});
+  }
+}
+
+/**
+ * Notify a user that they were added to a group.
+ */
+export async function notifyAddedToGroup(opts: {
+  userId: string;
+  groupId: string;
+  groupName: string;
+  addedByName: string;
+}): Promise<void> {
+  const { userId, groupId, groupName, addedByName } = opts;
+  const title = 'Added to a group';
+  const body = `${addedByName} added you to "${groupName}"`;
+
+  const tokens = await notificationsRepository.getUserFcmTokens(userId);
+
+  await notificationsRepository.createNotification({
+    userId,
+    type: 'ADDED_TO_GROUP',
+    title,
+    body,
+    groupId,
+    actorName: addedByName,
+    data: { type: 'ADDED_TO_GROUP', groupId },
+  });
+
+  if (tokens.length > 0) {
+    sendPushNotification({
+      tokens,
+      title,
+      body,
+      data: { type: 'ADDED_TO_GROUP', groupId, actorName: addedByName },
+    }).catch(() => {});
+  }
+}
