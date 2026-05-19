@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/settings_provider.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -33,7 +34,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     if (_navigated || !mounted) return;
     _navigated = true;
     if (authState.status == AuthStatus.authenticated) {
-      context.go('/home');
+      final onboardingDone = ref.read(onboardingCompletedProvider);
+      context.go(onboardingDone ? '/home' : '/onboarding');
     } else {
       context.go('/login');
     }

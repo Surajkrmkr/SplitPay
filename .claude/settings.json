@@ -11,7 +11,14 @@
       "Bash(python3 -c ' *)",
       "Bash(npm run *)",
       "Bash(npm install *)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(xargs cat)",
+      "Read(//Users/surajkrmkr/Storage/Xiaomi\\\\ Contract/Repos/dimeflow/lib/features/groups/widgets/**)",
+      "Bash(sed -n '150,162p' \"/Users/surajkrmkr/Storage/Xiaomi Contract/Repos/dimeflow/lib/features/home/widgets/recent_transactions.dart\")",
+      "Bash(sed -n '191,202p' \"/Users/surajkrmkr/Storage/Xiaomi Contract/Repos/dimeflow/lib/features/transactions/transactions_screen.dart\")",
+      "Bash(find ~/.pub-cache -path \"*/upi_india-3*/lib/*.dart\" 2>/dev/null | head -20)",
+      "Read(//Users/surajkrmkr/.pub-cache/**)",
+      "Bash(grep -v \"^$\")"
     ]
   }
 }

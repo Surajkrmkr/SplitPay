@@ -24,9 +24,17 @@ class GroupsNotifier extends AsyncNotifier<List<GroupModel>> {
     );
   }
 
-  Future<GroupModel> createGroup(String name, {String? description}) async {
+  Future<GroupModel> createGroup(
+    String name, {
+    String? description,
+    List<String> memberIds = const [],
+  }) async {
     final service = ref.read(groupApiServiceProvider);
-    final group = await service.createGroup(name: name, description: description);
+    final group = await service.createGroup(
+      name: name,
+      description: description,
+      memberIds: memberIds,
+    );
     final current = state.valueOrNull ?? [];
     state = AsyncValue.data([group, ...current]);
     return group;

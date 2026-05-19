@@ -2,12 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../data/services/group_api_service.dart';
 import '../../../providers/group_provider.dart';
 import '../../../shared/widgets/sp_button.dart';
+
+const _playStoreUrl =
+    'https://play.google.com/store/apps/details?id=com.splitpay.expensetracker';
 
 class InviteScreen extends ConsumerStatefulWidget {
   // null when opened from Groups screen (join-only mode)
@@ -72,9 +77,15 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: AppColors.expense));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$e'),
+            backgroundColor: AppColors.expense,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12)),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _generating = false);
@@ -95,19 +106,12 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
     );
   }
 
-  void _shareCode() {
+  Future<void> _shareCode() async {
     if (_generatedCode == null) return;
-    Clipboard.setData(ClipboardData(
-        text: 'Join my SplitPay group with invite code: $_generatedCode'));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Share text copied — paste it anywhere!'),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
+    final message =
+        'Join my SplitPay group with invite code: $_generatedCode\n\n'
+        'Download the app: $_playStoreUrl';
+    await Share.share(message, subject: 'Join my SplitPay group');
   }
 
   // ── Join ────────────────────────────────────────────────────
@@ -153,9 +157,15 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: AppColors.expense));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$e'),
+            backgroundColor: AppColors.expense,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12)),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _joining = false);
@@ -600,6 +610,7 @@ class _QrScannerSheet extends StatefulWidget {
 class _QrScannerSheetState extends State<_QrScannerSheet> {
   bool _scanned = false;
   final MobileScannerController _controller = MobileScannerController();
+  final _imagePicker = ImagePicker();
 
   @override
   void dispose() {
@@ -613,11 +624,36 @@ class _QrScannerSheetState extends State<_QrScannerSheet> {
     if (raw == null || raw.isEmpty) return;
     _scanned = true;
     _controller.stop();
+    _handleRaw(raw);
+  }
+
+  void _handleRaw(String raw) {
     final code = raw.startsWith('dimeflow://join/')
         ? raw.substring('dimeflow://join/'.length)
         : raw;
     Navigator.of(context).pop();
     widget.onCodeDetected(code.toUpperCase());
+  }
+
+  Future<void> _pickFromGallery() async {
+    final file = await _imagePicker.pickImage(source: ImageSource.gallery);
+    if (file == null) return;
+    final capture = await _controller.analyzeImage(file.path);
+    if (!mounted) return;
+    final raw = capture?.barcodes.firstOrNull?.rawValue;
+    if (raw != null && raw.isNotEmpty) {
+      _scanned = true;
+      _handleRaw(raw);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('No QR code found in the selected image'),
+          backgroundColor: AppColors.expense,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    }
   }
 
   @override
@@ -674,11 +710,11 @@ class _QrScannerSheetState extends State<_QrScannerSheet> {
                 ),
               ),
             ),
-            // Bottom label
+            // Bottom controls
             Positioned(
-              bottom: 40,
-              left: 0,
-              right: 0,
+              bottom: 32,
+              left: 24,
+              right: 24,
               child: Column(
                 children: [
                   Container(
@@ -695,6 +731,21 @@ class _QrScannerSheetState extends State<_QrScannerSheet> {
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: _pickFromGallery,
+                    icon: const Icon(Icons.photo_library_rounded, size: 18),
+                    label: const Text('Pick from Gallery'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: const BorderSide(color: Colors.white54),
+                      backgroundColor: Colors.black.withValues(alpha: 0.5),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
                     ),
                   ),
                 ],

@@ -10,6 +10,9 @@ class SettlementModel {
   final double amount;
   final String? notes;
   final DateTime settledAt;
+  final String? paymentMethod;   // 'UPI' | 'MANUAL'
+  final String? settlementType;  // 'AUTO' | 'MANUAL'
+  final String? transactionId;   // UPI transaction reference
 
   const SettlementModel({
     required this.id,
@@ -23,7 +26,13 @@ class SettlementModel {
     required this.amount,
     this.notes,
     required this.settledAt,
+    this.paymentMethod,
+    this.settlementType,
+    this.transactionId,
   });
+
+  bool get isUpiPayment => paymentMethod == 'UPI';
+  bool get isManualPayment => paymentMethod == 'MANUAL' || paymentMethod == null;
 
   factory SettlementModel.fromJson(Map<String, dynamic> json) {
     final payer = json['payer'] as Map<String, dynamic>?;
@@ -40,6 +49,9 @@ class SettlementModel {
       amount: double.parse(json['amount'].toString()),
       notes: json['notes'] as String?,
       settledAt: DateTime.parse(json['settledAt'] as String),
+      paymentMethod: json['paymentMethod'] as String?,
+      settlementType: json['settlementType'] as String?,
+      transactionId: json['transactionId'] as String?,
     );
   }
 
@@ -56,6 +68,9 @@ class SettlementModel {
       'amount': amount,
       'notes': notes,
       'settledAt': settledAt.toIso8601String(),
+      if (paymentMethod != null) 'paymentMethod': paymentMethod,
+      if (settlementType != null) 'settlementType': settlementType,
+      if (transactionId != null) 'transactionId': transactionId,
     };
   }
 }

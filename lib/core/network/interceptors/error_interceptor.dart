@@ -48,7 +48,7 @@ class ErrorInterceptor extends Interceptor {
       case 401:
         return AppException.unauthorized();
       case 403:
-        return AppException.forbidden();
+        return AppException.forbidden(serverMessage);
       case 404:
         return AppException.notFound(serverMessage);
       case int s when s >= 500:

@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../data/models/activity_model.dart';
 import '../../../data/models/group_model.dart';
+import '../../../data/models/settlement_model.dart';
 import '../../../data/services/group_api_service.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/group_provider.dart';
@@ -257,6 +258,8 @@ class _BalancesTab extends ConsumerWidget {
                       : null,
                 ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.05),
               ),
+              const SizedBox(height: 12),
+              _SettlementsSection(groupId: groupId, isDark: isDark),
             ],
           ),
         );
@@ -700,6 +703,33 @@ class _ActivityTile extends StatelessWidget {
     }
   }
 
+  Widget? _paymentBadge() {
+    if (activity.type != ActivityType.settlementCompleted) return null;
+    final method = activity.metadata?['paymentMethod'] as String?;
+    if (method == null) return null;
+    final isUpi = method.toUpperCase() == 'UPI';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: (isUpi ? AppColors.secondary : AppColors.primary).withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: (isUpi ? AppColors.secondary : AppColors.primary).withValues(alpha: 0.3),
+          width: 0.8,
+        ),
+      ),
+      child: Text(
+        isUpi ? 'UPI' : 'Manual',
+        style: TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+          color: isUpi ? AppColors.secondary : AppColors.primary,
+          letterSpacing: 0.4,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final color = _colorForType(activity.type);
@@ -800,6 +830,10 @@ class _ActivityTile extends StatelessWidget {
                                 color: AppColors.textTertiary,
                               ),
                             ),
+                            if (_paymentBadge() != null) ...[
+                              const SizedBox(width: 6),
+                              _paymentBadge()!,
+                            ],
                           ],
                         ),
                       ],
@@ -866,6 +900,185 @@ class _AppBarIconBtn extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Settlement History Section (shown at the bottom of the Balances tab)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _SettlementsSection extends ConsumerWidget {
+  final String groupId;
+  final bool isDark;
+
+  const _SettlementsSection({required this.groupId, required this.isDark});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currency = ref.watch(currencyProvider);
+    final settlementsAsync = ref.watch(groupSettlementsProvider(groupId));
+
+    return settlementsAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (settlements) {
+        if (settlements.isEmpty) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Text(
+                    'Recent Settlements',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : AppColors.textLight,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '${settlements.length}',
+                      style: const TextStyle(
+                          fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...settlements.take(5).map((s) => _SettlementTile(
+                  settlement: s,
+                  currency: currency,
+                  isDark: isDark,
+                )),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _SettlementTile extends StatelessWidget {
+  final SettlementModel settlement;
+  final String currency;
+  final bool isDark;
+
+  const _SettlementTile({
+    required this.settlement,
+    required this.currency,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isUpi = settlement.isUpiPayment;
+    final badgeColor = isUpi ? AppColors.secondary : AppColors.primary;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkCard : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+          width: 0.5,
+        ),
+      ),
+      child: Row(
+        children: [
+          // Method icon
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: badgeColor.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              isUpi ? Icons.account_balance_wallet_rounded : Icons.check_circle_rounded,
+              color: badgeColor,
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 10),
+          // Details
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${settlement.payerName} → ${settlement.payeeName}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white : AppColors.textLight,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Text(
+                      DateFormat('d MMM, h:mm a').format(settlement.settledAt),
+                      style: const TextStyle(fontSize: 10, color: AppColors.textTertiary),
+                    ),
+                    if (settlement.transactionId != null) ...[
+                      const SizedBox(width: 6),
+                      Text(
+                        '· ${settlement.transactionId!.length > 12 ? settlement.transactionId!.substring(0, 12) : settlement.transactionId!}…',
+                        style: const TextStyle(fontSize: 10, color: AppColors.textTertiary),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Amount + badge
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '$currency${settlement.amount.toStringAsFixed(0)}',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.income,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: badgeColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(5),
+                  border: Border.all(color: badgeColor.withValues(alpha: 0.3), width: 0.8),
+                ),
+                child: Text(
+                  isUpi ? 'UPI' : 'Manual',
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    color: badgeColor,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

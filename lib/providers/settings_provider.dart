@@ -3,7 +3,20 @@ import '../data/models/custom_category.dart';
 import '../data/models/transaction_model.dart';
 import '../data/services/hive_service.dart';
 
-final onboardingCompletedProvider = StateProvider<bool>((_) => false);
+// Reads synchronously from Hive so the router redirect can check it without async.
+class OnboardingNotifier extends StateNotifier<bool> {
+  OnboardingNotifier()
+      : super(HiveService.getSetting<bool>('onboarding_completed') ?? false);
+
+  Future<void> complete() async {
+    state = true;
+    await HiveService.setSetting('onboarding_completed', true);
+  }
+}
+
+final onboardingCompletedProvider =
+    StateNotifierProvider<OnboardingNotifier, bool>(
+        (ref) => OnboardingNotifier());
 
 final currencyProvider = StateNotifierProvider<CurrencyNotifier, String>(
   (ref) => CurrencyNotifier(),

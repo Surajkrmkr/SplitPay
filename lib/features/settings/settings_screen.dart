@@ -155,9 +155,23 @@ class _ProfileCard extends ConsumerWidget {
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: AppColors.balanceGradient,
+        gradient: isDark ? AppColors.balanceGradient : null,
+        color: isDark ? null : Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+        border: Border.all(
+          color: isDark
+              ? AppColors.primary.withValues(alpha: 0.2)
+              : AppColors.lightBorder,
+        ),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
       child: Row(
         children: [
@@ -181,8 +195,8 @@ class _ProfileCard extends ConsumerWidget {
               children: [
                 Text(
                   user?.name ?? 'User',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: isDark ? Colors.white : AppColors.textLight,
                     fontWeight: FontWeight.w700,
                     fontSize: 18,
                   ),
@@ -193,7 +207,9 @@ class _ProfileCard extends ConsumerWidget {
                 Text(
                   user?.email ?? '',
                   style: TextStyle(
-                    color: AppColors.primary.withValues(alpha: 0.8),
+                    color: isDark
+                        ? AppColors.primary.withValues(alpha: 0.8)
+                        : AppColors.textLightSecondary,
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                   ),

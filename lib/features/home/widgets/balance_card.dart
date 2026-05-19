@@ -17,24 +17,33 @@ class BalanceCard extends ConsumerWidget {
     final balance = ref.watch(balanceProvider);
     final currency = ref.watch(currencyProvider);
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1A3A2A), Color(0xFF0F1D16)],
-        ),
+        gradient: isDark
+            ? const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF1A3A2A), Color(0xFF0F1D16)],
+              )
+            : null,
+        color: isDark ? null : Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.2),
+          color: isDark
+              ? AppColors.primary.withValues(alpha: 0.2)
+              : AppColors.lightBorder,
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.12),
-            blurRadius: 32,
-            offset: const Offset(0, 16),
+            color: isDark
+                ? AppColors.primary.withValues(alpha: 0.12)
+                : Colors.black.withValues(alpha: 0.06),
+            blurRadius: isDark ? 32 : 20,
+            offset: Offset(0, isDark ? 16 : 8),
           ),
         ],
       ),
@@ -54,7 +63,9 @@ class BalanceCard extends ConsumerWidget {
                     Text(
                       'Total Balance',
                       style: TextStyle(
-                        color: AppColors.primary.withValues(alpha: 0.8),
+                        color: isDark
+                            ? AppColors.primary.withValues(alpha: 0.8)
+                            : AppColors.textLightSecondary,
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
                         letterSpacing: 0.5,
@@ -101,8 +112,8 @@ class BalanceCard extends ConsumerWidget {
                   curve: Curves.easeOutCubic,
                   builder: (context, value, _) => Text(
                     CurrencyFormatter.format(value, symbol: currency),
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: isDark ? Colors.white : AppColors.textLight,
                       fontSize: 38,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -1.5,
@@ -115,7 +126,9 @@ class BalanceCard extends ConsumerWidget {
                 // Divider
                 Container(
                   height: 0.5,
-                  color: Colors.white.withValues(alpha: 0.1),
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : AppColors.lightBorder,
                 ),
                 const SizedBox(height: 20),
 
@@ -134,7 +147,9 @@ class BalanceCard extends ConsumerWidget {
                     Container(
                       width: 0.5,
                       height: 40,
-                      color: Colors.white.withValues(alpha: 0.1),
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.1)
+                          : AppColors.lightBorder,
                     ),
                     Expanded(
                       child: _MiniStat(
@@ -201,14 +216,19 @@ class _MiniStat extends StatelessWidget {
                 ? CrossAxisAlignment.end
                 : CrossAxisAlignment.start,
             children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+              Builder(builder: (context) {
+                final isDark = Theme.of(context).brightness == Brightness.dark;
+                return Text(
+                  label,
+                  style: TextStyle(
+                    color: isDark
+                        ? AppColors.textSecondary
+                        : AppColors.textLightSecondary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                );
+              }),
               const SizedBox(height: 2),
               Text(
                 CurrencyFormatter.format(amount, symbol: currency),

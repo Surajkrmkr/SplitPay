@@ -85,6 +85,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
     final hidden = ref.watch(hiddenCategoriesProvider);
     final customCats = ref.watch(customCategoriesProvider);
 
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final safeAreaBottom = MediaQuery.of(context).viewPadding.bottom;
 
     final visibleBuiltIn =
@@ -203,10 +204,12 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
 
               // Fixed button — rises with keyboard
               AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
+                duration: const Duration(milliseconds: 200),
                 curve: Curves.easeOut,
                 padding: EdgeInsets.fromLTRB(
-                    24, 12, 24, safeAreaBottom + 16),
+                  24, 12, 24,
+                  (keyboardHeight > 0 ? keyboardHeight : safeAreaBottom) + 16,
+                ),
                 decoration: BoxDecoration(
                   color:
                       isDark ? AppColors.darkSurface : AppColors.lightSurface,

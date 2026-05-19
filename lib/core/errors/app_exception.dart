@@ -38,8 +38,8 @@ class AppException implements Exception {
         statusCode: 400,
       );
 
-  factory AppException.forbidden() => const AppException(
-        'You do not have permission to perform this action.',
+  factory AppException.forbidden([String? msg]) => AppException(
+        msg ?? 'You do not have permission to perform this action.',
         statusCode: 403,
       );
 

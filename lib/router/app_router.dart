@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../features/auth/splash_screen.dart';
 import '../features/auth/login_screen.dart';
+import '../features/onboarding/onboarding_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/groups/groups_screen.dart';
 import '../features/groups/group_detail/group_detail_screen.dart';
@@ -17,6 +18,7 @@ import '../features/settings/settings_screen.dart';
 import '../features/main_shell/main_shell.dart';
 import '../providers/auth_provider.dart';
 import '../providers/notification_provider.dart';
+import '../providers/settings_provider.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
@@ -26,6 +28,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // Read (not watch) — the router is refreshed via ref.listen below.
       final authAsync = ref.read(authProvider);
       final authValue = authAsync.valueOrNull;
+      final onboardingDone = ref.read(onboardingCompletedProvider);
       final loc = routerState.matchedLocation;
 
       // Splash handles its own navigation — never redirect it.
@@ -34,7 +37,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // Login: only leave if we are definitively authenticated.
       // This prevents bouncing to /splash while Google sign-in is in progress.
       if (loc == '/login') {
-        if (authValue?.isAuthenticated == true) return '/home';
+        if (authValue?.isAuthenticated == true) {
+          return onboardingDone ? '/home' : '/onboarding';
+        }
+        return null;
+      }
+
+      // Onboarding: allow authenticated users through; push unauthenticated out.
+      if (loc == '/onboarding') {
+        if (authAsync.isLoading || authValue == null) return '/splash';
+        if (!authValue.isAuthenticated) return '/login';
         return null;
       }
 
@@ -58,6 +70,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => CustomTransitionPage(
           key: state.pageKey,
           child: const LoginScreen(),
+          transitionsBuilder: _fadeTransition,
+        ),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const OnboardingScreen(),
           transitionsBuilder: _fadeTransition,
         ),
       ),
@@ -161,8 +181,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     ],
   );
 
-  // Refresh router when auth state changes.
+  // Refresh router when auth or onboarding state changes.
   ref.listen(authProvider, (_, __) => router.refresh());
+  ref.listen(onboardingCompletedProvider, (_, __) => router.refresh());
 
   // Navigate when a system notification is tapped (background/terminated).
   ref.listen(notificationTapProvider, (_, next) {

@@ -32,6 +32,7 @@ class GroupApiService {
   Future<GroupModel> createGroup({
     required String name,
     String? description,
+    List<String> memberIds = const [],
   }) async {
     if (_useMock) {
       final now = DateTime.now();
@@ -47,7 +48,11 @@ class GroupApiService {
     }
     final res = await _dio.post(
       ApiConstants.groups,
-      data: {'name': name, if (description != null) 'description': description},
+      data: {
+        'name': name,
+        if (description != null) 'description': description,
+        if (memberIds.isNotEmpty) 'memberIds': memberIds,
+      },
     );
     return GroupModel.fromJson(res.data['data'] as Map<String, dynamic>);
   }
@@ -237,6 +242,9 @@ class GroupApiService {
     required String payeeId,
     required double amount,
     String? notes,
+    String? paymentMethod,
+    String? settlementType,
+    String? transactionId,
   }) async {
     if (_useMock) {
       final now = DateTime.now();
@@ -250,6 +258,9 @@ class GroupApiService {
         amount: amount,
         notes: notes,
         settledAt: now,
+        paymentMethod: paymentMethod,
+        settlementType: settlementType,
+        transactionId: transactionId,
       );
     }
     // BE route is POST /settlements (groupId goes in the body)
@@ -260,6 +271,9 @@ class GroupApiService {
         'payeeId': payeeId,
         'amount': amount,
         if (notes != null) 'notes': notes,
+        if (paymentMethod != null) 'paymentMethod': paymentMethod,
+        if (settlementType != null) 'settlementType': settlementType,
+        if (transactionId != null) 'transactionId': transactionId,
       },
     );
     return SettlementModel.fromJson(res.data['data'] as Map<String, dynamic>);

@@ -193,6 +193,7 @@ class _TransactionList extends ConsumerWidget {
                   onEdit: () => showModalBottomSheet(
                     context: context,
                     isScrollControlled: true,
+                    useRootNavigator: true,
                     backgroundColor: Colors.transparent,
                     builder: (_) =>
                         EditTransactionSheet(transaction: item.tx),

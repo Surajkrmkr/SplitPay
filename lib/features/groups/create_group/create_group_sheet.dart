@@ -70,12 +70,8 @@ class _CreateGroupSheetState extends ConsumerState<CreateGroupSheet> {
             description: _descController.text.trim().isEmpty
                 ? null
                 : _descController.text.trim(),
+            memberIds: _addedMembers.map((m) => m.id).toList(),
           );
-      for (final member in _addedMembers) {
-        await ref
-            .read(groupApiServiceProvider)
-            .addMember(group.id, member.id);
-      }
       if (mounted) {
         Navigator.of(context).pop();
         context.push('/groups/${group.id}');
@@ -98,6 +94,8 @@ class _CreateGroupSheetState extends ConsumerState<CreateGroupSheet> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isValid = _nameController.text.trim().isNotEmpty;
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final safeAreaBottom = MediaQuery.of(context).viewPadding.bottom;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
@@ -235,8 +233,13 @@ class _CreateGroupSheetState extends ConsumerState<CreateGroupSheet> {
               ),
 
               // Bottom action bar
-              Container(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOut,
+                padding: EdgeInsets.fromLTRB(
+                  20, 12, 20,
+                  (keyboardHeight > 0 ? keyboardHeight : safeAreaBottom) + 16,
+                ),
                 decoration: BoxDecoration(
                   color: isDark ? AppColors.darkSurface : Colors.white,
                   border: Border(
