@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
+import '../../providers/transaction_provider.dart';
+import '../../shared/widgets/offline_banner.dart';
 import '../add_transaction/add_transaction_sheet.dart';
 import 'widgets/analytics_mini.dart';
 import 'widgets/balance_card.dart';
@@ -9,7 +12,7 @@ import 'widgets/category_overview.dart';
 import 'widgets/greeting_header.dart';
 import 'widgets/recent_transactions.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   void _openAddSheet(BuildContext context) {
@@ -23,38 +26,55 @@ class HomeScreen extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 16),
-                  const GreetingHeader(),
-                  const SizedBox(height: 24),
-                  const BalanceCard(),
-                  const SizedBox(height: 28),
-                  const CategoryOverview(),
-                  const SizedBox(height: 28),
-                  const AnalyticsMini(),
-                  const SizedBox(height: 28),
-                  const _SplitBanner(),
-                  const SizedBox(height: 28),
-                  const RecentTransactions(),
-                  // Ad placeholder area
-                  const SizedBox(height: 16),
-                  _AdBannerArea(),
-                  SizedBox(height: 100 + MediaQuery.of(context).padding.bottom),
-                ],
+      body: Column(
+        children: [
+          // Offline / sync-error banner (animates in/out automatically).
+          const OfflineBanner(),
+
+          Expanded(
+            child: SafeArea(
+              bottom: false,
+              child: RefreshIndicator(
+                color: AppColors.primary,
+                onRefresh: () =>
+                    ref.read(transactionProvider.notifier).syncAndReload(),
+                child: CustomScrollView(
+                  physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics(),
+                  ),
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 16),
+                          const GreetingHeader(),
+                          const SizedBox(height: 24),
+                          const BalanceCard(),
+                          const SizedBox(height: 28),
+                          const CategoryOverview(),
+                          const SizedBox(height: 28),
+                          const AnalyticsMini(),
+                          const SizedBox(height: 28),
+                          const _SplitBanner(),
+                          const SizedBox(height: 28),
+                          const RecentTransactions(),
+                          const SizedBox(height: 16),
+                          _AdBannerArea(),
+                          SizedBox(
+                            height: 100 + MediaQuery.of(context).padding.bottom,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

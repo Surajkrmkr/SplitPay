@@ -122,8 +122,10 @@ class Budget {
   });
 
   Color get color => Color(colorValue);
-  IconData get icon =>
-      IconData(iconCodePoint, fontFamily: 'MaterialIcons');
+  IconData get icon => kBudgetIcons.firstWhere(
+        (i) => i.codePoint == iconCodePoint,
+        orElse: () => kBudgetIcons[0],
+      );
   bool get isGlobal => categoryIds.isEmpty;
   bool get isActive => !isArchived;
   bool get isFuture => startDate.isAfter(DateTime.now());

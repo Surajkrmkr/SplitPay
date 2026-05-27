@@ -5,18 +5,59 @@ import '../models/notification_model.dart';
 import '../models/transaction_model.dart';
 
 class HiveService {
-  static const _transactionsBox = 'transactions_v1';
+  // v1 boxes — kept for one-time migration read.
+  static const _transactionsBoxV1 = 'transactions_v1';
+
+  // v2 boxes — include sync fields.
+  static const _transactionsBox = 'transactions_v2';
   static const _settingsBox = 'settings_v1';
   static const _customCategoriesBox = 'custom_categories_v1';
   static const _notificationsBox = 'notifications_v1';
   static const _budgetsBox = 'budgets_v1';
 
   static Future<void> init() async {
-    await Hive.openBox(_transactionsBox);
     await Hive.openBox(_settingsBox);
     await Hive.openBox(_customCategoriesBox);
     await Hive.openBox(_notificationsBox);
     await Hive.openBox(_budgetsBox);
+
+    // Open v2 transactions box.
+    await Hive.openBox(_transactionsBox);
+
+    // One-time migration: copy v1 rows into v2 with sync defaults.
+    await _migrateTransactionsV1toV2();
+  }
+
+  static Future<void> _migrateTransactionsV1toV2() async {
+    final v2Box = Hive.box(_transactionsBox);
+    if (v2Box.isNotEmpty) return; // Already migrated.
+
+    // Open v1 box to read legacy rows (may not exist on fresh installs).
+    try {
+      final v1Box = await Hive.openBox(_transactionsBoxV1);
+      if (v1Box.isEmpty) {
+        await v1Box.close();
+        return;
+      }
+
+      final batch = <String, dynamic>{};
+      for (final key in v1Box.keys) {
+        final raw = v1Box.get(key);
+        if (raw == null) continue;
+        final map = Map<String, dynamic>.from(raw as Map);
+        // Inject sync defaults so Transaction.fromMap() finds them.
+        map['syncStatus'] = SyncStatus.pendingCreate.name;
+        map['serverId'] = null;
+        map['lastSyncedAt'] = null;
+        map['isDeleted'] = false;
+        // updatedAt falls back to createdAt inside fromMap().
+        batch[key as String] = map;
+      }
+      await v2Box.putAll(batch);
+      await v1Box.close();
+    } catch (_) {
+      // v1 box never existed (fresh install) — nothing to migrate.
+    }
   }
 
   static Box get _transactions => Hive.box(_transactionsBox);
@@ -25,12 +66,21 @@ class HiveService {
   static Box get _notifications => Hive.box(_notificationsBox);
   static Box get _budgets => Hive.box(_budgetsBox);
 
-  // Transactions CRUD
+  // ─── Transactions CRUD ────────────────────────────────────────────────────
+
   static List<Transaction> getTransactions() {
     return _transactions.values
         .map((v) => Transaction.fromMap(v as Map))
+        .where((t) => !t.isDeleted)
         .toList()
       ..sort((a, b) => b.date.compareTo(a.date));
+}
+
+  static List<Transaction> getPendingTransactions() {
+    return _transactions.values
+        .map((v) => Transaction.fromMap(v as Map))
+        .where((t) => t.syncStatus.isPending)
+        .toList();
   }
 
   static Future<void> addTransaction(Transaction tx) async {
@@ -38,14 +88,58 @@ class HiveService {
   }
 
   static Future<void> deleteTransaction(String id) async {
-    await _transactions.delete(id);
+    final raw = _transactions.get(id);
+    if (raw == null) return;
+    final tx = Transaction.fromMap(raw as Map);
+    // Soft-delete: mark as pendingDelete so sync picks it up.
+    final updated = tx.copyWith(
+      isDeleted: true,
+      syncStatus: SyncStatus.pendingDelete,
+      updatedAt: DateTime.now(),
+    );
+    await _transactions.put(id, updated.toMap());
   }
 
   static Future<void> updateTransaction(Transaction tx) async {
     await _transactions.put(tx.id, tx.toMap());
   }
 
-  // Custom Categories CRUD
+  /// Called by SyncService after a successful push — stores the server ID
+  /// and marks the record as synced.
+  static Future<void> markSynced(String localId, String serverId) async {
+    final raw = _transactions.get(localId);
+    if (raw == null) return;
+    final tx = Transaction.fromMap(raw as Map);
+    final updated = tx.copyWith(
+      serverId: serverId,
+      syncStatus: SyncStatus.synced,
+      lastSyncedAt: DateTime.now(),
+    );
+    await _transactions.put(localId, updated.toMap());
+  }
+
+  /// Called by SyncService after a successful delete push — removes the row.
+  static Future<void> purgeDeleted(String localId) async {
+    await _transactions.delete(localId);
+  }
+
+  /// Upserts a transaction received from the server during a pull.
+  static Future<void> upsertFromServer(Transaction tx) async {
+    final existing = _transactions.get(tx.id);
+    if (existing != null) {
+      final local = Transaction.fromMap(existing as Map);
+      // Last-write-wins: only overwrite if server is newer.
+      if (local.syncStatus == SyncStatus.synced ||
+          tx.updatedAt.isAfter(local.updatedAt)) {
+        await _transactions.put(tx.id, tx.toMap());
+      }
+    } else {
+      await _transactions.put(tx.id, tx.toMap());
+    }
+  }
+
+  // ─── Custom Categories CRUD ───────────────────────────────────────────────
+
   static List<CustomCategory> getCustomCategories() {
     return _customCats.values
         .map((v) => CustomCategory.fromMap(v as Map))
@@ -60,7 +154,8 @@ class HiveService {
     await _customCats.delete(id);
   }
 
-  // Notifications CRUD
+  // ─── Notifications CRUD ───────────────────────────────────────────────────
+
   static List<NotificationModel> getNotifications() {
     return _notifications.values
         .map((v) => NotificationModel.fromHive(v as Map))
@@ -109,12 +204,14 @@ class HiveService {
         .length;
   }
 
-  // Settings
+  // ─── Settings ─────────────────────────────────────────────────────────────
+
   static T? getSetting<T>(String key) => _settings.get(key) as T?;
   static Future<void> setSetting(String key, dynamic value) =>
       _settings.put(key, value);
 
-  // Budgets CRUD
+  // ─── Budgets CRUD ─────────────────────────────────────────────────────────
+
   static List<Budget> getBudgets() {
     return _budgets.values
         .map((v) => Budget.fromMap(v as Map))

@@ -1,7 +1,7 @@
 class ApiConstants {
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://192.168.1.54:3000/api/v1',
+    defaultValue: 'http://192.168.1.60:3000/api/v1',
   );
 
   // Auth
@@ -39,4 +39,16 @@ class ApiConstants {
   static String notificationRead(String id) => '/notifications/$id/read';
   static const String notificationsReadAll = '/notifications/read-all';
   static const String notificationsRegisterToken = '/notifications/register-token';
+
+  // Personal Transactions
+  static const String transactions = '/transactions';
+  static String transactionById(String id) => '/transactions/$id';
+
+  // Custom Categories
+  static const String categories = '/categories';
+  static String categoryById(String id) => '/categories/$id';
+
+  // Sync
+  static const String syncPush = '/sync/transactions';
+  static const String syncPull = '/sync/changes';
 }

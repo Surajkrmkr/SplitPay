@@ -1,45 +1,62 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/models/transaction_model.dart';
+import '../data/repositories/transaction_repository.dart';
 import '../data/services/hive_service.dart';
 
-// All transactions, sorted by date desc
+// All transactions, sorted by date desc — reads from Hive (offline-first).
 final transactionProvider =
     StateNotifierProvider<TransactionNotifier, List<Transaction>>(
-  (ref) => TransactionNotifier()..load(),
+  (ref) => TransactionNotifier(ref.watch(transactionRepositoryProvider), ref)..load(),
 );
 
 class TransactionNotifier extends StateNotifier<List<Transaction>> {
-  TransactionNotifier() : super([]);
+  final TransactionRepository _repo;
+  final Ref _ref;
+
+  TransactionNotifier(this._repo, this._ref) : super([]);
 
   void load() {
-    state = HiveService.getTransactions();
+    state = _repo.getAll();
   }
 
   Future<void> add(Transaction tx) async {
-    await HiveService.addTransaction(tx);
+    await _repo.add(tx);
     load();
   }
 
   Future<void> delete(String id) async {
-    await HiveService.deleteTransaction(id);
+    await _repo.delete(id);
     load();
   }
 
   Future<void> update(Transaction tx) async {
-    await HiveService.updateTransaction(tx);
+    await _repo.update(tx);
     load();
+  }
+
+  /// Pull-to-refresh: full server sync then reload local state.
+  Future<void> syncAndReload() async {
+    final result = await _repo.syncNow();
+    load();
+    if (result.errorMessage == null) {
+      await HiveService.setSetting(
+        'lastSyncedAt',
+        result.syncedAt.millisecondsSinceEpoch,
+      );
+      _ref.read(lastSyncedAtProvider.notifier).state = result.syncedAt;
+    }
   }
 }
 
-// Month currently shown on the home dashboard. Defaults to the current month
-// at app start; the dashboard's month selector mutates it.
+// ─── Month selector ───────────────────────────────────────────────────────────
+
 final selectedMonthProvider = StateProvider<DateTime>((_) {
   final now = DateTime.now();
   return DateTime(now.year, now.month);
 });
 
-// Computed providers — scoped to [selectedMonthProvider] so the home dashboard
-// can navigate between months. The analytics screen also watches these.
+// ─── Computed summary providers ───────────────────────────────────────────────
+
 final totalIncomeProvider = Provider<double>((ref) {
   final txs = ref.watch(transactionProvider);
   final month = ref.watch(selectedMonthProvider);
@@ -68,8 +85,6 @@ final balanceProvider = Provider<double>((ref) {
   return income - expense;
 });
 
-// Same totals but for the previous month — used to show MoM deltas on the
-// dashboard without rebinding the global selection.
 final previousMonthExpenseProvider = Provider<double>((ref) {
   final txs = ref.watch(transactionProvider);
   final selected = ref.watch(selectedMonthProvider);
@@ -167,7 +182,8 @@ final monthlyIncomeTrendProvider = Provider<List<double>>((ref) {
   return months;
 });
 
-// Filter providers
+// ─── Filter / search providers ────────────────────────────────────────────────
+
 enum TransactionFilter { all, today, week, month }
 
 final filterProvider = StateProvider<TransactionFilter>(

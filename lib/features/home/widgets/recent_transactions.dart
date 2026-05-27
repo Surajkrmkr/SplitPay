@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/category_app_icons.dart';
+import '../../../shared/widgets/sync_status_indicator.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../data/models/custom_category.dart';
@@ -27,7 +28,6 @@ class RecentTransactions extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 'Recent',
@@ -35,6 +35,12 @@ class RecentTransactions extends ConsumerWidget {
                       fontWeight: FontWeight.w700,
                     ),
               ),
+              const SizedBox(width: 10),
+              SyncStatusIndicator(
+                onSyncTap: () =>
+                    ref.read(transactionProvider.notifier).syncAndReload(),
+              ),
+              const Spacer(),
               GestureDetector(
                 onTap: () => context.push('/transactions'),
                 child: Text(

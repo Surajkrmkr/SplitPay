@@ -6,6 +6,8 @@ import '../../data/models/transaction_model.dart';
 import '../../providers/transaction_provider.dart';
 import '../../shared/widgets/app_back_button.dart';
 import '../../shared/widgets/empty_state.dart';
+import '../../shared/widgets/offline_banner.dart';
+import '../../shared/widgets/sync_status_indicator.dart';
 import 'widgets/edit_transaction_sheet.dart';
 import 'widgets/transaction_tile.dart';
 
@@ -14,15 +16,17 @@ class TransactionsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return const Scaffold(
+    return Scaffold(
       body: SafeArea(
         bottom: false,
         child: Column(
           children: [
-            _Header(),
-            _SearchBar(),
-            _FilterChips(),
-            Expanded(child: _TransactionList()),
+            const OfflineBanner(),
+            const _Header(),
+            const _SyncRow(),
+            const _SearchBar(),
+            const _FilterChips(),
+            const Expanded(child: _TransactionList()),
           ],
         ),
       ),
@@ -50,6 +54,25 @@ class _Header extends StatelessWidget {
         ],
       ),
     ).animate().fadeIn(duration: 400.ms);
+  }
+}
+
+class _SyncRow extends ConsumerWidget {
+  const _SyncRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+      child: Row(
+        children: [
+          SyncStatusIndicator(
+            onSyncTap: () =>
+                ref.read(transactionProvider.notifier).syncAndReload(),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -155,12 +178,22 @@ class _TransactionList extends ConsumerWidget {
     final transactions = ref.watch(searchedTransactionsProvider);
 
     if (transactions.isEmpty) {
-      return EmptyState(
-        icon: Icons.receipt_long_outlined,
-        title: 'No transactions found',
-        subtitle: ref.watch(searchQueryProvider).isNotEmpty
-            ? 'Try a different search term'
-            : 'No transactions for the selected period',
+      return RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: () =>
+            ref.read(transactionProvider.notifier).syncAndReload(),
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            EmptyState(
+              icon: Icons.receipt_long_outlined,
+              title: 'No transactions found',
+              subtitle: ref.watch(searchQueryProvider).isNotEmpty
+                  ? 'Try a different search term'
+                  : 'Pull down to sync or add a transaction',
+            ),
+          ],
+        ),
       );
     }
 
@@ -173,34 +206,41 @@ class _TransactionList extends ConsumerWidget {
       grouped[key]!.add(_IndexedTx(tx, globalIndex++));
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
-      physics: const BouncingScrollPhysics(),
-      itemCount: grouped.length,
-      itemBuilder: (context, i) {
-        final key = grouped.keys.elementAt(i);
-        final txs = grouped[key]!;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _DateHeader(label: key),
-            ...txs.map((item) => TransactionTile(
-                  transaction: item.tx,
-                  index: item.index,
-                  onDelete: () =>
-                      ref.read(transactionProvider.notifier).delete(item.tx.id),
-                  onEdit: () => showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    useRootNavigator: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (_) =>
-                        EditTransactionSheet(transaction: item.tx),
-                  ),
-                )),
-          ],
-        );
-      },
+    return RefreshIndicator(
+      color: AppColors.primary,
+      onRefresh: () =>
+          ref.read(transactionProvider.notifier).syncAndReload(),
+      child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
+        itemCount: grouped.length,
+        itemBuilder: (context, i) {
+          final key = grouped.keys.elementAt(i);
+          final txs = grouped[key]!;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _DateHeader(label: key),
+              ...txs.map((item) => TransactionTile(
+                    transaction: item.tx,
+                    index: item.index,
+                    onDelete: () =>
+                        ref.read(transactionProvider.notifier).delete(item.tx.id),
+                    onEdit: () => showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      useRootNavigator: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) =>
+                          EditTransactionSheet(transaction: item.tx),
+                    ),
+                  )),
+            ],
+          );
+        },
+      ),
     );
   }
 

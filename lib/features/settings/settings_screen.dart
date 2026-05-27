@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
+import '../debug/debug_log_screen.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/auth_provider.dart';
@@ -1029,37 +1030,77 @@ class _Divider extends StatelessWidget {
   }
 }
 
-class _AppBadge extends StatelessWidget {
+class _AppBadge extends StatefulWidget {
+  @override
+  State<_AppBadge> createState() => _AppBadgeState();
+}
+
+class _AppBadgeState extends State<_AppBadge> {
+  bool _glowing = false;
+
+  Future<void> _onDoubleTap() async {
+    setState(() => _glowing = true);
+    await Future.delayed(const Duration(milliseconds: 350));
+    if (!mounted) return;
+    setState(() => _glowing = false);
+    if (!mounted) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const DebugLogScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Column(
-        children: [
-          // Icon already has its own background — render flat.
-          ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: Image.asset(
-              'assets/icon/app_icon.png',
-              width: 56,
-              height: 56,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'SplitPay',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
+      child: GestureDetector(
+        onDoubleTap: _onDoubleTap,
+        child: Column(
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: _glowing
+                    ? [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.55),
+                          blurRadius: 24,
+                          spreadRadius: 4,
+                        ),
+                      ]
+                    : [],
+              ),
+              child: AnimatedScale(
+                scale: _glowing ? 0.88 : 1.0,
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeInOut,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Image.asset(
+                    'assets/icon/app_icon.png',
+                    width: 56,
+                    height: 56,
+                  ),
                 ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Made with ♥ · v1.0.0',
-            style: TextStyle(
-              color: AppColors.textTertiary,
-              fontSize: 12,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            Text(
+              'SplitPay',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Made with ♥ · v1.0.0',
+              style: TextStyle(
+                color: AppColors.textTertiary,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
       ),
     ).animate(delay: 400.ms).fadeIn().scale(curve: Curves.elasticOut);
   }

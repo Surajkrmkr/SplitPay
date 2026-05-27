@@ -43,8 +43,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
     final budget = ref
         .read(budgetProvider)
         .cast<Budget?>()
-        .firstWhere((b) => b?.id == widget.editBudgetId,
-            orElse: () => null);
+        .firstWhere((b) => b?.id == widget.editBudgetId, orElse: () => null);
     if (budget == null) return;
     setState(() {
       _titleController.text = budget.title;
@@ -69,8 +68,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
   Future<void> _save() async {
     final title = _titleController.text.trim();
     if (title.isEmpty) return;
-    final amount =
-        double.tryParse(_amountController.text.replaceAll(',', ''));
+    final amount = double.tryParse(_amountController.text.replaceAll(',', ''));
     if (amount == null || amount <= 0) return;
 
     setState(() => _saving = true);
@@ -142,10 +140,8 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
       builder: (_, scrollController) {
         return Container(
           decoration: BoxDecoration(
-            color:
-                isDark ? AppColors.darkSurface : AppColors.lightSurface,
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(28)),
+            color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: Column(
             children: [
@@ -155,8 +151,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color:
-                      AppColors.textTertiary.withValues(alpha: 0.4),
+                  color: AppColors.textTertiary.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -180,9 +175,8 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
                       icon: const Icon(Icons.close_rounded),
                       color: AppColors.textSecondary,
                       style: IconButton.styleFrom(
-                        backgroundColor: isDark
-                            ? AppColors.darkCard
-                            : AppColors.lightCard,
+                        backgroundColor:
+                            isDark ? AppColors.darkCard : AppColors.lightCard,
                         padding: const EdgeInsets.all(8),
                       ),
                     ),
@@ -195,8 +189,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
               Expanded(
                 child: ListView(
                   controller: scrollController,
-                  padding:
-                      const EdgeInsets.fromLTRB(24, 8, 24, 8),
+                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
                   children: [
                     // Title
                     _Label('Budget Name'),
@@ -206,9 +199,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
                       textCapitalization: TextCapitalization.sentences,
                       decoration: const InputDecoration(
                         hintText: 'e.g. Monthly Food Budget',
-                        prefixIcon: Icon(
-                            Icons.label_rounded,
-                            size: 20),
+                        prefixIcon: Icon(Icons.label_rounded, size: 20),
                       ),
                     ).animate(delay: 50.ms).fadeIn().slideY(begin: 0.1),
 
@@ -236,7 +227,8 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
                     const SizedBox(height: 16),
 
                     // Categories
-                    _Label('Categories (optional — leave empty for all expenses)'),
+                    _Label(
+                        'Categories (optional — leave empty for all expenses)'),
                     const SizedBox(height: 8),
                     _CategoryPicker(
                       selectedIds: _selectedCategoryIds,
@@ -252,8 +244,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
                     const SizedBox(height: 8),
                     _ColorPicker(
                       selectedValue: _colorValue,
-                      onChanged: (v) =>
-                          setState(() => _colorValue = v),
+                      onChanged: (v) => setState(() => _colorValue = v),
                     ).animate(delay: 170.ms).fadeIn().slideY(begin: 0.1),
 
                     const SizedBox(height: 16),
@@ -265,8 +256,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
                       selectedCodePoint: _iconCodePoint,
                       color: Color(_colorValue),
                       isDark: isDark,
-                      onChanged: (cp) =>
-                          setState(() => _iconCodePoint = cp),
+                      onChanged: (cp) => setState(() => _iconCodePoint = cp),
                     ).animate(delay: 200.ms).fadeIn().slideY(begin: 0.1),
 
                     const SizedBox(height: 16),
@@ -280,10 +270,8 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
                       max: 0.95,
                       divisions: 9,
                       activeColor: Color(_colorValue),
-                      inactiveColor:
-                          Color(_colorValue).withValues(alpha: 0.15),
-                      onChanged: (v) =>
-                          setState(() => _alertThreshold = v),
+                      inactiveColor: Color(_colorValue).withValues(alpha: 0.15),
+                      onChanged: (v) => setState(() => _alertThreshold = v),
                     ).animate(delay: 220.ms).fadeIn(),
 
                     const SizedBox(height: 8),
@@ -302,14 +290,12 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
                   (keyboardH > 0 ? keyboardH : safeAreaBottom) + 16,
                 ),
                 decoration: BoxDecoration(
-                  color: isDark
-                      ? AppColors.darkSurface
-                      : AppColors.lightSurface,
+                  color:
+                      isDark ? AppColors.darkSurface : AppColors.lightSurface,
                   border: Border(
                     top: BorderSide(
-                      color: isDark
-                          ? AppColors.darkBorder
-                          : AppColors.lightBorder,
+                      color:
+                          isDark ? AppColors.darkBorder : AppColors.lightBorder,
                       width: 0.5,
                     ),
                   ),
@@ -351,15 +337,13 @@ class _AmountField extends StatelessWidget {
   final TextEditingController controller;
   final String currency;
 
-  const _AmountField(
-      {required this.controller, required this.currency});
+  const _AmountField({required this.controller, required this.currency});
 
   @override
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
-      keyboardType:
-          const TextInputType.numberWithOptions(decimal: true),
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
       inputFormatters: [
         FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
       ],
@@ -385,18 +369,17 @@ class _AmountField extends StatelessWidget {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(
-              color: AppColors.primary.withValues(alpha: 0.3)),
+          borderSide:
+              BorderSide(color: AppColors.primary.withValues(alpha: 0.3)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(
-              color: AppColors.primary.withValues(alpha: 0.2)),
+          borderSide:
+              BorderSide(color: AppColors.primary.withValues(alpha: 0.2)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide:
-              const BorderSide(color: AppColors.primary, width: 1.5),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
         filled: true,
         fillColor: AppColors.primary.withValues(alpha: 0.06),
@@ -447,8 +430,7 @@ class _PeriodSelector extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                   border: isSelected
                       ? Border.all(
-                          color: AppColors.primary
-                              .withValues(alpha: 0.4))
+                          color: AppColors.primary.withValues(alpha: 0.4))
                       : null,
                 ),
                 child: Text(
@@ -456,12 +438,9 @@ class _PeriodSelector extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 12,
-                    fontWeight: isSelected
-                        ? FontWeight.w700
-                        : FontWeight.w500,
-                    color: isSelected
-                        ? AppColors.primary
-                        : AppColors.textTertiary,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    color:
+                        isSelected ? AppColors.primary : AppColors.textTertiary,
                   ),
                 ),
               ),
@@ -491,9 +470,7 @@ class _CategoryPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Only show expense-relevant categories
-    final builtIn = Category.values
-        .where((c) => c != Category.salary)
-        .toList();
+    final builtIn = Category.values.where((c) => c != Category.salary).toList();
 
     return Wrap(
       spacing: 8,
@@ -549,8 +526,7 @@ class _CategoryChip extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: 200.ms,
-        padding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected
               ? color.withValues(alpha: 0.15)
@@ -571,11 +547,9 @@ class _CategoryChip extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (isSelected)
-              Icon(Icons.check_circle_rounded,
-                  color: color, size: 13)
+              Icon(Icons.check_circle_rounded, color: color, size: 13)
             else
-              Icon(icon,
-                  color: AppColors.textTertiary, size: 13),
+              Icon(icon, color: AppColors.textTertiary, size: 13),
             const SizedBox(width: 6),
             Text(
               label,
@@ -585,9 +559,7 @@ class _CategoryChip extends StatelessWidget {
                     : isDark
                         ? AppColors.textSecondary
                         : AppColors.textLightSecondary,
-                fontWeight: isSelected
-                    ? FontWeight.w700
-                    : FontWeight.w500,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 fontSize: 13,
               ),
             ),
@@ -604,8 +576,7 @@ class _ColorPicker extends StatelessWidget {
   final int selectedValue;
   final ValueChanged<int> onChanged;
 
-  const _ColorPicker(
-      {required this.selectedValue, required this.onChanged});
+  const _ColorPicker({required this.selectedValue, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -631,15 +602,14 @@ class _ColorPicker extends StatelessWidget {
                 color: color,
                 shape: BoxShape.circle,
                 border: isSelected
-                    ? Border.all(
-                        color: Colors.white, width: 3)
+                    ? Border.all(color: Colors.white, width: 3)
                     : null,
                 boxShadow: isSelected
                     ? [
                         BoxShadow(
                           color: color.withValues(alpha: 0.5),
-                          blurRadius: 10,
-                          offset: const Offset(0, 3),
+                          blurRadius: 3,
+                          offset: const Offset(0, 2),
                         )
                       ]
                     : null,
@@ -761,8 +731,7 @@ class _SaveButton extends StatelessWidget {
                       width: 22,
                       height: 22,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: Colors.white),
+                          strokeWidth: 2.5, color: Colors.white),
                     )
                   : Text(
                       isEdit ? 'Update Budget' : 'Create Budget',

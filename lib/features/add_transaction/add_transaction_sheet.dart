@@ -166,6 +166,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
       snapSizes: const [0.75, 0.9],
       builder: (_, scrollController) {
         return Container(
+          clipBehavior: Clip.hardEdge,
           decoration: BoxDecoration(
             color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
