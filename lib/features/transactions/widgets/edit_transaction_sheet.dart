@@ -3,9 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/category_app_icons.dart';
 import '../../../data/models/transaction_model.dart';
 import '../../../providers/settings_provider.dart';
 import '../../../providers/transaction_provider.dart';
+import '../../../shared/widgets/app_icon_picker.dart';
 import '../../../shared/widgets/sp_button.dart';
 
 class EditTransactionSheet extends ConsumerStatefulWidget {
@@ -24,6 +26,7 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
   late TransactionType _type;
   late Category _category;
   String? _customCategoryId;
+  String? _appIcon;
   late DateTime _date;
   bool _saving = false;
 
@@ -38,6 +41,7 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
     _type = widget.transaction.type;
     _category = widget.transaction.category;
     _customCategoryId = widget.transaction.customCategoryId;
+    _appIcon = widget.transaction.appIcon;
     _date = widget.transaction.date;
   }
 
@@ -59,6 +63,7 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
               type: _type,
               category: _category,
               customCategoryId: _customCategoryId,
+              appIcon: _appIcon,
               note: _noteController.text.trim().isEmpty
                   ? null
                   : _noteController.text.trim(),
@@ -77,8 +82,58 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
       initialDate: _date,
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(
+          colorScheme: Theme.of(ctx)
+              .colorScheme
+              .copyWith(primary: AppColors.primary, onPrimary: Colors.white),
+        ),
+        child: child!,
+      ),
     );
-    if (picked != null) setState(() => _date = picked);
+    if (picked == null) return;
+    setState(() => _date = DateTime(
+          picked.year,
+          picked.month,
+          picked.day,
+          _date.hour,
+          _date.minute,
+        ));
+  }
+
+  Future<void> _pickTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_date),
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(
+          colorScheme: Theme.of(ctx)
+              .colorScheme
+              .copyWith(primary: AppColors.primary, onPrimary: Colors.white),
+          timePickerTheme: TimePickerThemeData(
+            dayPeriodColor: WidgetStateColor.resolveWith((states) =>
+                states.contains(WidgetState.selected)
+                    ? AppColors.primary
+                    : Colors.transparent),
+            dayPeriodTextColor: WidgetStateColor.resolveWith((states) =>
+                states.contains(WidgetState.selected)
+                    ? Colors.white
+                    : AppColors.primary),
+            dayPeriodBorderSide: const BorderSide(
+                color: AppColors.primary, width: 1),
+          ),
+        ),
+        child: child!,
+      ),
+    );
+    if (picked == null) return;
+    setState(() => _date = DateTime(
+          _date.year,
+          _date.month,
+          _date.day,
+          picked.hour,
+          picked.minute,
+        ));
   }
 
   @override
@@ -259,6 +314,11 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
                             onTap: () => setState(() {
                               _category = cat;
                               _customCategoryId = null;
+                              if (_appIcon != null &&
+                                  !CategoryAppIcons.iconsFor(cat)
+                                      .contains(_appIcon)) {
+                                _appIcon = null;
+                              }
                             }),
                           );
                         }),
@@ -273,12 +333,23 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
                             onTap: () => setState(() {
                               _category = Category.other;
                               _customCategoryId = cat.id;
+                              _appIcon = null;
                             }),
                           );
                         }),
                       ],
                     ),
                     const SizedBox(height: 16),
+                    if (CategoryAppIcons.iconsFor(_category).isNotEmpty &&
+                        _customCategoryId == null) ...[
+                      AppIconPicker(
+                        category: _category,
+                        selected: _appIcon,
+                        onSelected: (v) => setState(() => _appIcon = v),
+                        isDark: isDark,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
 
                     // Note
                     _label('Note', isDark),
@@ -315,37 +386,29 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Date
-                    _label('Date', isDark),
+                    // Date & Time
+                    _label('Date & Time', isDark),
                     const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: _pickDate,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                        decoration: BoxDecoration(
-                          color: isDark ? AppColors.darkCard : AppColors.lightCard,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _DateTimeTile(
+                            icon: Icons.calendar_today_rounded,
+                            label: DateFormat('d MMM yyyy').format(_date),
+                            isDark: isDark,
+                            onTap: _pickDate,
                           ),
                         ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.calendar_today_rounded, size: 16, color: AppColors.primary),
-                            const SizedBox(width: 10),
-                            Text(
-                              DateFormat('d MMM yyyy').format(_date),
-                              style: TextStyle(
-                                fontSize: 15,
-                                color: isDark ? Colors.white : AppColors.textLight,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const Spacer(),
-                            Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.textTertiary),
-                          ],
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _DateTimeTile(
+                            icon: Icons.access_time_rounded,
+                            label: TimeOfDay.fromDateTime(_date).format(context),
+                            isDark: isDark,
+                            onTap: _pickTime,
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                   ],
@@ -392,6 +455,56 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
           letterSpacing: 0.3,
         ),
       );
+}
+
+class _DateTimeTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _DateTimeTile({
+    required this.icon,
+    required this.label,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkCard : AppColors.lightCard,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 16, color: AppColors.primary),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isDark ? Colors.white : AppColors.textLight,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Icon(Icons.keyboard_arrow_down_rounded,
+                size: 18, color: AppColors.textTertiary),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _CategoryChip extends StatelessWidget {

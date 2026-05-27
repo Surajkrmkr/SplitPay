@@ -5,10 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/utils/category_app_icons.dart';
 import '../../data/models/custom_category.dart';
 import '../../data/models/transaction_model.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../shared/widgets/app_icon_picker.dart';
 
 class AddTransactionSheet extends ConsumerStatefulWidget {
   const AddTransactionSheet({super.key});
@@ -25,6 +27,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   TransactionType _type = TransactionType.expense;
   Category _category = Category.food;
   String? _customCategoryId;
+  String? _appIcon;
   DateTime _date = DateTime.now();
   bool _saving = false;
 
@@ -47,6 +50,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
               type: _type,
               category: _category,
               customCategoryId: _customCategoryId,
+              appIcon: _appIcon,
               note: _noteController.text.trim().isEmpty
                   ? null
                   : _noteController.text.trim(),
@@ -75,7 +79,50 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
         child: child!,
       ),
     );
-    if (picked != null) setState(() => _date = picked);
+    if (picked == null) return;
+    setState(() => _date = DateTime(
+          picked.year,
+          picked.month,
+          picked.day,
+          _date.hour,
+          _date.minute,
+        ));
+  }
+
+  Future<void> _pickTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_date),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: Theme.of(context).colorScheme.copyWith(
+                primary: AppColors.primary,
+                onPrimary: Colors.white,
+              ),
+          timePickerTheme: TimePickerThemeData(
+            dayPeriodColor: WidgetStateColor.resolveWith((states) =>
+                states.contains(WidgetState.selected)
+                    ? AppColors.primary
+                    : Colors.transparent),
+            dayPeriodTextColor: WidgetStateColor.resolveWith((states) =>
+                states.contains(WidgetState.selected)
+                    ? Colors.white
+                    : AppColors.primary),
+            dayPeriodBorderSide: const BorderSide(
+                color: AppColors.primary, width: 1),
+          ),
+        ),
+        child: child!,
+      ),
+    );
+    if (picked == null) return;
+    setState(() => _date = DateTime(
+          _date.year,
+          _date.month,
+          _date.day,
+          picked.hour,
+          picked.minute,
+        ));
   }
 
   @override
@@ -157,6 +204,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                       onChanged: (t) => setState(() {
                         _type = t;
                         _customCategoryId = null;
+                        _appIcon = null;
                         _category = t == TransactionType.income
                             ? Category.salary
                             : Category.food;
@@ -180,9 +228,26 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                       onChanged: (cat, customId) => setState(() {
                         _category = cat;
                         _customCategoryId = customId;
+                        // Clear the app icon if it's not relevant to the new
+                        // category — keeps suggestions consistent with the
+                        // user's pick.
+                        if (_appIcon != null &&
+                            !CategoryAppIcons.iconsFor(cat)
+                                .contains(_appIcon)) {
+                          _appIcon = null;
+                        }
                       }),
                     ).animate(delay: 100.ms).fadeIn().slideY(begin: 0.1),
                     const SizedBox(height: 16),
+                    if (CategoryAppIcons.iconsFor(_category).isNotEmpty) ...[
+                      AppIconPicker(
+                        category: _category,
+                        selected: _appIcon,
+                        onSelected: (v) => setState(() => _appIcon = v),
+                        isDark: isDark,
+                      ).animate(delay: 130.ms).fadeIn().slideY(begin: 0.1),
+                      const SizedBox(height: 16),
+                    ],
                     _sectionLabel(context, 'Note (optional)'),
                     const SizedBox(height: 10),
                     _NoteInput(controller: _noteController)
@@ -190,12 +255,26 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                         .fadeIn()
                         .slideY(begin: 0.1),
                     const SizedBox(height: 16),
-                    _sectionLabel(context, 'Date'),
+                    _sectionLabel(context, 'Date & Time'),
                     const SizedBox(height: 10),
-                    _DateSelector(
-                      date: _date,
-                      onTap: _pickDate,
-                      isDark: isDark,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _DateSelector(
+                            date: _date,
+                            onTap: _pickDate,
+                            isDark: isDark,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _TimeSelector(
+                            date: _date,
+                            onTap: _pickTime,
+                            isDark: isDark,
+                          ),
+                        ),
+                      ],
                     ).animate(delay: 200.ms).fadeIn().slideY(begin: 0.1),
                     const SizedBox(height: 8),
                   ],
@@ -562,6 +641,53 @@ class _DateSelector extends StatelessWidget {
             const SizedBox(width: 12),
             Text(
               DateFormat('d MMM yyyy').format(date),
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(fontWeight: FontWeight.w500),
+            ),
+            const Spacer(),
+            Icon(Icons.chevron_right_rounded,
+                color: AppColors.textTertiary, size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TimeSelector extends StatelessWidget {
+  final DateTime date;
+  final VoidCallback onTap;
+  final bool isDark;
+
+  const _TimeSelector({
+    required this.date,
+    required this.onTap,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurface : AppColors.lightCard,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+            width: 0.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.access_time_rounded,
+                size: 18, color: AppColors.primary),
+            const SizedBox(width: 10),
+            Text(
+              TimeOfDay.fromDateTime(date).format(context),
               style: Theme.of(context)
                   .textTheme
                   .bodyMedium

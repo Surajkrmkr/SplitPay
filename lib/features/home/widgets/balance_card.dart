@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../providers/transaction_provider.dart';
@@ -15,7 +16,9 @@ class BalanceCard extends ConsumerWidget {
     final income = ref.watch(totalIncomeProvider);
     final expense = ref.watch(totalExpenseProvider);
     final balance = ref.watch(balanceProvider);
+    final prevExpense = ref.watch(previousMonthExpenseProvider);
     final currency = ref.watch(currencyProvider);
+    final selectedMonth = ref.watch(selectedMonthProvider);
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -56,7 +59,6 @@ class BalanceCard extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Label
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -71,41 +73,11 @@ class BalanceCard extends ConsumerWidget {
                         letterSpacing: 0.5,
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: const BoxDecoration(
-                              color: AppColors.primary,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            'This Month',
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    _MonthSelector(selectedMonth: selectedMonth),
                   ],
                 ),
                 const SizedBox(height: 12),
 
-                // Balance amount
                 TweenAnimationBuilder<double>(
                   duration: 1200.ms,
                   tween: Tween(begin: 0, end: balance),
@@ -121,9 +93,14 @@ class BalanceCard extends ConsumerWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 8),
+                _MoMDelta(
+                  current: expense,
+                  previous: prevExpense,
+                  currency: currency,
+                ),
+                const SizedBox(height: 20),
 
-                // Divider
                 Container(
                   height: 0.5,
                   color: isDark
@@ -132,7 +109,6 @@ class BalanceCard extends ConsumerWidget {
                 ),
                 const SizedBox(height: 20),
 
-                // Income / Expense row
                 Row(
                   children: [
                     Expanded(
@@ -168,7 +144,155 @@ class BalanceCard extends ConsumerWidget {
           ),
         ),
       ),
-    ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.2, end: 0, duration: 600.ms, curve: Curves.easeOutCubic);
+    ).animate().fadeIn(duration: 600.ms).slideY(
+        begin: 0.2, end: 0, duration: 600.ms, curve: Curves.easeOutCubic);
+  }
+}
+
+class _MonthSelector extends ConsumerWidget {
+  final DateTime selectedMonth;
+  const _MonthSelector({required this.selectedMonth});
+
+  bool get _isCurrent {
+    final now = DateTime.now();
+    return now.year == selectedMonth.year && now.month == selectedMonth.month;
+  }
+
+  void _shift(WidgetRef ref, int delta) {
+    final notifier = ref.read(selectedMonthProvider.notifier);
+    final cur = notifier.state;
+    notifier.state = DateTime(cur.year, cur.month + delta);
+  }
+
+  bool _canGoForward() {
+    final now = DateTime.now();
+    return selectedMonth.year < now.year ||
+        (selectedMonth.year == now.year && selectedMonth.month < now.month);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final canForward = _canGoForward();
+    final label = _isCurrent
+        ? 'This Month'
+        : DateFormat('MMM yyyy').format(selectedMonth);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          InkResponse(
+            radius: 16,
+            onTap: () => _shift(ref, -1),
+            child: const Padding(
+              padding: EdgeInsets.all(4),
+              child: Icon(Icons.chevron_left_rounded,
+                  size: 16, color: AppColors.primary),
+            ),
+          ),
+          GestureDetector(
+            onTap: () => _openMonthPicker(context, ref),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+          InkResponse(
+            radius: 16,
+            onTap: canForward ? () => _shift(ref, 1) : null,
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: Icon(
+                Icons.chevron_right_rounded,
+                size: 16,
+                color: canForward
+                    ? AppColors.primary
+                    : AppColors.primary.withValues(alpha: 0.3),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openMonthPicker(BuildContext context, WidgetRef ref) async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: selectedMonth,
+      firstDate: DateTime(now.year - 5, 1),
+      lastDate: DateTime(now.year, now.month),
+      initialDatePickerMode: DatePickerMode.year,
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(
+          colorScheme:
+              Theme.of(ctx).colorScheme.copyWith(primary: AppColors.primary),
+        ),
+        child: child!,
+      ),
+    );
+    if (picked != null) {
+      ref.read(selectedMonthProvider.notifier).state =
+          DateTime(picked.year, picked.month);
+    }
+  }
+}
+
+class _MoMDelta extends StatelessWidget {
+  final double current;
+  final double previous;
+  final String currency;
+
+  const _MoMDelta({
+    required this.current,
+    required this.previous,
+    required this.currency,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (previous <= 0 && current <= 0) {
+      return const SizedBox(height: 18);
+    }
+    final delta = current - previous;
+    final hasPrev = previous > 0;
+    final pct = hasPrev ? (delta.abs() / previous) * 100 : 0.0;
+    final isUp = delta > 0;
+    final color = isUp ? AppColors.expense : AppColors.income;
+
+    return Row(
+      children: [
+        Icon(
+          isUp ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+          size: 14,
+          color: color,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          hasPrev
+              ? '${pct.toStringAsFixed(0)}% ${isUp ? 'higher' : 'lower'} than last month'
+              : 'No spend last month',
+          style: TextStyle(
+            color: color,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
   }
 }
 

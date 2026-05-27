@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/category_app_icons.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../data/models/custom_category.dart';
@@ -91,15 +92,12 @@ class TransactionTile extends ConsumerWidget {
               padding: const EdgeInsets.all(14),
               child: Row(
                 children: [
-                  // Icon
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Icon(icon, color: color, size: 22),
+                  // Icon — show the chosen brand icon when one is set,
+                  // otherwise fall back to the category icon.
+                  _TileIcon(
+                    appIcon: transaction.appIcon,
+                    fallbackIcon: icon,
+                    color: color,
                   ),
                   const SizedBox(width: 14),
 
@@ -183,5 +181,41 @@ class TransactionTile extends ConsumerWidget {
           end: 0,
           curve: Curves.easeOutCubic,
         );
+  }
+}
+
+class _TileIcon extends StatelessWidget {
+  final String? appIcon;
+  final IconData fallbackIcon;
+  final Color color;
+
+  const _TileIcon({
+    required this.appIcon,
+    required this.fallbackIcon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      padding: appIcon != null ? const EdgeInsets.all(4) : null,
+      child: appIcon != null
+          ? ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Image.asset(
+                CategoryAppIcons.pathFor(appIcon!),
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) =>
+                    Icon(fallbackIcon, color: color, size: 22),
+              ),
+            )
+          : Icon(fallbackIcon, color: color, size: 22),
+    );
   }
 }

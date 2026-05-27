@@ -67,6 +67,7 @@ class Transaction {
   final TransactionType type;
   final Category category;
   final String? customCategoryId;
+  final String? appIcon;
   final String? note;
   final DateTime date;
   final DateTime createdAt;
@@ -77,6 +78,7 @@ class Transaction {
     required this.type,
     required this.category,
     this.customCategoryId,
+    this.appIcon,
     this.note,
     required this.date,
     required this.createdAt,
@@ -88,6 +90,7 @@ class Transaction {
     'type': type.name,
     'category': category.name,
     'customCategoryId': customCategoryId,
+    'appIcon': appIcon,
     'note': note,
     'date': date.millisecondsSinceEpoch,
     'createdAt': createdAt.millisecondsSinceEpoch,
@@ -99,6 +102,8 @@ class Transaction {
     type: TransactionType.values.byName(map['type'] as String),
     category: Category.values.byName(map['category'] as String),
     customCategoryId: map['customCategoryId'] as String?,
+    // appIcon is nullable so old Hive rows without it deserialize cleanly.
+    appIcon: map['appIcon'] as String?,
     note: map['note'] as String?,
     date: DateTime.fromMillisecondsSinceEpoch(map['date'] as int),
     createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] as int),
@@ -110,6 +115,7 @@ class Transaction {
     TransactionType? type,
     Category? category,
     Object? customCategoryId = _unset,
+    Object? appIcon = _unset,
     Object? note = _unset,
     DateTime? date,
     DateTime? createdAt,
@@ -122,6 +128,7 @@ class Transaction {
         customCategoryId: customCategoryId == _unset
             ? this.customCategoryId
             : customCategoryId as String?,
+        appIcon: appIcon == _unset ? this.appIcon : appIcon as String?,
         note: note == _unset ? this.note : note as String?,
         date: date ?? this.date,
         createdAt: createdAt ?? this.createdAt,

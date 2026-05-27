@@ -1,21 +1,41 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+
 import '../../storage/token_storage.dart';
 import '../api_constants.dart';
 
 class AuthInterceptor extends Interceptor {
+  // Marker on RequestOptions.extra so we never retry the same request twice.
+  static const _retryMarker = '__auth_retry__';
+
   final Dio _dio;
   final TokenStorage _tokenStorage;
+  final VoidCallback? onSessionExpired;
 
-  bool _isRefreshing = false;
-  final List<RequestOptions> _pendingRequests = [];
+  // Single in-flight refresh shared across concurrent 401s.
+  Completer<String?>? _refreshCompleter;
 
-  AuthInterceptor(this._dio, this._tokenStorage);
+  AuthInterceptor(
+    this._dio,
+    this._tokenStorage, {
+    this.onSessionExpired,
+  });
 
   @override
   Future<void> onRequest(
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
+    // Auth endpoints must not carry a (possibly stale) access token —
+    // the refresh endpoint authenticates via the refresh token in the body,
+    // and the login endpoint via the Google ID token.
+    if (_isAuthEndpoint(options)) {
+      options.headers.remove('Authorization');
+      return handler.next(options);
+    }
+
     final token = await _tokenStorage.getAccessToken();
     if (token != null && token.isNotEmpty) {
       options.headers['Authorization'] = 'Bearer $token';
@@ -34,68 +54,100 @@ class AuthInterceptor extends Interceptor {
 
     final options = err.requestOptions;
 
-    // Avoid infinite loop if the refresh request itself fails
-    if (options.path == ApiConstants.authRefresh) {
-      await _tokenStorage.clearTokens();
+    // A 401 from the refresh endpoint itself means the refresh token is dead.
+    if (_isRefreshEndpoint(options)) {
+      await _invalidateSession();
       return handler.next(err);
     }
 
-    if (_isRefreshing) {
-      _pendingRequests.add(options);
-      return;
+    // Don't refresh on login — it needs valid credentials, not a token swap.
+    if (_isLoginEndpoint(options)) {
+      return handler.next(err);
     }
 
-    _isRefreshing = true;
+    // One retry per request, max.
+    if (options.extra[_retryMarker] == true) {
+      return handler.next(err);
+    }
+
+    final refreshToken = await _tokenStorage.getRefreshToken();
+    if (refreshToken == null || refreshToken.isEmpty) {
+      await _invalidateSession();
+      return handler.next(err);
+    }
+
+    final newAccess = await _refreshAccessToken(refreshToken);
+    if (newAccess == null || newAccess.isEmpty) {
+      return handler.next(err);
+    }
 
     try {
-      final refreshToken = await _tokenStorage.getRefreshToken();
-      if (refreshToken == null) {
-        await _tokenStorage.clearTokens();
-        _isRefreshing = false;
-        return handler.next(err);
-      }
+      options.extra[_retryMarker] = true;
+      options.headers['Authorization'] = 'Bearer $newAccess';
+      final response = await _dio.fetch(options);
+      return handler.resolve(response);
+    } on DioException catch (retryErr) {
+      return handler.next(retryErr);
+    }
+  }
 
-      final refreshResponse = await _dio.post(
+  /// Posts to the refresh endpoint and persists the new tokens.
+  /// Concurrent callers share a single in-flight request via [_refreshCompleter].
+  Future<String?> _refreshAccessToken(String refreshToken) async {
+    final inflight = _refreshCompleter;
+    if (inflight != null) return inflight.future;
+
+    final completer = Completer<String?>();
+    _refreshCompleter = completer;
+
+    try {
+      final response = await _dio.post(
         ApiConstants.authRefresh,
         data: {'refreshToken': refreshToken},
-        options: Options(
-          headers: {'Authorization': null},
-        ),
       );
 
-      final newAccess = refreshResponse.data['data']?['accessToken'] as String?;
-      final newRefresh =
-          refreshResponse.data['data']?['refreshToken'] as String?;
+      final data = response.data is Map<String, dynamic>
+          ? response.data['data'] as Map<String, dynamic>?
+          : null;
+      final newAccess = data?['accessToken'] as String?;
+      final newRefresh = data?['refreshToken'] as String?;
 
-      if (newAccess == null) {
-        await _tokenStorage.clearTokens();
-        _isRefreshing = false;
-        return handler.next(err);
+      if (newAccess == null || newAccess.isEmpty) {
+        await _invalidateSession();
+        completer.complete(null);
+        return null;
       }
 
       await _tokenStorage.saveTokens(
         access: newAccess,
-        refresh: newRefresh ?? refreshToken,
+        refresh: (newRefresh != null && newRefresh.isNotEmpty)
+            ? newRefresh
+            : refreshToken,
       );
-
-      // Retry original request
-      options.headers['Authorization'] = 'Bearer $newAccess';
-      final retryResponse = await _dio.fetch(options);
-
-      // Retry any pending requests that came in during refresh
-      for (final pending in _pendingRequests) {
-        pending.headers['Authorization'] = 'Bearer $newAccess';
-        _dio.fetch(pending);
-      }
-      _pendingRequests.clear();
-      _isRefreshing = false;
-
-      return handler.resolve(retryResponse);
+      completer.complete(newAccess);
+      return newAccess;
     } catch (_) {
-      await _tokenStorage.clearTokens();
-      _pendingRequests.clear();
-      _isRefreshing = false;
-      return handler.next(err);
+      await _invalidateSession();
+      completer.complete(null);
+      return null;
+    } finally {
+      _refreshCompleter = null;
     }
   }
+
+  Future<void> _invalidateSession() async {
+    await _tokenStorage.clearTokens();
+    onSessionExpired?.call();
+  }
+
+  bool _isAuthEndpoint(RequestOptions options) =>
+      _isRefreshEndpoint(options) || _isLoginEndpoint(options);
+
+  bool _isRefreshEndpoint(RequestOptions options) =>
+      options.path == ApiConstants.authRefresh ||
+      options.uri.path.endsWith(ApiConstants.authRefresh);
+
+  bool _isLoginEndpoint(RequestOptions options) =>
+      options.path == ApiConstants.authGoogle ||
+      options.uri.path.endsWith(ApiConstants.authGoogle);
 }

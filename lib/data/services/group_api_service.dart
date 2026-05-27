@@ -32,6 +32,7 @@ class GroupApiService {
   Future<GroupModel> createGroup({
     required String name,
     String? description,
+    String? avatar,
     List<String> memberIds = const [],
   }) async {
     if (_useMock) {
@@ -40,6 +41,7 @@ class GroupApiService {
         id: 'grp_${now.millisecondsSinceEpoch}',
         name: name,
         description: description,
+        avatar: avatar,
         createdById: 'user_1',
         members: [_mockMember('user_1', 'You', 'you@email.com', role: 'ADMIN')],
         createdAt: now,
@@ -51,10 +53,18 @@ class GroupApiService {
       data: {
         'name': name,
         if (description != null) 'description': description,
+        if (avatar != null) 'avatar': avatar,
         if (memberIds.isNotEmpty) 'memberIds': memberIds,
       },
     );
-    return GroupModel.fromJson(res.data['data'] as Map<String, dynamic>);
+    final created =
+        GroupModel.fromJson(res.data['data'] as Map<String, dynamic>);
+    // If the backend ignored the avatar field we sent, preserve it locally so
+    // the picked icon at least persists in this session.
+    if (avatar != null && (created.avatar == null || created.avatar!.isEmpty)) {
+      return created.copyWith(avatar: avatar);
+    }
+    return created;
   }
 
   Future<GroupModel> getGroup(String groupId) async {
@@ -143,6 +153,9 @@ class GroupApiService {
     String? splitType,
     List<Map<String, dynamic>>? participants,
     String? notes,
+    String? date,
+    String? appIcon,
+    bool clearAppIcon = false,
   }) async {
     final res = await _dio.patch(
       ApiConstants.expenseById(expenseId),
@@ -153,6 +166,9 @@ class GroupApiService {
         if (splitType != null) 'splitType': splitType,
         if (participants != null) 'participants': participants,
         if (notes != null) 'notes': notes,
+        if (date != null) 'date': date,
+        if (appIcon != null) 'appIcon': appIcon,
+        if (clearAppIcon) 'appIcon': null,
       },
     );
     return GroupExpenseModel.fromJson(res.data['data'] as Map<String, dynamic>);
@@ -171,6 +187,7 @@ class GroupApiService {
     required List<Map<String, dynamic>> participants,
     String? notes,
     String? date,
+    String? appIcon,
   }) async {
     if (_useMock) {
       final now = DateTime.now();
@@ -202,10 +219,16 @@ class GroupApiService {
         'participants': participants,
         if (notes != null) 'notes': notes,
         if (date != null) 'date': date,
+        if (appIcon != null) 'appIcon': appIcon,
       },
     );
-    return GroupExpenseModel.fromJson(
+    final created = GroupExpenseModel.fromJson(
         res.data['data'] as Map<String, dynamic>);
+    // Preserve the chosen icon locally if backend doesn't echo it back.
+    if (appIcon != null && created.appIcon == null) {
+      return created.copyWithAppIcon(appIcon);
+    }
+    return created;
   }
 
   // ──────────────────────────────────────────────

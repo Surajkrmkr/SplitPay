@@ -31,26 +31,34 @@ class TransactionNotifier extends StateNotifier<List<Transaction>> {
   }
 }
 
-// Computed providers
+// Month currently shown on the home dashboard. Defaults to the current month
+// at app start; the dashboard's month selector mutates it.
+final selectedMonthProvider = StateProvider<DateTime>((_) {
+  final now = DateTime.now();
+  return DateTime(now.year, now.month);
+});
+
+// Computed providers — scoped to [selectedMonthProvider] so the home dashboard
+// can navigate between months. The analytics screen also watches these.
 final totalIncomeProvider = Provider<double>((ref) {
   final txs = ref.watch(transactionProvider);
-  final now = DateTime.now();
+  final month = ref.watch(selectedMonthProvider);
   return txs
       .where((t) =>
           t.type == TransactionType.income &&
-          t.date.year == now.year &&
-          t.date.month == now.month)
+          t.date.year == month.year &&
+          t.date.month == month.month)
       .fold(0, (sum, t) => sum + t.amount);
 });
 
 final totalExpenseProvider = Provider<double>((ref) {
   final txs = ref.watch(transactionProvider);
-  final now = DateTime.now();
+  final month = ref.watch(selectedMonthProvider);
   return txs
       .where((t) =>
           t.type == TransactionType.expense &&
-          t.date.year == now.year &&
-          t.date.month == now.month)
+          t.date.year == month.year &&
+          t.date.month == month.month)
       .fold(0, (sum, t) => sum + t.amount);
 });
 
@@ -60,17 +68,43 @@ final balanceProvider = Provider<double>((ref) {
   return income - expense;
 });
 
+// Same totals but for the previous month — used to show MoM deltas on the
+// dashboard without rebinding the global selection.
+final previousMonthExpenseProvider = Provider<double>((ref) {
+  final txs = ref.watch(transactionProvider);
+  final selected = ref.watch(selectedMonthProvider);
+  final prev = DateTime(selected.year, selected.month - 1);
+  return txs
+      .where((t) =>
+          t.type == TransactionType.expense &&
+          t.date.year == prev.year &&
+          t.date.month == prev.month)
+      .fold(0, (sum, t) => sum + t.amount);
+});
+
+final previousMonthIncomeProvider = Provider<double>((ref) {
+  final txs = ref.watch(transactionProvider);
+  final selected = ref.watch(selectedMonthProvider);
+  final prev = DateTime(selected.year, selected.month - 1);
+  return txs
+      .where((t) =>
+          t.type == TransactionType.income &&
+          t.date.year == prev.year &&
+          t.date.month == prev.month)
+      .fold(0, (sum, t) => sum + t.amount);
+});
+
 final recentTransactionsProvider = Provider<List<Transaction>>((ref) {
   return ref.watch(transactionProvider).take(5).toList();
 });
 
 final categoryBreakdownProvider = Provider<Map<Category, double>>((ref) {
   final txs = ref.watch(transactionProvider);
-  final now = DateTime.now();
+  final month = ref.watch(selectedMonthProvider);
   final expenses = txs.where((t) =>
       t.type == TransactionType.expense &&
-      t.date.year == now.year &&
-      t.date.month == now.month);
+      t.date.year == month.year &&
+      t.date.month == month.month);
 
   final map = <Category, double>{};
   for (final tx in expenses) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/transaction_model.dart';
@@ -14,6 +15,7 @@ class CategoryOverview extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final breakdown = ref.watch(categoryBreakdownProvider);
     final currency = ref.watch(currencyProvider);
+    final selectedMonth = ref.watch(selectedMonthProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (breakdown.isEmpty) {
@@ -24,6 +26,13 @@ class CategoryOverview extends ConsumerWidget {
     final sorted = breakdown.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
     final top = sorted.take(4).toList();
+
+    final now = DateTime.now();
+    final isCurrent = selectedMonth.year == now.year &&
+        selectedMonth.month == now.month;
+    final monthLabel = isCurrent
+        ? 'This month'
+        : DateFormat('MMM yyyy').format(selectedMonth);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -40,7 +49,7 @@ class CategoryOverview extends ConsumerWidget {
                     ),
               ),
               Text(
-                'This month',
+                monthLabel,
                 style: TextStyle(
                   color: AppColors.textSecondary,
                   fontSize: 12,

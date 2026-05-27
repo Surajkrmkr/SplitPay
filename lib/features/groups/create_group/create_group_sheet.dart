@@ -3,10 +3,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../data/models/auth_user_model.dart';
-import '../../../data/services/group_api_service.dart';
+import '../../../core/utils/group_icons.dart';
 import '../../../providers/group_provider.dart';
-import '../../../shared/widgets/avatar_widget.dart';
 import '../../../shared/widgets/sp_button.dart';
 
 class CreateGroupSheet extends ConsumerStatefulWidget {
@@ -19,45 +17,15 @@ class CreateGroupSheet extends ConsumerStatefulWidget {
 class _CreateGroupSheetState extends ConsumerState<CreateGroupSheet> {
   final _nameController = TextEditingController();
   final _descController = TextEditingController();
-  final _searchController = TextEditingController();
 
-  final List<AuthUserModel> _addedMembers = [];
-  List<AuthUserModel> _searchResults = [];
-  bool _searching = false;
+  String _selectedIconKey = GroupIcons.defaultKey;
   bool _creating = false;
-  String _searchQuery = '';
 
   @override
   void dispose() {
     _nameController.dispose();
     _descController.dispose();
-    _searchController.dispose();
     super.dispose();
-  }
-
-  Future<void> _search(String q) async {
-    setState(() {
-      _searchQuery = q;
-      _searching = q.isNotEmpty;
-    });
-    if (q.isEmpty) {
-      setState(() => _searchResults = []);
-      return;
-    }
-    try {
-      final results =
-          await ref.read(groupApiServiceProvider).searchUsers(q);
-      if (mounted && _searchQuery == q) {
-        setState(() {
-          _searchResults = results
-              .where((u) => !_addedMembers.any((m) => m.id == u.id))
-              .toList();
-          _searching = false;
-        });
-      }
-    } catch (_) {
-      if (mounted) setState(() => _searching = false);
-    }
   }
 
   Future<void> _createGroup() async {
@@ -70,11 +38,11 @@ class _CreateGroupSheetState extends ConsumerState<CreateGroupSheet> {
             description: _descController.text.trim().isEmpty
                 ? null
                 : _descController.text.trim(),
-            memberIds: _addedMembers.map((m) => m.id).toList(),
+            avatar: GroupIcons.encode(_selectedIconKey),
           );
       if (mounted) {
         Navigator.of(context).pop();
-        context.push('/groups/${group.id}');
+        context.push('/groups/${group.id}/invite');
       }
     } catch (e) {
       if (mounted) {
@@ -110,7 +78,6 @@ class _CreateGroupSheetState extends ConsumerState<CreateGroupSheet> {
           ),
           child: Column(
             children: [
-              // Handle
               const SizedBox(height: 12),
               Container(
                 width: 40,
@@ -121,10 +88,9 @@ class _CreateGroupSheetState extends ConsumerState<CreateGroupSheet> {
                 ),
               ),
               const SizedBox(height: 4),
-
-              // Header
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 child: Row(
                   children: [
                     Text(
@@ -144,13 +110,47 @@ class _CreateGroupSheetState extends ConsumerState<CreateGroupSheet> {
                   ],
                 ),
               ),
-
               Expanded(
                 child: ListView(
                   controller: scrollController,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   children: [
-                    // Group name field
+                    // Live preview avatar
+                    Center(
+                      child: Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: (GroupIcons.colors[_selectedIconKey] ??
+                                  AppColors.primary)
+                              .withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: GroupIcons.colors[_selectedIconKey] ??
+                                AppColors.primary,
+                            width: 2,
+                          ),
+                        ),
+                        child: Icon(
+                          GroupIcons.all[_selectedIconKey],
+                          color: GroupIcons.colors[_selectedIconKey] ??
+                              AppColors.primary,
+                          size: 38,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+
+                    _SectionLabel(label: 'Group Icon', isDark: isDark),
+                    const SizedBox(height: 10),
+                    _IconPicker(
+                      selectedKey: _selectedIconKey,
+                      isDark: isDark,
+                      onSelect: (key) =>
+                          setState(() => _selectedIconKey = key),
+                    ),
+                    const SizedBox(height: 22),
+
                     _SectionLabel(label: 'Group Name *', isDark: isDark),
                     const SizedBox(height: 8),
                     _StyledTextField(
@@ -161,8 +161,8 @@ class _CreateGroupSheetState extends ConsumerState<CreateGroupSheet> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Description field
-                    _SectionLabel(label: 'Description (optional)', isDark: isDark),
+                    _SectionLabel(
+                        label: 'Description (optional)', isDark: isDark),
                     const SizedBox(height: 8),
                     _StyledTextField(
                       controller: _descController,
@@ -172,67 +172,68 @@ class _CreateGroupSheetState extends ConsumerState<CreateGroupSheet> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Add members
-                    _SectionLabel(label: 'Add Members', isDark: isDark),
-                    const SizedBox(height: 8),
-                    _StyledTextField(
-                      controller: _searchController,
-                      hint: 'Search by name or email…',
-                      isDark: isDark,
-                      prefixIcon: Icons.search_rounded,
-                      onChanged: _search,
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Added members chips
-                    if (_addedMembers.isNotEmpty) ...[
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: _addedMembers
-                            .map((u) => _MemberChip(
-                                  user: u,
-                                  onRemove: () =>
-                                      setState(() => _addedMembers.remove(u)),
-                                ))
-                            .toList(),
+                    // Invite hint
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppColors.secondary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: AppColors.secondary.withValues(alpha: 0.25),
+                          width: 0.8,
+                        ),
                       ),
-                      const SizedBox(height: 16),
-                    ],
-
-                    // Search results
-                    if (_searching)
-                      const Center(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 16),
-                          child: CircularProgressIndicator(
-                            color: AppColors.primary,
-                            strokeWidth: 2,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(7),
+                            decoration: BoxDecoration(
+                              color: AppColors.secondary
+                                  .withValues(alpha: 0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.qr_code_2_rounded,
+                              color: AppColors.secondary,
+                              size: 18,
+                            ),
                           ),
-                        ),
-                      )
-                    else if (_searchResults.isNotEmpty)
-                      ..._searchResults.map(
-                        (u) => _UserResultTile(
-                          user: u,
-                          onAdd: () {
-                            setState(() {
-                              _addedMembers.add(u);
-                              _searchResults.remove(u);
-                              _searchController.clear();
-                              _searchResults = [];
-                            });
-                          },
-                          isDark: isDark,
-                        ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Invite by share code',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: isDark
+                                        ? Colors.white
+                                        : AppColors.textLight,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  'Once the group is created, you\'ll get a share code & QR to invite members.',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
+                    ).animate().fadeIn(duration: 250.ms),
 
                     const SizedBox(height: 32),
                   ],
                 ),
               ),
-
-              // Bottom action bar
               AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeOut,
@@ -285,6 +286,63 @@ class _CreateGroupSheetState extends ConsumerState<CreateGroupSheet> {
   }
 }
 
+class _IconPicker extends StatelessWidget {
+  final String selectedKey;
+  final bool isDark;
+  final ValueChanged<String> onSelect;
+
+  const _IconPicker({
+    required this.selectedKey,
+    required this.isDark,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final entries = GroupIcons.all.entries.toList();
+    return SizedBox(
+      height: 64,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: entries.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (_, i) {
+          final e = entries[i];
+          final selected = e.key == selectedKey;
+          final color = GroupIcons.colors[e.key] ?? AppColors.primary;
+          return GestureDetector(
+            onTap: () => onSelect(e.key),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: selected
+                    ? color.withValues(alpha: 0.18)
+                    : (isDark ? AppColors.darkCard : AppColors.lightCard),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: selected
+                      ? color
+                      : (isDark
+                          ? AppColors.darkBorder
+                          : AppColors.lightBorder),
+                  width: selected ? 2 : 1,
+                ),
+              ),
+              child: Icon(
+                e.value,
+                color: selected ? color : AppColors.textSecondary,
+                size: 24,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
 class _SectionLabel extends StatelessWidget {
   final String label;
   final bool isDark;
@@ -309,7 +367,6 @@ class _StyledTextField extends StatelessWidget {
   final String hint;
   final bool isDark;
   final int maxLines;
-  final IconData? prefixIcon;
   final ValueChanged<String>? onChanged;
 
   const _StyledTextField({
@@ -317,7 +374,6 @@ class _StyledTextField extends StatelessWidget {
     required this.hint,
     required this.isDark,
     this.maxLines = 1,
-    this.prefixIcon,
     this.onChanged,
   });
 
@@ -334,9 +390,6 @@ class _StyledTextField extends StatelessWidget {
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: TextStyle(color: AppColors.textTertiary, fontSize: 14),
-        prefixIcon: prefixIcon != null
-            ? Icon(prefixIcon, color: AppColors.textTertiary, size: 20)
-            : null,
         filled: true,
         fillColor: isDark ? AppColors.darkCard : AppColors.lightCard,
         border: OutlineInputBorder(
@@ -359,84 +412,5 @@ class _StyledTextField extends StatelessWidget {
             const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       ),
     );
-  }
-}
-
-class _MemberChip extends StatelessWidget {
-  final AuthUserModel user;
-  final VoidCallback onRemove;
-
-  const _MemberChip({required this.user, required this.onRemove});
-
-  @override
-  Widget build(BuildContext context) {
-    return Chip(
-      avatar: AvatarWidget(name: user.name, size: 24),
-      label: Text(user.name.split(' ').first),
-      deleteIcon: const Icon(Icons.close_rounded, size: 14),
-      onDeleted: onRemove,
-      backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-      labelStyle: const TextStyle(
-        color: AppColors.primary,
-        fontSize: 13,
-        fontWeight: FontWeight.w600,
-      ),
-      deleteIconColor: AppColors.primary,
-      side: BorderSide.none,
-    );
-  }
-}
-
-class _UserResultTile extends StatelessWidget {
-  final AuthUserModel user;
-  final VoidCallback onAdd;
-  final bool isDark;
-
-  const _UserResultTile({
-    required this.user,
-    required this.onAdd,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: AvatarWidget(
-        imageUrl: user.avatar,
-        name: user.name,
-        size: 40,
-      ),
-      title: Text(
-        user.name,
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: isDark ? Colors.white : AppColors.textLight,
-        ),
-      ),
-      subtitle: Text(
-        user.email,
-        style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-      ),
-      trailing: GestureDetector(
-        onTap: onAdd,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: const Text(
-            '+ Add',
-            style: TextStyle(
-              color: AppColors.primary,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ),
-    ).animate().fadeIn(duration: 200.ms);
   }
 }

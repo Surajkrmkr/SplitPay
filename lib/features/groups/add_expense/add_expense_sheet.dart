@@ -3,12 +3,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/category_app_icons.dart';
 import '../../../data/models/group_model.dart';
 import '../../../data/models/member_model.dart';
+import '../../../data/models/transaction_model.dart';
 import '../../../data/services/group_api_service.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/group_provider.dart';
 import '../../../providers/settings_provider.dart';
+import '../../../shared/widgets/app_icon_picker.dart';
 import '../../../shared/widgets/avatar_widget.dart';
 import '../../../shared/widgets/sp_button.dart';
 
@@ -35,6 +38,8 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
   late String _currentUserId;
   late List<String> _selectedParticipantIds;
   DateTime _selectedDate = DateTime.now();
+  Category _iconCategory = Category.food; // local filter for the picker
+  String? _appIcon;
 
   // For percentage split: map userId -> %
   final Map<String, TextEditingController> _percentControllers = {};
@@ -157,6 +162,7 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
                 ? null
                 : _noteController.text.trim(),
             date: _selectedDate.toUtc().toIso8601String(),
+            appIcon: _appIcon,
           );
       ref.invalidate(groupExpensesProvider(widget.group.id));
       ref.invalidate(groupBalancesProvider(widget.group.id));
@@ -263,13 +269,52 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
                     ),
                     const SizedBox(height: 16),
 
-                    // Date
-                    _label('Date', isDark),
+                    // App icon picker — category filter + suggestions
+                    _label('Icon (optional)', isDark),
                     const SizedBox(height: 8),
-                    _DatePickerTile(
-                      selectedDate: _selectedDate,
+                    IconCategoryFilter(
+                      selected: _iconCategory,
                       isDark: isDark,
-                      onChanged: (d) => setState(() => _selectedDate = d),
+                      onChanged: (c) => setState(() {
+                        _iconCategory = c;
+                        if (_appIcon != null &&
+                            !CategoryAppIcons.iconsFor(c).contains(_appIcon)) {
+                          _appIcon = null;
+                        }
+                      }),
+                    ),
+                    const SizedBox(height: 10),
+                    AppIconPicker(
+                      category: _iconCategory,
+                      selected: _appIcon,
+                      onSelected: (v) => setState(() => _appIcon = v),
+                      isDark: isDark,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Date & Time
+                    _label('Date & Time', isDark),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _DatePickerTile(
+                            selectedDate: _selectedDate,
+                            isDark: isDark,
+                            onChanged: (d) =>
+                                setState(() => _selectedDate = d),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _TimePickerTile(
+                            selectedDate: _selectedDate,
+                            isDark: isDark,
+                            onChanged: (d) =>
+                                setState(() => _selectedDate = d),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 16),
 
@@ -591,19 +636,28 @@ class _DatePickerTile extends StatelessWidget {
         child: child!,
       ),
     );
-    if (picked != null) onChanged(picked);
+    if (picked == null) return;
+    // Preserve the time-of-day component when only the date changes.
+    onChanged(DateTime(
+      picked.year,
+      picked.month,
+      picked.day,
+      selectedDate.hour,
+      selectedDate.minute,
+    ));
   }
 
   @override
   Widget build(BuildContext context) {
-    final label = DateFormat('EEE, d MMM yyyy').format(selectedDate);
     final isToday = DateFormat('yyyyMMdd').format(selectedDate) ==
         DateFormat('yyyyMMdd').format(DateTime.now());
+    final label =
+        isToday ? 'Today' : DateFormat('d MMM yyyy').format(selectedDate);
 
     return GestureDetector(
       onTap: () => _pick(context),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
         decoration: BoxDecoration(
           color: isDark ? AppColors.darkCard : AppColors.lightCard,
           borderRadius: BorderRadius.circular(12),
@@ -615,24 +669,111 @@ class _DatePickerTile extends StatelessWidget {
           children: [
             Icon(
               Icons.calendar_today_rounded,
-              size: 18,
+              size: 16,
               color: AppColors.primary,
             ),
-            const SizedBox(width: 10),
-            Text(
-              isToday ? 'Today, ${DateFormat('d MMM').format(selectedDate)}' : label,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: isDark ? Colors.white : AppColors.textLight,
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: isDark ? Colors.white : AppColors.textLight,
+                ),
               ),
             ),
-            const Spacer(),
             Icon(
               Icons.keyboard_arrow_down_rounded,
               color: AppColors.textSecondary,
-              size: 20,
+              size: 18,
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TimePickerTile extends StatelessWidget {
+  final DateTime selectedDate;
+  final bool isDark;
+  final ValueChanged<DateTime> onChanged;
+
+  const _TimePickerTile({
+    required this.selectedDate,
+    required this.isDark,
+    required this.onChanged,
+  });
+
+  Future<void> _pick(BuildContext context) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(selectedDate),
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(
+          colorScheme: Theme.of(ctx).colorScheme.copyWith(
+                primary: AppColors.primary,
+                onPrimary: Colors.white,
+              ),
+          timePickerTheme: TimePickerThemeData(
+            dayPeriodColor: WidgetStateColor.resolveWith((states) =>
+                states.contains(WidgetState.selected)
+                    ? AppColors.primary
+                    : Colors.transparent),
+            dayPeriodTextColor: WidgetStateColor.resolveWith((states) =>
+                states.contains(WidgetState.selected)
+                    ? Colors.white
+                    : AppColors.primary),
+            dayPeriodBorderSide: const BorderSide(
+                color: AppColors.primary, width: 1),
+          ),
+        ),
+        child: child!,
+      ),
+    );
+    if (picked == null) return;
+    onChanged(DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+      picked.hour,
+      picked.minute,
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _pick(context),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkCard : AppColors.lightCard,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.access_time_rounded,
+                size: 16, color: AppColors.primary),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                TimeOfDay.fromDateTime(selectedDate).format(context),
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: isDark ? Colors.white : AppColors.textLight,
+                ),
+              ),
+            ),
+            Icon(Icons.keyboard_arrow_down_rounded,
+                color: AppColors.textSecondary, size: 18),
           ],
         ),
       ),
@@ -827,3 +968,4 @@ class ParticipantRow extends StatelessWidget {
     );
   }
 }
+

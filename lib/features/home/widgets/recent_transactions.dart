@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/category_app_icons.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../data/models/custom_category.dart';
@@ -161,7 +162,7 @@ class _TransactionItem extends ConsumerWidget {
               padding: const EdgeInsets.all(14),
               child: Row(
                 children: [
-                  // Icon
+                  // Icon — prefer the brand app icon if set on the transaction.
                   Container(
                     width: 48,
                     height: 48,
@@ -169,7 +170,20 @@ class _TransactionItem extends ConsumerWidget {
                       color: color.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: Icon(icon, color: color, size: 22),
+                    padding: transaction.appIcon != null
+                        ? const EdgeInsets.all(4)
+                        : null,
+                    child: transaction.appIcon != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.asset(
+                              CategoryAppIcons.pathFor(transaction.appIcon!),
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, __, ___) =>
+                                  Icon(icon, color: color, size: 22),
+                            ),
+                          )
+                        : Icon(icon, color: color, size: 22),
                   ),
                   const SizedBox(width: 14),
 

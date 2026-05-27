@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/network/api_client.dart';
 import '../core/network/api_constants.dart';
+import '../core/network/auth_events.dart';
 import '../core/storage/token_storage.dart';
 import '../data/models/auth_user_model.dart';
 import '../data/repositories/notification_repository.dart';
@@ -45,6 +46,14 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   Future<AuthState> build() async {
     final tokenStorage = ref.watch(tokenStorageProvider);
     final firebaseAuth = ref.watch(firebaseAuthServiceProvider);
+
+    // Reset auth state when the API client signals an invalid session
+    // (refresh token expired/missing or refresh request failed).
+    ref.listen(sessionExpiredProvider, (prev, next) {
+      if (prev != null && next > prev) {
+        _handleSessionExpired();
+      }
+    });
 
     final hasTokens = await tokenStorage.hasTokens();
     if (!hasTokens) {
@@ -184,6 +193,18 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         AuthState(status: AuthStatus.error, error: e.toString()),
       );
     }
+  }
+
+  Future<void> _handleSessionExpired() async {
+    // Tokens are already cleared by AuthInterceptor; sign out of Firebase and
+    // notification token so the next sign-in starts clean, then flip state.
+    try {
+      await NotificationService.instance.deleteToken();
+      await ref.read(firebaseAuthServiceProvider).signOut();
+    } catch (_) {}
+    state = AsyncValue.data(
+      const AuthState(status: AuthStatus.unauthenticated),
+    );
   }
 
   Future<void> _registerFcmToken(String userId) async {

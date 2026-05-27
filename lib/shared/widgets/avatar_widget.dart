@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/utils/group_icons.dart';
 
 class AvatarWidget extends StatelessWidget {
   final String? imageUrl;
@@ -44,19 +45,31 @@ class AvatarWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final appIcon = GroupIcons.iconFor(imageUrl);
+
+    final Widget child;
+    if (appIcon != null) {
+      final color = GroupIcons.colorFor(imageUrl) ?? AppColors.primary;
+      child = Container(
+        color: color,
+        alignment: Alignment.center,
+        child: Icon(appIcon, color: Colors.white, size: size * 0.5),
+      );
+    } else if (imageUrl != null && imageUrl!.isNotEmpty) {
+      child = CachedNetworkImage(
+        imageUrl: imageUrl!,
+        fit: BoxFit.cover,
+        placeholder: (_, __) => _fallback,
+        errorWidget: (_, __, ___) => _fallback,
+      );
+    } else {
+      child = _fallback;
+    }
+
     final widget = SizedBox(
       width: size,
       height: size,
-      child: ClipOval(
-        child: imageUrl != null && imageUrl!.isNotEmpty
-            ? CachedNetworkImage(
-                imageUrl: imageUrl!,
-                fit: BoxFit.cover,
-                placeholder: (_, __) => _fallback,
-                errorWidget: (_, __, ___) => _fallback,
-              )
-            : _fallback,
-      ),
+      child: ClipOval(child: child),
     );
 
     if (onTap != null) {

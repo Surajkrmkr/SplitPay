@@ -8,6 +8,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../data/services/group_api_service.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../providers/group_provider.dart';
 import '../../../shared/widgets/sp_button.dart';
 
@@ -191,6 +192,20 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    // Only admins can generate invite codes — derived from the group's member roster.
+    bool isAdmin = false;
+    if (!_joinOnly) {
+      final groupAsync = ref.watch(groupDetailProvider(widget.groupId!));
+      final currentUserId = ref.watch(currentUserProvider)?.id;
+      final group = groupAsync.valueOrNull;
+      if (group != null && currentUserId != null) {
+        final me = group.members
+            .where((m) => m.userId == currentUserId)
+            .firstOrNull;
+        isAdmin = me?.isAdmin ?? false;
+      }
+    }
+
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBg : AppColors.lightBg,
       appBar: AppBar(
@@ -231,6 +246,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
               children: [
                 _GenerateTab(
                   isDark: isDark,
+                  isAdmin: isAdmin,
                   generatedCode: _generatedCode,
                   expiresAt: _expiresAt,
                   generating: _generating,
@@ -258,6 +274,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
 
 class _GenerateTab extends StatelessWidget {
   final bool isDark;
+  final bool isAdmin;
   final String? generatedCode;
   final DateTime? expiresAt;
   final bool generating;
@@ -267,6 +284,7 @@ class _GenerateTab extends StatelessWidget {
 
   const _GenerateTab({
     required this.isDark,
+    required this.isAdmin,
     required this.generatedCode,
     required this.expiresAt,
     required this.generating,
@@ -419,12 +437,18 @@ class _GenerateTab extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  Icon(Icons.qr_code_2_rounded,
-                      size: 64,
-                      color: AppColors.primary.withValues(alpha: 0.5)),
+                  Icon(
+                    isAdmin
+                        ? Icons.qr_code_2_rounded
+                        : Icons.lock_outline_rounded,
+                    size: 64,
+                    color: AppColors.primary.withValues(alpha: 0.5),
+                  ),
                   const SizedBox(height: 16),
                   Text(
-                    'No active invite code',
+                    isAdmin
+                        ? 'No active invite code'
+                        : 'Admin permission required',
                     style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -432,20 +456,33 @@ class _GenerateTab extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Tap below to generate a code + QR',
+                    isAdmin
+                        ? 'Tap below to generate a code + QR'
+                        : 'Only group admins can generate invite codes. Ask an admin to share an invite with you.',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                         fontSize: 13,
-                        color: AppColors.textSecondary),
+                        color: AppColors.textSecondary,
+                        height: 1.4),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 32),
-            SpButton(
-              label: 'Generate Invite Code',
-              onTap: generating ? null : onGenerate,
-              isLoading: generating,
-              icon: Icons.add_link_rounded,
+            Tooltip(
+              message: isAdmin
+                  ? ''
+                  : 'Only admins can create invite codes for this group',
+              triggerMode: TooltipTriggerMode.tap,
+              showDuration: const Duration(seconds: 3),
+              child: SpButton(
+                label: 'Generate Invite Code',
+                onTap: (isAdmin && !generating) ? onGenerate : null,
+                isLoading: generating,
+                icon: isAdmin
+                    ? Icons.add_link_rounded
+                    : Icons.lock_outline_rounded,
+              ),
             ),
           ],
         ],

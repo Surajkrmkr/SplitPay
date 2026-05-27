@@ -27,12 +27,14 @@ class GroupsNotifier extends AsyncNotifier<List<GroupModel>> {
   Future<GroupModel> createGroup(
     String name, {
     String? description,
+    String? avatar,
     List<String> memberIds = const [],
   }) async {
     final service = ref.read(groupApiServiceProvider);
     final group = await service.createGroup(
       name: name,
       description: description,
+      avatar: avatar,
       memberIds: memberIds,
     );
     final current = state.valueOrNull ?? [];

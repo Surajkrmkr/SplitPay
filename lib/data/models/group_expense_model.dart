@@ -11,6 +11,7 @@ class GroupExpenseModel {
   final String splitType;
   final List<ExpenseParticipantModel> participants;
   final String? notes;
+  final String? appIcon;
   final DateTime date;
   final DateTime createdAt;
 
@@ -25,6 +26,7 @@ class GroupExpenseModel {
     required this.splitType,
     required this.participants,
     this.notes,
+    this.appIcon,
     required this.date,
     required this.createdAt,
   });
@@ -45,6 +47,7 @@ class GroupExpenseModel {
               ExpenseParticipantModel.fromJson(p as Map<String, dynamic>))
           .toList(),
       notes: json['notes'] as String?,
+      appIcon: json['appIcon'] as String?,
       date: DateTime.parse(json['date'] as String),
       createdAt: DateTime.parse(json['createdAt'] as String),
     );
@@ -62,6 +65,7 @@ class GroupExpenseModel {
       'splitType': splitType,
       'participants': participants.map((p) => p.toJson()).toList(),
       'notes': notes,
+      'appIcon': appIcon,
       'date': date.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
     };
@@ -71,4 +75,20 @@ class GroupExpenseModel {
     final participant = participants.where((p) => p.userId == userId).firstOrNull;
     return participant?.share ?? 0.0;
   }
+
+  GroupExpenseModel copyWithAppIcon(String? appIcon) => GroupExpenseModel(
+        id: id,
+        groupId: groupId,
+        title: title,
+        amount: amount,
+        paidById: paidById,
+        paidByName: paidByName,
+        paidByAvatar: paidByAvatar,
+        splitType: splitType,
+        participants: participants,
+        notes: notes,
+        appIcon: appIcon,
+        date: date,
+        createdAt: createdAt,
+      );
 }

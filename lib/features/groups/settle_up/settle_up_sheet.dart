@@ -59,6 +59,18 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
     );
     _upiIdCtrl = TextEditingController();
     _noteCtrl = TextEditingController();
+    // Load installed UPI apps up front so the method-picker can preview them.
+    _loadInstalledApps();
+  }
+
+  Future<void> _loadInstalledApps() async {
+    setState(() => _loadingApps = true);
+    final apps = await ref.read(upiServiceProvider).getInstalledApps();
+    if (!mounted) return;
+    setState(() {
+      _upiApps = apps;
+      _loadingApps = false;
+    });
   }
 
   @override
@@ -71,17 +83,13 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
 
   // ── Navigation ──────────────────────────────────────────────────────────────
 
-  void _goToUpiForm() async {
-    setState(() {
-      _view = _SheetView.upiForm;
-      _loadingApps = true;
-    });
-    final apps = await ref.read(upiServiceProvider).getInstalledApps();
-    if (!mounted) return;
-    setState(() {
-      _upiApps = apps;
-      _loadingApps = false;
-    });
+  void _goToUpiForm() {
+    setState(() => _view = _SheetView.upiForm);
+    // Apps were preloaded in initState; refresh in the background in case the
+    // user installed something while the sheet was open.
+    if (_upiApps.isEmpty && !_loadingApps) {
+      _loadInstalledApps();
+    }
   }
 
   void _goToAppPicker() {
@@ -328,6 +336,7 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
           isLoading: _manualSettling,
           amountCtrl: _amountCtrl,
           noteCtrl: _noteCtrl,
+          upiApps: _upiApps,
         ),
       _SheetView.upiForm => _UpiFormView(
           key: const ValueKey('upiForm'),
@@ -376,6 +385,7 @@ class _MethodPickerView extends ConsumerWidget {
   final bool isLoading;
   final TextEditingController amountCtrl;
   final TextEditingController noteCtrl;
+  final List<UpiApp> upiApps;
 
   const _MethodPickerView({
     super.key,
@@ -387,6 +397,7 @@ class _MethodPickerView extends ConsumerWidget {
     required this.isLoading,
     required this.amountCtrl,
     required this.noteCtrl,
+    required this.upiApps,
   });
 
   @override
@@ -456,7 +467,7 @@ class _MethodPickerView extends ConsumerWidget {
             iconBg: const Color(0xFF5B6EF5),
             title: 'Pay via UPI',
             subtitle: 'Instant · Secure · Free',
-            trailing: _UpiAppPills(),
+            trailing: _UpiAppPills(apps: upiApps),
             onTap: onUpi,
           ).animate().fadeIn(duration: 250.ms).slideY(begin: 0.06),
           const SizedBox(height: 12),
@@ -1292,25 +1303,81 @@ class _OptionCardState extends State<_OptionCard> {
 }
 
 class _UpiAppPills extends StatelessWidget {
+  final List<UpiApp> apps;
+  const _UpiAppPills({required this.apps});
+
   @override
   Widget build(BuildContext context) {
-    final popular = ['G', 'P', 'Pa'];
+    // Leave blank when no UPI apps are installed.
+    if (apps.isEmpty) return const SizedBox.shrink();
+
+    // Show up to 3 app icons + a "+N" pill if there are more.
+    final visible = apps.take(3).toList();
+    final extra = apps.length - visible.length;
+
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: popular
-          .map((l) => Container(
-                width: 22,
-                height: 22,
-                margin: const EdgeInsets.only(left: 3),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF5B6EF5), Color(0xFF00D09C)],
+      children: [
+        for (final app in visible)
+          Padding(
+            padding: const EdgeInsets.only(left: 3),
+            child: _UpiAppIcon(app: app),
+          ),
+        if (extra > 0)
+          Padding(
+            padding: const EdgeInsets.only(left: 3),
+            child: Container(
+              width: 22,
+              height: 22,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.primary.withValues(alpha: 0.15),
+                border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.4),
+                    width: 0.6),
+              ),
+              child: Text(
+                '+$extra',
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _UpiAppIcon extends StatelessWidget {
+  final UpiApp app;
+  const _UpiAppIcon({required this.app});
+
+  @override
+  Widget build(BuildContext context) {
+    final hasIcon = app.icon != null && app.icon!.isNotEmpty;
+    return ClipOval(
+      child: SizedBox(
+        width: 22,
+        height: 22,
+        child: hasIcon
+            ? Image.memory(app.icon!, fit: BoxFit.cover)
+            : Container(
+                color: AppColors.primary.withValues(alpha: 0.2),
+                alignment: Alignment.center,
+                child: Text(
+                  app.name.isNotEmpty ? app.name[0].toUpperCase() : '?',
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                child: Center(child: Text(l, style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w700))),
-              ))
-          .toList(),
+              ),
+      ),
     );
   }
 }

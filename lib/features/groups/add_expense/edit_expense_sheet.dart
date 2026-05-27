@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/category_app_icons.dart';
 import '../../../data/models/group_expense_model.dart';
 import '../../../data/models/group_model.dart';
+import '../../../data/models/transaction_model.dart';
 import '../../../data/services/group_api_service.dart';
 import '../../../providers/group_provider.dart';
 import '../../../providers/settings_provider.dart';
+import '../../../shared/widgets/app_icon_picker.dart';
 import '../../../shared/widgets/sp_button.dart';
 import 'add_expense_sheet.dart';
 
@@ -30,6 +34,9 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
   late String _splitType;
   late String _paidById;
   late List<String> _selectedParticipantIds;
+  late DateTime _selectedDate;
+  late String? _appIcon;
+  late Category _iconCategory;
 
   final Map<String, TextEditingController> _percentControllers = {};
   final Map<String, TextEditingController> _exactControllers = {};
@@ -46,6 +53,14 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
     _splitType = widget.expense.splitType;
     _paidById = widget.expense.paidById;
     _selectedParticipantIds = widget.expense.participants.map((p) => p.userId).toList();
+    _selectedDate = widget.expense.date;
+    _appIcon = widget.expense.appIcon;
+    // Seed the category filter from the existing icon if we can map it back,
+    // otherwise default to Food (most common).
+    _iconCategory = (_appIcon != null
+            ? CategoryAppIcons.categoryFor(_appIcon!)
+            : null) ??
+        Category.food;
 
     final initialIndex = ['EQUAL', 'PERCENTAGE', 'EXACT'].indexOf(_splitType);
     _splitTabController = TabController(
@@ -147,6 +162,9 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
             splitType: _splitType,
             participants: _buildParticipants(),
             notes: _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
+            date: _selectedDate.toUtc().toIso8601String(),
+            appIcon: _appIcon,
+            clearAppIcon: _appIcon == null && widget.expense.appIcon != null,
           );
       ref.invalidate(groupExpensesProvider(widget.expense.groupId));
       ref.invalidate(groupBalancesProvider(widget.expense.groupId));
@@ -239,6 +257,51 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
                       hint: 'What was this for?',
                       isDark: isDark,
                       onChanged: (_) => setState(() {}),
+                    ),
+                    const SizedBox(height: 16),
+                    _label('Icon (optional)', isDark),
+                    const SizedBox(height: 8),
+                    IconCategoryFilter(
+                      selected: _iconCategory,
+                      isDark: isDark,
+                      onChanged: (c) => setState(() {
+                        _iconCategory = c;
+                        if (_appIcon != null &&
+                            !CategoryAppIcons.iconsFor(c).contains(_appIcon)) {
+                          _appIcon = null;
+                        }
+                      }),
+                    ),
+                    const SizedBox(height: 10),
+                    AppIconPicker(
+                      category: _iconCategory,
+                      selected: _appIcon,
+                      onSelected: (v) => setState(() => _appIcon = v),
+                      isDark: isDark,
+                    ),
+                    const SizedBox(height: 16),
+                    _label('Date & Time', isDark),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _EditDateTile(
+                            selectedDate: _selectedDate,
+                            isDark: isDark,
+                            onChanged: (d) =>
+                                setState(() => _selectedDate = d),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _EditTimeTile(
+                            selectedDate: _selectedDate,
+                            isDark: isDark,
+                            onChanged: (d) =>
+                                setState(() => _selectedDate = d),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 16),
                     _label('Paid by', isDark),
@@ -407,6 +470,171 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
           borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      ),
+    );
+  }
+}
+
+class _EditDateTile extends StatelessWidget {
+  final DateTime selectedDate;
+  final bool isDark;
+  final ValueChanged<DateTime> onChanged;
+
+  const _EditDateTile({
+    required this.selectedDate,
+    required this.isDark,
+    required this.onChanged,
+  });
+
+  Future<void> _pick(BuildContext context) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(
+          colorScheme: Theme.of(ctx).colorScheme.copyWith(
+                primary: AppColors.primary,
+                onPrimary: Colors.white,
+              ),
+        ),
+        child: child!,
+      ),
+    );
+    if (picked == null) return;
+    onChanged(DateTime(
+      picked.year,
+      picked.month,
+      picked.day,
+      selectedDate.hour,
+      selectedDate.minute,
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isToday = DateFormat('yyyyMMdd').format(selectedDate) ==
+        DateFormat('yyyyMMdd').format(DateTime.now());
+    final label =
+        isToday ? 'Today' : DateFormat('d MMM yyyy').format(selectedDate);
+
+    return GestureDetector(
+      onTap: () => _pick(context),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkCard : AppColors.lightCard,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.calendar_today_rounded,
+                size: 16, color: AppColors.primary),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: isDark ? Colors.white : AppColors.textLight,
+                ),
+              ),
+            ),
+            const Icon(Icons.keyboard_arrow_down_rounded,
+                color: AppColors.textSecondary, size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EditTimeTile extends StatelessWidget {
+  final DateTime selectedDate;
+  final bool isDark;
+  final ValueChanged<DateTime> onChanged;
+
+  const _EditTimeTile({
+    required this.selectedDate,
+    required this.isDark,
+    required this.onChanged,
+  });
+
+  Future<void> _pick(BuildContext context) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(selectedDate),
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(
+          colorScheme: Theme.of(ctx).colorScheme.copyWith(
+                primary: AppColors.primary,
+                onPrimary: Colors.white,
+              ),
+          timePickerTheme: TimePickerThemeData(
+            dayPeriodColor: WidgetStateColor.resolveWith((states) =>
+                states.contains(WidgetState.selected)
+                    ? AppColors.primary
+                    : Colors.transparent),
+            dayPeriodTextColor: WidgetStateColor.resolveWith((states) =>
+                states.contains(WidgetState.selected)
+                    ? Colors.white
+                    : AppColors.primary),
+            dayPeriodBorderSide: const BorderSide(
+                color: AppColors.primary, width: 1),
+          ),
+        ),
+        child: child!,
+      ),
+    );
+    if (picked == null) return;
+    onChanged(DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+      picked.hour,
+      picked.minute,
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _pick(context),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkCard : AppColors.lightCard,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.access_time_rounded,
+                size: 16, color: AppColors.primary),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                TimeOfDay.fromDateTime(selectedDate).format(context),
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: isDark ? Colors.white : AppColors.textLight,
+                ),
+              ),
+            ),
+            const Icon(Icons.keyboard_arrow_down_rounded,
+                color: AppColors.textSecondary, size: 18),
+          ],
+        ),
       ),
     );
   }
