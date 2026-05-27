@@ -11,6 +11,7 @@ import '../../../data/services/group_api_service.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/group_provider.dart';
 import '../../../providers/settings_provider.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../../../shared/widgets/avatar_widget.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/skeleton_loader.dart';
@@ -34,8 +35,31 @@ class GroupDetailScreen extends ConsumerWidget {
     return groupAsync.when(
       loading: () => Scaffold(
         backgroundColor: isDark ? AppColors.darkBg : AppColors.lightBg,
-        body: const Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
+        appBar: AppBar(
+          backgroundColor: isDark ? AppColors.darkBg : AppColors.lightBg,
+          leadingWidth: 56,
+          leading: const Padding(
+            padding: EdgeInsets.only(left: 16),
+            child: Center(child: AppBackButton()),
+          ),
+        ),
+        body: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+          children: [
+            const SkeletonBox(width: 180, height: 22, borderRadius: 6),
+            const SizedBox(height: 12),
+            const SkeletonBox(width: double.infinity, height: 56, borderRadius: 14),
+            const SizedBox(height: 20),
+            const SkeletonBox(width: double.infinity, height: 140, borderRadius: 16),
+            const SizedBox(height: 16),
+            ...List.generate(
+              4,
+              (_) => const Padding(
+                padding: EdgeInsets.symmetric(vertical: 6),
+                child: SkeletonExpenseTile(),
+              ),
+            ),
+          ],
         ),
       ),
       error: (e, _) => Scaffold(
@@ -79,6 +103,11 @@ class GroupDetailScreen extends ConsumerWidget {
               SliverAppBar(
                 pinned: true,
                 backgroundColor: isDark ? AppColors.darkBg : AppColors.lightBg,
+                leadingWidth: 56,
+                leading: const Padding(
+                  padding: EdgeInsets.only(left: 16),
+                  child: Center(child: AppBackButton()),
+                ),
                 title: Text(
                   group.name,
                   style: const TextStyle(

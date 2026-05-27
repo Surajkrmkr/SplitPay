@@ -57,6 +57,9 @@ dependencies:
   # Image
   cached_network_image: ^3.4.1
 
+  # On-device OCR — powers the Bill Scan flow on transaction & expense sheets
+  google_mlkit_text_recognition: ^0.13.1
+
   # QR code
   qr_flutter: ^4.1.0
   mobile_scanner: ^5.2.3

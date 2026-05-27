@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../data/models/transaction_model.dart';
 import '../../providers/transaction_provider.dart';
+import '../../shared/widgets/app_back_button.dart';
 import '../../shared/widgets/empty_state.dart';
 import 'widgets/edit_transaction_sheet.dart';
 import 'widgets/transaction_tile.dart';
@@ -35,13 +36,11 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 16, 20, 0),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Row(
         children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
+          const AppBackButton(),
+          const SizedBox(width: 14),
           Text(
             'Transactions',
             style: Theme.of(context).textTheme.headlineLarge?.copyWith(

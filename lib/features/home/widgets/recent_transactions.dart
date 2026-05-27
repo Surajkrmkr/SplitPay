@@ -162,29 +162,46 @@ class _TransactionItem extends ConsumerWidget {
               padding: const EdgeInsets.all(14),
               child: Row(
                 children: [
-                  // Icon — prefer the brand app icon if set on the transaction.
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(14),
+                  // Icon — app icon renders flat at the same visual size as
+                  // the fallback category glyph; the fallback path keeps the
+                  // tinted bubble.
+                  if (transaction.appIcon != null)
+                    Container(
+                      width: 48,
+                      height: 48,
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? AppColors.darkCard
+                            : AppColors.lightCard,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDark
+                              ? AppColors.darkBorder
+                              : AppColors.lightBorder,
+                          width: 0.8,
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.asset(
+                          CategoryAppIcons.pathFor(transaction.appIcon!),
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, __, ___) =>
+                              Icon(icon, color: color, size: 22),
+                        ),
+                      ),
+                    )
+                  else
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Icon(icon, color: color, size: 22),
                     ),
-                    padding: transaction.appIcon != null
-                        ? const EdgeInsets.all(4)
-                        : null,
-                    child: transaction.appIcon != null
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: Image.asset(
-                              CategoryAppIcons.pathFor(transaction.appIcon!),
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, __, ___) =>
-                                  Icon(icon, color: color, size: 22),
-                            ),
-                          )
-                        : Icon(icon, color: color, size: 22),
-                  ),
                   const SizedBox(width: 14),
 
                   // Details

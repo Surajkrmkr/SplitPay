@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../add_transaction/add_transaction_sheet.dart';
+import 'widgets/analytics_mini.dart';
 import 'widgets/balance_card.dart';
 import 'widgets/category_overview.dart';
 import 'widgets/greeting_header.dart';
@@ -39,6 +40,8 @@ class HomeScreen extends StatelessWidget {
                   const BalanceCard(),
                   const SizedBox(height: 28),
                   const CategoryOverview(),
+                  const SizedBox(height: 28),
+                  const AnalyticsMini(),
                   const SizedBox(height: 28),
                   const _SplitBanner(),
                   const SizedBox(height: 28),

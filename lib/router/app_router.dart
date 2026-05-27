@@ -12,6 +12,8 @@ import '../features/groups/group_settings/group_settings_screen.dart';
 import '../features/groups/invite/invite_screen.dart';
 import '../features/transactions/transactions_screen.dart';
 import '../features/analytics/analytics_screen.dart';
+import '../features/budget/budget_screen.dart';
+import '../features/budget/budget_detail_screen.dart';
 import '../data/models/notification_model.dart';
 import '../features/notifications/notifications_screen.dart';
 import '../features/settings/settings_screen.dart';
@@ -90,6 +92,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           transitionsBuilder: _slideTransition,
         ),
       ),
+      // Full analytics screen (accessible from home mini-analytics "Full report")
+      GoRoute(
+        path: '/analytics',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const AnalyticsScreen(),
+          transitionsBuilder: _slideTransition,
+        ),
+      ),
+      // Budget detail — outside the shell so the navbar is hidden
+      GoRoute(
+        path: '/budget/:budgetId',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: BudgetDetailScreen(
+              budgetId: state.pathParameters['budgetId']!),
+          transitionsBuilder: _slideTransition,
+        ),
+      ),
       // Group detail routes — outside the shell so the navbar is hidden
       GoRoute(
         path: '/notifications',
@@ -161,9 +182,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/analytics',
+                path: '/budget',
                 pageBuilder: (context, state) =>
-                    const NoTransitionPage(child: AnalyticsScreen()),
+                    const NoTransitionPage(child: BudgetScreen()),
               ),
             ],
           ),

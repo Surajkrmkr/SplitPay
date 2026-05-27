@@ -1035,23 +1035,13 @@ class _AppBadge extends StatelessWidget {
     return Center(
       child: Column(
         children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              gradient: AppColors.primaryGradient,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.3),
-                  blurRadius: 16,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(10),
-              child: Image.asset('assets/icon/app_icon.png'),
+          // Icon already has its own background — render flat.
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: Image.asset(
+              'assets/icon/app_icon.png',
+              width: 56,
+              height: 56,
             ),
           ),
           const SizedBox(height: 12),

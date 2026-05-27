@@ -205,30 +205,47 @@ class _ExpenseTileState extends ConsumerState<ExpenseTile> {
                         Padding(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 14, vertical: 14),
-                          child: Container(
+                          child: SizedBox(
                             width: 40,
                             height: 40,
-                            decoration: BoxDecoration(
-                              color: accentColor.withValues(alpha: 0.12),
-                              shape: BoxShape.circle,
-                            ),
-                            padding: expense.appIcon != null
-                                ? const EdgeInsets.all(4)
-                                : null,
                             child: expense.appIcon != null
-                                ? ClipOval(
-                                    child: Image.asset(
-                                      CategoryAppIcons.pathFor(
-                                          expense.appIcon!),
-                                      fit: BoxFit.contain,
-                                      errorBuilder: (_, __, ___) => Icon(
+                                // Match the AppIconPicker tile treatment: a
+                                // card-colored container with a subtle border
+                                // and `BoxFit.contain` so the brand icon reads
+                                // the same here as in the picker.
+                                ? Container(
+                                    padding: const EdgeInsets.all(3),
+                                    decoration: BoxDecoration(
+                                      color: isDark
+                                          ? AppColors.darkCard
+                                          : AppColors.lightCard,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: isDark
+                                            ? AppColors.darkBorder
+                                            : AppColors.lightBorder,
+                                        width: 0.8,
+                                      ),
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius:
+                                          BorderRadius.circular(7),
+                                      child: Image.asset(
+                                        CategoryAppIcons.pathFor(
+                                            expense.appIcon!),
+                                        fit: BoxFit.contain,
+                                        errorBuilder: (_, __, ___) => Icon(
                                           _iconFor(expense.title),
                                           color: accentColor,
-                                          size: 20),
+                                          size: 20,
+                                        ),
+                                      ),
                                     ),
                                   )
-                                : Icon(_iconFor(expense.title),
-                                    color: accentColor, size: 20),
+                                : _ExpenseIconBubble(
+                                    icon: _iconFor(expense.title),
+                                    color: accentColor,
+                                  ),
                           ),
                         ),
                         Expanded(
@@ -291,7 +308,9 @@ class _ExpenseTileState extends ConsumerState<ExpenseTile> {
                                   ],
                                 ),
                                 const SizedBox(height: 4),
-                                // Meta row — date + split type
+                                // Meta row — date + split type. Chip is
+                                // Flexible so it ellipsises before overflowing
+                                // when the date label is long.
                                 Row(
                                   children: [
                                     Icon(Icons.calendar_today_rounded,
@@ -306,10 +325,13 @@ class _ExpenseTileState extends ConsumerState<ExpenseTile> {
                                       ),
                                     ),
                                     const SizedBox(width: 8),
-                                    _SplitTypeChip(
-                                      icon: _splitTypeIcon(expense.splitType),
-                                      label:
-                                          _splitTypeLabel(expense.splitType),
+                                    Flexible(
+                                      child: _SplitTypeChip(
+                                        icon:
+                                            _splitTypeIcon(expense.splitType),
+                                        label: _splitTypeLabel(
+                                            expense.splitType),
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -419,6 +441,23 @@ class _ExpenseTileState extends ConsumerState<ExpenseTile> {
   }
 }
 
+class _ExpenseIconBubble extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  const _ExpenseIconBubble({required this.icon, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(icon, color: color, size: 20),
+    );
+  }
+}
+
 class _SplitTypeChip extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -437,12 +476,16 @@ class _SplitTypeChip extends StatelessWidget {
         children: [
           Icon(icon, size: 10, color: AppColors.primary),
           const SizedBox(width: 3),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: AppColors.primary,
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primary,
+              ),
             ),
           ),
         ],

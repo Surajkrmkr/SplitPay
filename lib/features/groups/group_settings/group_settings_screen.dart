@@ -7,7 +7,9 @@ import '../../../data/models/member_model.dart';
 import '../../../data/services/group_api_service.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/group_provider.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../../../shared/widgets/avatar_widget.dart';
+import '../../../shared/widgets/skeleton_loader.dart';
 
 class GroupSettingsScreen extends ConsumerStatefulWidget {
   final String groupId;
@@ -28,10 +30,36 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
       backgroundColor: isDark ? AppColors.darkBg : AppColors.lightBg,
       appBar: AppBar(
         backgroundColor: isDark ? AppColors.darkBg : AppColors.lightBg,
+        leadingWidth: 56,
+        leading: const Padding(
+          padding: EdgeInsets.only(left: 16),
+          child: Center(child: AppBackButton()),
+        ),
         title: const Text('Group Settings', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
       ),
       body: groupAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+        loading: () => ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          children: [
+            const SkeletonBox(
+                width: 140, height: 16, borderRadius: 6),
+            const SizedBox(height: 12),
+            const SkeletonBox(
+                width: double.infinity, height: 56, borderRadius: 12),
+            const SizedBox(height: 24),
+            const SkeletonBox(
+                width: 100, height: 14, borderRadius: 6),
+            const SizedBox(height: 10),
+            ...List.generate(
+              4,
+              (_) => const Padding(
+                padding: EdgeInsets.symmetric(vertical: 6),
+                child: SkeletonBox(
+                    width: double.infinity, height: 56, borderRadius: 12),
+              ),
+            ),
+          ],
+        ),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (group) {
           final isAdmin = group.members

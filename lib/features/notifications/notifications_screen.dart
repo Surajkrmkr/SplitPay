@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../data/models/notification_model.dart';
 import '../../providers/notification_provider.dart';
+import '../../shared/widgets/app_back_button.dart';
 import 'widgets/notification_card.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
@@ -154,9 +155,10 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       backgroundColor: isDark ? AppColors.darkBg : AppColors.lightBg,
       elevation: 0,
       scrolledUnderElevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
-        onPressed: () => context.pop(),
+      leadingWidth: 56,
+      leading: const Padding(
+        padding: EdgeInsets.only(left: 16),
+        child: Center(child: AppBackButton()),
       ),
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

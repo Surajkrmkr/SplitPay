@@ -7,6 +7,7 @@ import '../../../data/models/group_model.dart';
 import '../../../providers/group_provider.dart';
 import '../../../providers/settings_provider.dart';
 import '../../../shared/widgets/avatar_widget.dart';
+import '../../../shared/widgets/skeleton_loader.dart';
 
 class GroupCard extends ConsumerWidget {
   final GroupModel group;
@@ -102,11 +103,8 @@ class GroupCard extends ConsumerWidget {
                 lent: summary.totalLent,
                 currency: currency,
               ),
-              loading: () => const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
+              loading: () =>
+                  const SkeletonBox(width: 64, height: 26, borderRadius: 20),
               error: (_, __) => const SizedBox.shrink(),
             ),
           ],

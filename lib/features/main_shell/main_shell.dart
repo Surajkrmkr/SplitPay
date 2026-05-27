@@ -47,7 +47,7 @@ class _FloatingBottomNav extends StatelessWidget {
   static const _items = [
     _NavData(Icons.home_rounded, Icons.home_outlined, 'Home'),
     _NavData(Icons.receipt_long_rounded, Icons.receipt_long_outlined, 'History'),
-    _NavData(Icons.bar_chart_rounded, Icons.bar_chart_outlined, 'Analytics'),
+    _NavData(Icons.account_balance_wallet_rounded, Icons.account_balance_wallet_outlined, 'Budget'),
     _NavData(Icons.person_rounded, Icons.person_outline_rounded, 'Profile'),
   ];
 

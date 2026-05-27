@@ -3,6 +3,35 @@ import '../../core/constants/app_colors.dart';
 
 enum TransactionType { income, expense }
 
+/// How often a transaction is expected to repeat. Stored on the transaction
+/// so the UI can label it; auto-creation of future entries is out of scope —
+/// this is a preference, not a scheduler.
+enum RecurrenceType { none, daily, weekly, monthly, yearly }
+
+extension RecurrenceTypeExt on RecurrenceType {
+  String get label {
+    switch (this) {
+      case RecurrenceType.none: return 'One-time';
+      case RecurrenceType.daily: return 'Daily';
+      case RecurrenceType.weekly: return 'Weekly';
+      case RecurrenceType.monthly: return 'Monthly';
+      case RecurrenceType.yearly: return 'Yearly';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case RecurrenceType.none: return Icons.bolt_rounded;
+      case RecurrenceType.daily: return Icons.today_rounded;
+      case RecurrenceType.weekly: return Icons.view_week_rounded;
+      case RecurrenceType.monthly: return Icons.calendar_month_rounded;
+      case RecurrenceType.yearly: return Icons.event_repeat_rounded;
+    }
+  }
+
+  bool get isRecurring => this != RecurrenceType.none;
+}
+
 enum Category {
   food,
   shopping,
@@ -71,6 +100,7 @@ class Transaction {
   final String? note;
   final DateTime date;
   final DateTime createdAt;
+  final RecurrenceType recurrence;
 
   const Transaction({
     required this.id,
@@ -82,6 +112,7 @@ class Transaction {
     this.note,
     required this.date,
     required this.createdAt,
+    this.recurrence = RecurrenceType.none,
   });
 
   Map<String, dynamic> toMap() => {
@@ -94,6 +125,7 @@ class Transaction {
     'note': note,
     'date': date.millisecondsSinceEpoch,
     'createdAt': createdAt.millisecondsSinceEpoch,
+    'recurrence': recurrence.name,
   };
 
   factory Transaction.fromMap(Map map) => Transaction(
@@ -107,6 +139,10 @@ class Transaction {
     note: map['note'] as String?,
     date: DateTime.fromMillisecondsSinceEpoch(map['date'] as int),
     createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] as int),
+    // Old rows without `recurrence` decode to a one-time entry.
+    recurrence: map['recurrence'] is String
+        ? RecurrenceType.values.byName(map['recurrence'] as String)
+        : RecurrenceType.none,
   );
 
   Transaction copyWith({
@@ -119,6 +155,7 @@ class Transaction {
     Object? note = _unset,
     DateTime? date,
     DateTime? createdAt,
+    RecurrenceType? recurrence,
   }) =>
       Transaction(
         id: id ?? this.id,
@@ -132,6 +169,7 @@ class Transaction {
         note: note == _unset ? this.note : note as String?,
         date: date ?? this.date,
         createdAt: createdAt ?? this.createdAt,
+        recurrence: recurrence ?? this.recurrence,
       );
 }
 

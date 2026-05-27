@@ -74,24 +74,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Logo container
-                Container(
-                  width: 96,
-                  height: 96,
-                  decoration: BoxDecoration(
-                    gradient: AppColors.primaryGradient,
-                    borderRadius: BorderRadius.circular(28),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.4),
-                        blurRadius: 32,
-                        spreadRadius: 4,
-                      ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Image.asset('assets/icon/app_icon.png'),
+                // Logo — icon already has its own background; render flat
+                // with iOS-style ~22% corner radius.
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(22),
+                  child: Image.asset(
+                    'assets/icon/app_icon.png',
+                    width: 96,
+                    height: 96,
                   ),
                 )
                     .animate(onPlay: (c) => c.repeat(reverse: true))

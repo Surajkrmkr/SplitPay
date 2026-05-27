@@ -28,6 +28,7 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
   String? _customCategoryId;
   String? _appIcon;
   late DateTime _date;
+  late RecurrenceType _recurrence;
   bool _saving = false;
 
   @override
@@ -43,6 +44,7 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
     _customCategoryId = widget.transaction.customCategoryId;
     _appIcon = widget.transaction.appIcon;
     _date = widget.transaction.date;
+    _recurrence = widget.transaction.recurrence;
   }
 
   @override
@@ -68,6 +70,7 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
                   ? null
                   : _noteController.text.trim(),
               date: _date,
+              recurrence: _recurrence,
             ),
           );
       if (mounted) Navigator.of(context).pop();
@@ -410,6 +413,14 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 16),
+                    _label('Repeats', isDark),
+                    const SizedBox(height: 8),
+                    _EditRecurrencePicker(
+                      selected: _recurrence,
+                      isDark: isDark,
+                      onChanged: (r) => setState(() => _recurrence = r),
+                    ),
                     const SizedBox(height: 8),
                   ],
                 ),
@@ -502,6 +513,79 @@ class _DateTimeTile extends StatelessWidget {
                 size: 18, color: AppColors.textTertiary),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _EditRecurrencePicker extends StatelessWidget {
+  final RecurrenceType selected;
+  final bool isDark;
+  final ValueChanged<RecurrenceType> onChanged;
+
+  const _EditRecurrencePicker({
+    required this.selected,
+    required this.isDark,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 36,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: RecurrenceType.values.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final type = RecurrenceType.values[i];
+          final isSelected = type == selected;
+          return GestureDetector(
+            onTap: () => onChanged(type),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppColors.primary.withValues(alpha: 0.15)
+                    : (isDark ? AppColors.darkCard : AppColors.lightCard),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: isSelected
+                      ? AppColors.primary
+                      : (isDark
+                          ? AppColors.darkBorder
+                          : AppColors.lightBorder),
+                  width: isSelected ? 1.2 : 0.5,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    type.icon,
+                    size: 14,
+                    color: isSelected
+                        ? AppColors.primary
+                        : AppColors.textSecondary,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    type.label,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected
+                          ? AppColors.primary
+                          : AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }

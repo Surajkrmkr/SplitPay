@@ -67,13 +67,44 @@ class AnalyticsScreen extends ConsumerWidget {
 class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final canPop = Navigator.of(context).canPop();
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Text(
-        'Analytics',
-        style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-              fontWeight: FontWeight.w800,
+      child: Row(
+        children: [
+          if (canPop) ...[
+            GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkCard : AppColors.lightCard,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isDark
+                        ? AppColors.darkBorder
+                        : AppColors.lightBorder,
+                    width: 0.5,
+                  ),
+                ),
+                child: Icon(
+                  Icons.arrow_back_rounded,
+                  size: 20,
+                  color: isDark ? Colors.white : AppColors.textLight,
+                ),
+              ),
             ),
+            const SizedBox(width: 14),
+          ],
+          Text(
+            'Analytics',
+            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+          ),
+        ],
       ),
     ).animate().fadeIn(duration: 400.ms);
   }

@@ -1,4 +1,5 @@
 import 'package:hive_flutter/hive_flutter.dart';
+import '../models/budget_model.dart';
 import '../models/custom_category.dart';
 import '../models/notification_model.dart';
 import '../models/transaction_model.dart';
@@ -8,18 +9,21 @@ class HiveService {
   static const _settingsBox = 'settings_v1';
   static const _customCategoriesBox = 'custom_categories_v1';
   static const _notificationsBox = 'notifications_v1';
+  static const _budgetsBox = 'budgets_v1';
 
   static Future<void> init() async {
     await Hive.openBox(_transactionsBox);
     await Hive.openBox(_settingsBox);
     await Hive.openBox(_customCategoriesBox);
     await Hive.openBox(_notificationsBox);
+    await Hive.openBox(_budgetsBox);
   }
 
   static Box get _transactions => Hive.box(_transactionsBox);
   static Box get _settings => Hive.box(_settingsBox);
   static Box get _customCats => Hive.box(_customCategoriesBox);
   static Box get _notifications => Hive.box(_notificationsBox);
+  static Box get _budgets => Hive.box(_budgetsBox);
 
   // Transactions CRUD
   static List<Transaction> getTransactions() {
@@ -109,4 +113,24 @@ class HiveService {
   static T? getSetting<T>(String key) => _settings.get(key) as T?;
   static Future<void> setSetting(String key, dynamic value) =>
       _settings.put(key, value);
+
+  // Budgets CRUD
+  static List<Budget> getBudgets() {
+    return _budgets.values
+        .map((v) => Budget.fromMap(v as Map))
+        .toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  }
+
+  static Future<void> addBudget(Budget budget) async {
+    await _budgets.put(budget.id, budget.toMap());
+  }
+
+  static Future<void> updateBudget(Budget budget) async {
+    await _budgets.put(budget.id, budget.toMap());
+  }
+
+  static Future<void> deleteBudget(String id) async {
+    await _budgets.delete(id);
+  }
 }

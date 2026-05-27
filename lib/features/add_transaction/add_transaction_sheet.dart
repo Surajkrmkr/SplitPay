@@ -11,6 +11,7 @@ import '../../data/models/transaction_model.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../shared/widgets/app_icon_picker.dart';
+import '../../shared/widgets/bill_scan_button.dart';
 
 class AddTransactionSheet extends ConsumerStatefulWidget {
   const AddTransactionSheet({super.key});
@@ -29,6 +30,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   String? _customCategoryId;
   String? _appIcon;
   DateTime _date = DateTime.now();
+  RecurrenceType _recurrence = RecurrenceType.none;
   bool _saving = false;
 
   @override
@@ -36,6 +38,22 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
     _amountController.dispose();
     _noteController.dispose();
     super.dispose();
+  }
+
+  void _applyScannedBill(BillScanApplied scan) {
+    setState(() {
+      if (scan.amount != null) {
+        _amountController.text = scan.amount!.toStringAsFixed(2);
+      }
+      // Add-transaction has no title field — drop the merchant name into the
+      // note so it isn't lost. Only fill if note is currently empty.
+      if (scan.title != null && _noteController.text.trim().isEmpty) {
+        _noteController.text = scan.title!;
+      }
+      if (scan.dateTime != null) {
+        _date = scan.dateTime!;
+      }
+    });
   }
 
   Future<void> _save() async {
@@ -56,6 +74,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                   : _noteController.text.trim(),
               date: _date,
               createdAt: DateTime.now(),
+              recurrence: _recurrence,
             ),
           );
       if (mounted) Navigator.of(context).pop();
@@ -178,6 +197,11 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                           ?.copyWith(fontWeight: FontWeight.w800),
                     ),
                     const Spacer(),
+                    BillScanButton(
+                      supportsTitle: false,
+                      onApply: _applyScannedBill,
+                    ),
+                    const SizedBox(width: 8),
                     IconButton(
                       onPressed: () => Navigator.of(context).pop(),
                       icon: Icon(Icons.close_rounded,
@@ -276,6 +300,13 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                         ),
                       ],
                     ).animate(delay: 200.ms).fadeIn().slideY(begin: 0.1),
+                    const SizedBox(height: 16),
+                    _sectionLabel(context, 'Repeats'),
+                    const SizedBox(height: 10),
+                    _RecurrencePicker(
+                      selected: _recurrence,
+                      onChanged: (r) => setState(() => _recurrence = r),
+                    ).animate(delay: 250.ms).fadeIn().slideY(begin: 0.1),
                     const SizedBox(height: 8),
                   ],
                 ),
@@ -698,6 +729,80 @@ class _TimeSelector extends StatelessWidget {
                 color: AppColors.textTertiary, size: 18),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ─── Recurrence Picker ────────────────────────────────────────────────────────
+
+class _RecurrencePicker extends StatelessWidget {
+  final RecurrenceType selected;
+  final ValueChanged<RecurrenceType> onChanged;
+
+  const _RecurrencePicker({required this.selected, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return SizedBox(
+      height: 36,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: RecurrenceType.values.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final type = RecurrenceType.values[i];
+          final isSelected = type == selected;
+          return GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onChanged(type);
+            },
+            child: AnimatedContainer(
+              duration: 180.ms,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppColors.primary.withValues(alpha: 0.15)
+                    : (isDark ? AppColors.darkCard : AppColors.lightCard),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: isSelected
+                      ? AppColors.primary
+                      : (isDark
+                          ? AppColors.darkBorder
+                          : AppColors.lightBorder),
+                  width: isSelected ? 1.2 : 0.5,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    type.icon,
+                    size: 14,
+                    color: isSelected
+                        ? AppColors.primary
+                        : AppColors.textSecondary,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    type.label,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected
+                          ? AppColors.primary
+                          : AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }

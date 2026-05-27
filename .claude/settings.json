@@ -18,7 +18,8 @@
       "Bash(sed -n '191,202p' \"/Users/surajkrmkr/Storage/Xiaomi Contract/Repos/dimeflow/lib/features/transactions/transactions_screen.dart\")",
       "Bash(find ~/.pub-cache -path \"*/upi_india-3*/lib/*.dart\" 2>/dev/null | head -20)",
       "Read(//Users/surajkrmkr/.pub-cache/**)",
-      "Bash(grep -v \"^$\")"
+      "Bash(grep -v \"^$\")",
+      "Bash(flutter --version)"
     ]
   }
 }

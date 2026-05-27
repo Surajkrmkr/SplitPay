@@ -3,16 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/utils/category_app_icons.dart';
 import '../../../data/models/group_model.dart';
 import '../../../data/models/member_model.dart';
-import '../../../data/models/transaction_model.dart';
 import '../../../data/services/group_api_service.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/group_provider.dart';
 import '../../../providers/settings_provider.dart';
-import '../../../shared/widgets/app_icon_picker.dart';
 import '../../../shared/widgets/avatar_widget.dart';
+import '../../../shared/widgets/bill_scan_button.dart';
 import '../../../shared/widgets/sp_button.dart';
 
 class AddExpenseSheet extends ConsumerStatefulWidget {
@@ -38,8 +36,6 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
   late String _currentUserId;
   late List<String> _selectedParticipantIds;
   DateTime _selectedDate = DateTime.now();
-  Category _iconCategory = Category.food; // local filter for the picker
-  String? _appIcon;
 
   // For percentage split: map userId -> %
   final Map<String, TextEditingController> _percentControllers = {};
@@ -147,6 +143,20 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
     }).toList();
   }
 
+  void _applyScannedBill(BillScanApplied scan) {
+    setState(() {
+      if (scan.amount != null) {
+        _amountController.text = scan.amount!.toStringAsFixed(2);
+      }
+      if (scan.title != null && _titleController.text.trim().isEmpty) {
+        _titleController.text = scan.title!;
+      }
+      if (scan.dateTime != null) {
+        _selectedDate = scan.dateTime!;
+      }
+    });
+  }
+
   Future<void> _addExpense() async {
     if (!_isValid) return;
     setState(() => _creating = true);
@@ -162,7 +172,6 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
                 ? null
                 : _noteController.text.trim(),
             date: _selectedDate.toUtc().toIso8601String(),
-            appIcon: _appIcon,
           );
       ref.invalidate(groupExpensesProvider(widget.group.id));
       ref.invalidate(groupBalancesProvider(widget.group.id));
@@ -234,6 +243,8 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
                       ),
                     ),
                     const Spacer(),
+                    BillScanButton(onApply: _applyScannedBill),
+                    const SizedBox(width: 4),
                     IconButton(
                       icon: const Icon(Icons.close_rounded),
                       color: AppColors.textSecondary,
@@ -266,29 +277,6 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
                       hint: 'What was this for?',
                       isDark: isDark,
                       onChanged: (_) => setState(() {}),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // App icon picker — category filter + suggestions
-                    _label('Icon (optional)', isDark),
-                    const SizedBox(height: 8),
-                    IconCategoryFilter(
-                      selected: _iconCategory,
-                      isDark: isDark,
-                      onChanged: (c) => setState(() {
-                        _iconCategory = c;
-                        if (_appIcon != null &&
-                            !CategoryAppIcons.iconsFor(c).contains(_appIcon)) {
-                          _appIcon = null;
-                        }
-                      }),
-                    ),
-                    const SizedBox(height: 10),
-                    AppIconPicker(
-                      category: _iconCategory,
-                      selected: _appIcon,
-                      onSelected: (v) => setState(() => _appIcon = v),
-                      isDark: isDark,
                     ),
                     const SizedBox(height: 16),
 

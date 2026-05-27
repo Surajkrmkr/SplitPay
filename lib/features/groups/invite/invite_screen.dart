@@ -10,6 +10,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../data/services/group_api_service.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/group_provider.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../../../shared/widgets/sp_button.dart';
 
 const _playStoreUrl =
@@ -210,6 +211,11 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
       backgroundColor: isDark ? AppColors.darkBg : AppColors.lightBg,
       appBar: AppBar(
         backgroundColor: isDark ? AppColors.darkBg : AppColors.lightBg,
+        leadingWidth: 56,
+        leading: const Padding(
+          padding: EdgeInsets.only(left: 16),
+          child: Center(child: AppBackButton()),
+        ),
         title: Text(
           _joinOnly ? 'Join a Group' : 'Invite',
           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),

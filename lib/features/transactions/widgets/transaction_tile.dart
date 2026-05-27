@@ -184,6 +184,40 @@ class TransactionTile extends ConsumerWidget {
   }
 }
 
+/// Mirrors the visual treatment of the AppIconPicker tile so a transaction's
+/// brand icon reads the same here as it does when the user picks it: 48×48
+/// card-colored container with a subtle border, 4-px padding, and
+/// `BoxFit.contain` on the asset.
+class _AppIconBox extends StatelessWidget {
+  final String appIcon;
+  const _AppIconBox({required this.appIcon});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      width: 48,
+      height: 48,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkCard : AppColors.lightCard,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+          width: 0.8,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.asset(
+          CategoryAppIcons.pathFor(appIcon),
+          fit: BoxFit.contain,
+        ),
+      ),
+    );
+  }
+}
+
 class _TileIcon extends StatelessWidget {
   final String? appIcon;
   final IconData fallbackIcon;
@@ -197,6 +231,11 @@ class _TileIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (appIcon != null) return _AppIconBox(appIcon: appIcon!);
+    return _fallbackBubble();
+  }
+
+  Widget _fallbackBubble() {
     return Container(
       width: 48,
       height: 48,
@@ -204,18 +243,7 @@ class _TileIcon extends StatelessWidget {
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(14),
       ),
-      padding: appIcon != null ? const EdgeInsets.all(4) : null,
-      child: appIcon != null
-          ? ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Image.asset(
-                CategoryAppIcons.pathFor(appIcon!),
-                fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) =>
-                    Icon(fallbackIcon, color: color, size: 22),
-              ),
-            )
-          : Icon(fallbackIcon, color: color, size: 22),
+      child: Icon(fallbackIcon, color: color, size: 22),
     );
   }
 }

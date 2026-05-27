@@ -315,36 +315,42 @@ class _OnboardingPage extends StatelessWidget {
           child: Column(
             children: [
               const Spacer(),
-              Container(
-                width: 200,
-                height: 200,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      data.gradient[0].withValues(alpha: 0.8),
-                      data.gradient[1],
-                    ],
-                  ),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: data.accentColor.withValues(alpha: 0.3),
-                    width: 2,
-                  ),
-                ),
-                child: Center(
-                  child: data.imagePath != null
-                      ? Padding(
-                          padding: const EdgeInsets.all(36),
-                          child: Image.asset(data.imagePath!),
+              // App-icon pages render the icon flat (it has its own background);
+              // emoji pages keep the gradient-circle hero element.
+              (data.imagePath != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(44),
+                          child: Image.asset(
+                            data.imagePath!,
+                            width: 200,
+                            height: 200,
+                          ),
                         )
-                      : Text(
-                          data.emoji,
-                          style: const TextStyle(fontSize: 80),
-                        ),
-                ),
-              )
+                      : Container(
+                          width: 200,
+                          height: 200,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                data.gradient[0].withValues(alpha: 0.8),
+                                data.gradient[1],
+                              ],
+                            ),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: data.accentColor.withValues(alpha: 0.3),
+                              width: 2,
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              data.emoji,
+                              style: const TextStyle(fontSize: 80),
+                            ),
+                          ),
+                        ))
                   .animate()
                   .scale(duration: 600.ms, curve: Curves.elasticOut)
                   .fadeIn(duration: 400.ms),
