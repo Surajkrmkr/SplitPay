@@ -16,6 +16,7 @@ import '../features/budget/budget_screen.dart';
 import '../features/budget/budget_detail_screen.dart';
 import '../data/models/notification_model.dart';
 import '../features/notifications/notifications_screen.dart';
+import '../features/settings/notification_settings_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../features/main_shell/main_shell.dart';
 import '../providers/auth_provider.dart';
@@ -117,6 +118,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => CustomTransitionPage(
           key: state.pageKey,
           child: const NotificationsScreen(),
+          transitionsBuilder: _slideTransition,
+        ),
+      ),
+      GoRoute(
+        path: '/settings/notifications',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const NotificationSettingsScreen(),
           transitionsBuilder: _slideTransition,
         ),
       ),

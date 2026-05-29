@@ -13,7 +13,6 @@ import '../../../providers/auth_provider.dart';
 import '../../../providers/group_provider.dart';
 import '../../../providers/settings_provider.dart';
 import '../../../shared/widgets/app_back_button.dart';
-import '../../../shared/widgets/app_search_bar.dart';
 import '../../../shared/widgets/avatar_widget.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/skeleton_loader.dart';
@@ -24,15 +23,60 @@ import 'widgets/balance_tile.dart';
 import 'widgets/expense_tile.dart';
 import 'widgets/member_avatar_row.dart';
 
-class GroupDetailScreen extends ConsumerWidget {
+class GroupDetailScreen extends ConsumerStatefulWidget {
   final String groupId;
-
   const GroupDetailScreen({super.key, required this.groupId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GroupDetailScreen> createState() =>
+      _GroupDetailScreenState();
+}
+
+class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  final ValueNotifier<String> _searchNotifier = ValueNotifier('');
+  final TextEditingController _searchCtrl = TextEditingController();
+  final FocusNode _searchFocus = FocusNode();
+  bool _isSearching = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (_isSearching && _tabController.index != 1) _closeSearch();
+      if (mounted) setState(() {});
+    });
+    _searchCtrl.addListener(() {
+      _searchNotifier.value = _searchCtrl.text;
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _searchNotifier.dispose();
+    _searchCtrl.dispose();
+    _searchFocus.dispose();
+    super.dispose();
+  }
+
+  void _openSearch() {
+    setState(() => _isSearching = true);
+    _searchFocus.requestFocus();
+  }
+
+  void _closeSearch() {
+    setState(() => _isSearching = false);
+    _searchCtrl.clear();
+    _searchFocus.unfocus();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final groupAsync = ref.watch(groupDetailProvider(groupId));
+    final groupAsync = ref.watch(groupDetailProvider(widget.groupId));
 
     return groupAsync.when(
       loading: () => Scaffold(
@@ -50,9 +94,11 @@ class GroupDetailScreen extends ConsumerWidget {
           children: [
             const SkeletonBox(width: 180, height: 22, borderRadius: 6),
             const SizedBox(height: 12),
-            const SkeletonBox(width: double.infinity, height: 56, borderRadius: 14),
+            const SkeletonBox(
+                width: double.infinity, height: 56, borderRadius: 14),
             const SizedBox(height: 20),
-            const SkeletonBox(width: double.infinity, height: 140, borderRadius: 16),
+            const SkeletonBox(
+                width: double.infinity, height: 140, borderRadius: 16),
             const SizedBox(height: 16),
             ...List.generate(
               4,
@@ -75,134 +121,385 @@ class GroupDetailScreen extends ConsumerWidget {
           title: 'Could not load group',
           subtitle: e.toString(),
           actionLabel: 'Retry',
-          onAction: () => ref.invalidate(groupDetailProvider(groupId)),
+          onAction: () =>
+              ref.invalidate(groupDetailProvider(widget.groupId)),
         ),
       ),
-      data: (group) => DefaultTabController(
-        length: 3,
-        child: Scaffold(
-          backgroundColor: isDark ? AppColors.darkBg : AppColors.lightBg,
-          floatingActionButtonLocation:
-              FloatingActionButtonLocation.centerFloat,
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              useRootNavigator: true,
-              backgroundColor: Colors.transparent,
-              builder: (_) => AddExpenseSheet(group: group),
-            ),
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            icon: const Icon(Icons.add_rounded),
-            label: const Text(
-              'Add Expense',
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
+      data: (group) => Scaffold(
+        backgroundColor: isDark ? AppColors.darkBg : AppColors.lightBg,
+        floatingActionButtonLocation:
+            FloatingActionButtonLocation.centerFloat,
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            useRootNavigator: true,
+            backgroundColor: Colors.transparent,
+            builder: (_) => AddExpenseSheet(group: group),
           ),
-          body: NestedScrollView(
-            headerSliverBuilder: (context, _) => [
-              SliverAppBar(
-                pinned: true,
-                backgroundColor: isDark ? AppColors.darkBg : AppColors.lightBg,
-                leadingWidth: 56,
-                leading: const Padding(
-                  padding: EdgeInsets.only(left: 16),
-                  child: Center(child: AppBackButton()),
-                ),
-                title: Text(
-                  group.name,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                actions: [
-                  Container(
-                    margin: const EdgeInsets.only(right: 16),
-                    padding: const EdgeInsets.all(3),
-                    decoration: BoxDecoration(
-                      color: isDark ? AppColors.darkCard : AppColors.lightCard,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                        width: 0.5,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _AppBarIconBtn(
-                          icon: Icons.people_alt_rounded,
-                          tooltip: 'Invite',
-                          onTap: () => context.push('/groups/$groupId/invite'),
-                          isDark: isDark,
-                        ),
-                        Container(
-                          width: 0.5,
-                          height: 20,
-                          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                          margin: const EdgeInsets.symmetric(horizontal: 2),
-                        ),
-                        _AppBarIconBtn(
-                          icon: Icons.tune_rounded,
-                          tooltip: 'Settings',
-                          onTap: () => context.push('/groups/$groupId/settings'),
-                          isDark: isDark,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                bottom: TabBar(
-                  labelColor: AppColors.primary,
-                  unselectedLabelColor: AppColors.textSecondary,
-                  indicatorColor: AppColors.primary,
-                  indicatorSize: TabBarIndicatorSize.label,
-                  dividerColor:
-                      isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                  tabs: const [
-                    Tab(text: 'Balances'),
-                    Tab(text: 'Expenses'),
-                    Tab(text: 'Activity'),
-                  ],
-                ),
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          icon: const Icon(Icons.add_rounded),
+          label: const Text(
+            'Add Expense',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ),
+        body: NestedScrollView(
+          headerSliverBuilder: (context, _) => [
+            SliverAppBar(
+              pinned: true,
+              backgroundColor:
+                  isDark ? AppColors.darkBg : AppColors.lightBg,
+              leadingWidth: 56,
+              leading: const Padding(
+                padding: EdgeInsets.only(left: 16),
+                child: Center(child: AppBackButton()),
               ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (group.description != null) ...[
-                        Text(
-                          group.description!,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
+              title: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: _isSearching
+                    ? const SizedBox.shrink()
+                    : Text(
+                        group.name,
+                        key: const ValueKey('gname'),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+              ),
+              actions: [
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: _isSearching
+                      ? const SizedBox.shrink()
+                      : Container(
+                          key: const ValueKey('actions'),
+                          margin: const EdgeInsets.only(right: 16),
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? AppColors.darkCard
+                                : AppColors.lightCard,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isDark
+                                  ? AppColors.darkBorder
+                                  : AppColors.lightBorder,
+                              width: 0.5,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _AppBarIconBtn(
+                                icon: Icons.people_alt_rounded,
+                                tooltip: 'Invite',
+                                onTap: () => context.push(
+                                    '/groups/${widget.groupId}/invite'),
+                                isDark: isDark,
+                              ),
+                              Container(
+                                width: 0.5,
+                                height: 20,
+                                color: isDark
+                                    ? AppColors.darkBorder
+                                    : AppColors.lightBorder,
+                                margin: const EdgeInsets.symmetric(
+                                    horizontal: 2),
+                              ),
+                              _AppBarIconBtn(
+                                icon: Icons.tune_rounded,
+                                tooltip: 'Settings',
+                                onTap: () => context.push(
+                                    '/groups/${widget.groupId}/settings'),
+                                isDark: isDark,
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 10),
-                      ],
-                      MemberAvatarRow(members: group.members),
-                    ],
-                  ),
                 ),
-              ),
-            ],
-            body: TabBarView(
-              children: [
-                _BalancesTab(groupId: groupId),
-                _ExpensesTab(groupId: groupId, group: group),
-                _ActivityTab(groupId: groupId),
               ],
+              bottom: TabBar(
+                controller: _tabController,
+                labelColor: AppColors.primary,
+                unselectedLabelColor: AppColors.textSecondary,
+                indicatorColor: AppColors.primary,
+                indicatorSize: TabBarIndicatorSize.label,
+                dividerColor:
+                    isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                tabs: const [
+                  Tab(text: 'Balances'),
+                  Tab(text: 'Expenses'),
+                  Tab(text: 'Activity'),
+                ],
+              ),
             ),
+            SliverToBoxAdapter(
+              child: _GroupInfoBar(
+                group: group,
+                isSearching: _isSearching,
+                searchCtrl: _searchCtrl,
+                searchFocus: _searchFocus,
+                isExpensesTab: _tabController.index == 1,
+                onSearchOpen: _openSearch,
+                onSearchClose: _closeSearch,
+                isDark: isDark,
+              ),
+            ),
+          ],
+          body: TabBarView(
+            controller: _tabController,
+            children: [
+              _BalancesTab(groupId: widget.groupId),
+              _ExpensesTab(
+                groupId: widget.groupId,
+                group: group,
+                searchNotifier: _searchNotifier,
+              ),
+              _ActivityTab(groupId: widget.groupId),
+            ],
           ),
         ),
       ),
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Group info bar — avatars + description ↔ expandable search field
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _GroupInfoBar extends StatelessWidget {
+  final GroupModel group;
+  final bool isSearching;
+  final TextEditingController searchCtrl;
+  final FocusNode searchFocus;
+  final bool isExpensesTab;
+  final VoidCallback onSearchOpen;
+  final VoidCallback onSearchClose;
+  final bool isDark;
+
+  const _GroupInfoBar({
+    required this.group,
+    required this.isSearching,
+    required this.searchCtrl,
+    required this.searchFocus,
+    required this.isExpensesTab,
+    required this.onSearchOpen,
+    required this.onSearchClose,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkBg : AppColors.lightBg,
+          border: Border(
+            bottom: BorderSide(
+              color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+              width: 0.5,
+            ),
+          ),
+        ),
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 280),
+          switchInCurve: Curves.easeOut,
+          switchOutCurve: Curves.easeIn,
+          transitionBuilder: (child, animation) {
+            final isSearch = child.key == const ValueKey('sf');
+            return FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: Offset(isSearch ? 0.06 : -0.06, 0),
+                  end: Offset.zero,
+                ).animate(animation),
+                child: child,
+              ),
+            );
+          },
+          child: isSearching
+              ? _SearchField(
+                  key: const ValueKey('sf'),
+                  controller: searchCtrl,
+                  focusNode: searchFocus,
+                  onClose: onSearchClose,
+                  isDark: isDark,
+                )
+              : _InfoRow(
+                  key: const ValueKey('ir'),
+                  group: group,
+                  isExpensesTab: isExpensesTab,
+                  onSearchOpen: onSearchOpen,
+                  isDark: isDark,
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final GroupModel group;
+  final bool isExpensesTab;
+  final VoidCallback onSearchOpen;
+  final bool isDark;
+
+  const _InfoRow({
+    super.key,
+    required this.group,
+    required this.isExpensesTab,
+    required this.onSearchOpen,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        MemberAvatarRow(
+          members: group.members,
+          maxVisible: 4,
+          avatarSize: 28,
+        ),
+        const SizedBox(width: 10),
+        if (group.description?.isNotEmpty == true)
+          Expanded(
+            child: Text(
+              group.description!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                  fontSize: 13, color: AppColors.textSecondary),
+            ),
+          )
+        else
+          const Spacer(),
+        if (isExpensesTab) ...[
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: onSearchOpen,
+            child: Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkCard : AppColors.lightCard,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color:
+                      isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                  width: 0.5,
+                ),
+              ),
+              child: Icon(
+                Icons.search_rounded,
+                size: 17,
+                color: isDark
+                    ? AppColors.textSecondary
+                    : AppColors.textLightSecondary,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _SearchField extends StatelessWidget {
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final VoidCallback onClose;
+  final bool isDark;
+
+  const _SearchField({
+    super.key,
+    required this.controller,
+    required this.focusNode,
+    required this.onClose,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller: controller,
+            focusNode: focusNode,
+            autofocus: true,
+            style: TextStyle(
+              fontSize: 14,
+              color: isDark ? Colors.white : AppColors.textLight,
+            ),
+            decoration: InputDecoration(
+              hintText: 'Search expenses...',
+              prefixIcon: Icon(
+                Icons.search_rounded,
+                size: 20,
+                color: AppColors.primary.withValues(alpha: 0.7),
+              ),
+              suffixIcon: ValueListenableBuilder<TextEditingValue>(
+                valueListenable: controller,
+                builder: (_, val, __) => val.text.isEmpty
+                    ? const SizedBox.shrink()
+                    : IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 18),
+                        color: AppColors.textSecondary,
+                        onPressed: controller.clear,
+                      ),
+              ),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                  width: 0.5,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: AppColors.primary.withValues(alpha: 0.6),
+                  width: 1.2,
+                ),
+              ),
+              filled: true,
+              fillColor: isDark ? AppColors.darkCard : AppColors.lightCard,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        TextButton(
+          onPressed: onClose,
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: const Text(
+            'Cancel',
+            style: TextStyle(
+              color: AppColors.primary,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 
 // ─────────────────────────────────────────────────────
 // Balances Tab
@@ -537,35 +834,150 @@ Future<void> _confirmDeleteExpense(
 class _ExpensesTab extends ConsumerStatefulWidget {
   final String groupId;
   final GroupModel group;
-  const _ExpensesTab({required this.groupId, required this.group});
+  final ValueNotifier<String> searchNotifier;
+
+  const _ExpensesTab({
+    required this.groupId,
+    required this.group,
+    required this.searchNotifier,
+  });
 
   @override
   ConsumerState<_ExpensesTab> createState() => _ExpensesTabState();
 }
 
-class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
-  String _query = '';
+enum _ExpenseDateFilter { all, week, month }
 
-  List<GroupExpenseModel> _filter(List<GroupExpenseModel> expenses) {
-    if (_query.isEmpty) return expenses;
-    final q = _query.toLowerCase();
-    return expenses.where((e) {
-      return e.title.toLowerCase().contains(q) ||
-          e.paidByName.toLowerCase().contains(q) ||
-          (e.notes?.toLowerCase().contains(q) ?? false);
-    }).toList();
+enum _ExpenseSortOrder { newestFirst, oldestFirst, highestAmount, lowestAmount }
+
+class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
+  _ExpenseDateFilter _dateFilter = _ExpenseDateFilter.month;
+  _ExpenseSortOrder _sort = _ExpenseSortOrder.newestFirst;
+  Set<String> _payerFilter = {};
+  double? _amountMin;
+  double? _amountMax;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.searchNotifier.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.searchNotifier.removeListener(_onSearchChanged);
+    super.dispose();
+  }
+
+  void _onSearchChanged() => setState(() {});
+
+  int get _activeFilterCount {
+    int c = 0;
+    if (_sort != _ExpenseSortOrder.newestFirst) c++;
+    if (_payerFilter.isNotEmpty) c++;
+    if (_amountMin != null || _amountMax != null) c++;
+    return c;
+  }
+
+  List<GroupExpenseModel> _applyFilters(List<GroupExpenseModel> expenses) {
+    var result = expenses;
+
+    // Date range
+    if (_dateFilter != _ExpenseDateFilter.all) {
+      final now = DateTime.now();
+      final cutoff = _dateFilter == _ExpenseDateFilter.week
+          ? now.subtract(const Duration(days: 7))
+          : DateTime(now.year, now.month, 1);
+      result = result.where((e) => e.date.isAfter(cutoff)).toList();
+    }
+
+    // Payer
+    if (_payerFilter.isNotEmpty) {
+      result = result.where((e) => _payerFilter.contains(e.paidByName)).toList();
+    }
+
+    // Amount range
+    if (_amountMin != null) {
+      result = result.where((e) => e.amount >= _amountMin!).toList();
+    }
+    if (_amountMax != null) {
+      result = result.where((e) => e.amount <= _amountMax!).toList();
+    }
+
+    // Search (query comes from the parent's expandable search field)
+    final query = widget.searchNotifier.value;
+    if (query.isNotEmpty) {
+      final q = query.toLowerCase();
+      result = result.where((e) {
+        return e.title.toLowerCase().contains(q) ||
+            e.paidByName.toLowerCase().contains(q) ||
+            (e.notes?.toLowerCase().contains(q) ?? false);
+      }).toList();
+    }
+
+    // Sort
+    result = List.from(result);
+    switch (_sort) {
+      case _ExpenseSortOrder.newestFirst:
+        result.sort((a, b) => b.date.compareTo(a.date));
+      case _ExpenseSortOrder.oldestFirst:
+        result.sort((a, b) => a.date.compareTo(b.date));
+      case _ExpenseSortOrder.highestAmount:
+        result.sort((a, b) => b.amount.compareTo(a.amount));
+      case _ExpenseSortOrder.lowestAmount:
+        result.sort((a, b) => a.amount.compareTo(b.amount));
+    }
+
+    return result;
+  }
+
+  void _showFilterSheet(
+      BuildContext context, List<GroupExpenseModel> expenses) {
+    final allPayers = expenses.map((e) => e.paidByName).toSet().toList()
+      ..sort();
+    final maxAmount = expenses.isEmpty
+        ? 50000.0
+        : expenses.map((e) => e.amount).reduce((a, b) => a > b ? a : b);
+    final sliderMax =
+        ((maxAmount / 1000).ceil() * 1000).toDouble().clamp(1000.0, 1000000.0);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useRootNavigator: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _ExpenseFilterSheet(
+        currentSort: _sort,
+        currentPayers: _payerFilter,
+        currentAmountMin: _amountMin,
+        currentAmountMax: _amountMax,
+        allPayers: allPayers,
+        sliderMax: sliderMax,
+        onApply: ({
+          required _ExpenseSortOrder sort,
+          required Set<String> payers,
+          required double? amountMin,
+          required double? amountMax,
+        }) {
+          setState(() {
+            _sort = sort;
+            _payerFilter = payers;
+            _amountMin = amountMin;
+            _amountMax = amountMax;
+          });
+        },
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final expensesAsync = ref.watch(groupExpensesProvider(widget.groupId));
 
     return expensesAsync.when(
       loading: () => ListView(
-        children: List.generate(
-          4,
-          (_) => const SkeletonExpenseTile(),
-        ),
+        children: List.generate(4, (_) => const SkeletonExpenseTile()),
       ),
       error: (e, _) => RefreshIndicator(
         color: AppColors.primary,
@@ -601,50 +1013,649 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
           );
         }
 
-        final filtered = _filter(expenses);
+        final filtered = _applyFilters(expenses);
+        final activeCount = _activeFilterCount;
 
-        return RefreshIndicator(
-          color: AppColors.primary,
-          onRefresh: () async =>
-              ref.invalidate(groupExpensesProvider(widget.groupId)),
-          child: ListView.builder(
-            padding: const EdgeInsets.only(top: 8, bottom: 100),
-            itemCount: filtered.isEmpty ? 2 : filtered.length + 1,
-            itemBuilder: (context, i) {
-              if (i == 0) {
-                return AppSearchBar(
-                  hintText: 'Search expenses...',
-                  onChanged: (v) => setState(() => _query = v),
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-                );
-              }
-              if (filtered.isEmpty) {
-                return const EmptyState(
-                  icon: Icons.search_off_rounded,
-                  title: 'No expenses found',
-                  subtitle: 'Try a different search term.',
-                );
-              }
-              final expense = filtered[i - 1];
-              return ExpenseTile(
-                expense: expense,
-                onEdit: () => showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  useRootNavigator: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (_) => EditExpenseSheet(
-                    expense: expense,
-                    group: widget.group,
+        return Column(
+          children: [
+            // ── Date chips + Filter button in one row ──────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+              child: Row(
+                children: [
+                  // Date period chips (scrollable)
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          for (final (f, label) in [
+                            (_ExpenseDateFilter.all, 'All'),
+                            (_ExpenseDateFilter.month, 'This Month'),
+                            (_ExpenseDateFilter.week, 'This Week'),
+                          ])
+                            Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: GestureDetector(
+                                onTap: () =>
+                                    setState(() => _dateFilter = f),
+                                child: AnimatedContainer(
+                                  duration:
+                                      const Duration(milliseconds: 200),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 14, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: _dateFilter == f
+                                        ? AppColors.primary
+                                        : isDark
+                                            ? AppColors.darkCard
+                                            : AppColors.lightCard,
+                                    borderRadius:
+                                        BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: _dateFilter == f
+                                          ? AppColors.primary
+                                          : isDark
+                                              ? AppColors.darkBorder
+                                              : AppColors.lightBorder,
+                                      width:
+                                          _dateFilter == f ? 1.0 : 0.5,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    label,
+                                    style: TextStyle(
+                                      color: _dateFilter == f
+                                          ? Colors.white
+                                          : AppColors.textSecondary,
+                                      fontWeight: _dateFilter == f
+                                          ? FontWeight.w600
+                                          : FontWeight.w500,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Filter button
+                  GestureDetector(
+                    onTap: () => _showFilterSheet(context, expenses),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 11, vertical: 7),
+                          decoration: BoxDecoration(
+                            color: activeCount > 0
+                                ? AppColors.primary.withValues(alpha: 0.12)
+                                : isDark
+                                    ? AppColors.darkCard
+                                    : AppColors.lightCard,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: activeCount > 0
+                                  ? AppColors.primary
+                                  : isDark
+                                      ? AppColors.darkBorder
+                                      : AppColors.lightBorder,
+                              width: activeCount > 0 ? 1.0 : 0.5,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.tune_rounded,
+                                  size: 15,
+                                  color: activeCount > 0
+                                      ? AppColors.primary
+                                      : AppColors.textSecondary),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Filter',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: activeCount > 0
+                                      ? AppColors.primary
+                                      : AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (activeCount > 0)
+                          Positioned(
+                            top: -5,
+                            right: -5,
+                            child: Container(
+                              width: 16,
+                              height: 16,
+                              decoration: const BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                '$activeCount',
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Active filter chips ─────────────────────────────────────
+            if (activeCount > 0)
+              SizedBox(
+                height: 32,
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    if (_sort != _ExpenseSortOrder.newestFirst)
+                      _ActiveChip(
+                        label: switch (_sort) {
+                          _ExpenseSortOrder.oldestFirst => 'Oldest first',
+                          _ExpenseSortOrder.highestAmount =>
+                            'Highest amount',
+                          _ExpenseSortOrder.lowestAmount => 'Lowest amount',
+                          _ExpenseSortOrder.newestFirst => '',
+                        },
+                        onRemove: () => setState(
+                            () => _sort = _ExpenseSortOrder.newestFirst),
+                      ),
+                    for (final payer in _payerFilter)
+                      _ActiveChip(
+                        label: payer,
+                        onRemove: () => setState(() {
+                          _payerFilter =
+                              Set.from(_payerFilter)..remove(payer);
+                        }),
+                      ),
+                    if (_amountMin != null || _amountMax != null)
+                      _ActiveChip(
+                        label: _amountMin != null && _amountMax != null
+                            ? '${_amountMin!.toStringAsFixed(0)} – ${_amountMax!.toStringAsFixed(0)}'
+                            : _amountMin != null
+                                ? '≥ ${_amountMin!.toStringAsFixed(0)}'
+                                : '≤ ${_amountMax!.toStringAsFixed(0)}',
+                        onRemove: () =>
+                            setState(() => _amountMin = _amountMax = null),
+                      ),
+                  ],
+                ),
+              ),
+
+            // ── Expense list ────────────────────────────────────────────
+            Expanded(
+              child: RefreshIndicator(
+                color: AppColors.primary,
+                onRefresh: () async =>
+                    ref.invalidate(groupExpensesProvider(widget.groupId)),
+                child: filtered.isEmpty
+                    ? ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: [
+                          EmptyState(
+                            icon: Icons.search_off_rounded,
+                            title: activeCount > 0 || widget.searchNotifier.value.isNotEmpty
+                                ? 'No expenses match'
+                                : 'No expenses yet',
+                            subtitle: activeCount > 0 || widget.searchNotifier.value.isNotEmpty
+                                ? 'Try adjusting your filters.'
+                                : 'Add an expense to start tracking.',
+                          ),
+                        ],
+                      )
+                    : ListView.builder(
+                        padding:
+                            const EdgeInsets.only(top: 4, bottom: 100),
+                        itemCount: filtered.length,
+                        itemBuilder: (context, i) => ExpenseTile(
+                          expense: filtered[i],
+                          onEdit: () => showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            useRootNavigator: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (_) => EditExpenseSheet(
+                              expense: filtered[i],
+                              group: widget.group,
+                            ),
+                          ),
+                          onDelete: () => _confirmDeleteExpense(
+                              context, ref, filtered[i].id),
+                        ),
+                      ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────
+// Expense filter sheet
+// ─────────────────────────────────────────────────────
+
+class _ExpenseFilterSheet extends StatefulWidget {
+  final _ExpenseSortOrder currentSort;
+  final Set<String> currentPayers;
+  final double? currentAmountMin;
+  final double? currentAmountMax;
+  final List<String> allPayers;
+  final double sliderMax;
+  final void Function({
+    required _ExpenseSortOrder sort,
+    required Set<String> payers,
+    required double? amountMin,
+    required double? amountMax,
+  }) onApply;
+
+  const _ExpenseFilterSheet({
+    required this.currentSort,
+    required this.currentPayers,
+    required this.currentAmountMin,
+    required this.currentAmountMax,
+    required this.allPayers,
+    required this.sliderMax,
+    required this.onApply,
+  });
+
+  @override
+  State<_ExpenseFilterSheet> createState() => _ExpenseFilterSheetState();
+}
+
+class _ExpenseFilterSheetState extends State<_ExpenseFilterSheet> {
+  late _ExpenseSortOrder _sort;
+  late Set<String> _payers;
+  late double _sliderMin;
+  late double _sliderMax;
+
+  @override
+  void initState() {
+    super.initState();
+    _sort = widget.currentSort;
+    _payers = Set.from(widget.currentPayers);
+    _sliderMin = widget.currentAmountMin ?? 0;
+    _sliderMax = widget.currentAmountMax ?? widget.sliderMax;
+  }
+
+  bool get _hasChanges =>
+      _sort != _ExpenseSortOrder.newestFirst ||
+      _payers.isNotEmpty ||
+      _sliderMin > 0 ||
+      _sliderMax < widget.sliderMax;
+
+  void _reset() {
+    setState(() {
+      _sort = _ExpenseSortOrder.newestFirst;
+      _payers = {};
+      _sliderMin = 0;
+      _sliderMax = widget.sliderMax;
+    });
+  }
+
+  void _apply() {
+    widget.onApply(
+      sort: _sort,
+      payers: _payers,
+      amountMin: _sliderMin > 0 ? _sliderMin : null,
+      amountMax: _sliderMax < widget.sliderMax ? _sliderMax : null,
+    );
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.75,
+      minChildSize: 0.5,
+      maxChildSize: 0.92,
+      builder: (context, scrollController) {
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.darkSurface : Colors.white,
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              // Handle
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(top: 12),
+                decoration: BoxDecoration(
+                  color:
+                      isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              // Title
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                child: Row(
+                  children: [
+                    Text(
+                      'Filter & Sort',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleLarge
+                          ?.copyWith(fontWeight: FontWeight.w800),
+                    ),
+                    const Spacer(),
+                    if (_hasChanges)
+                      TextButton(
+                        onPressed: _reset,
+                        child: const Text(
+                          'Reset',
+                          style: TextStyle(
+                              color: AppColors.expense,
+                              fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              // Content
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                  children: [
+                    // Sort
+                    _SheetSection(
+                      title: 'Sort by',
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final (s, label) in [
+                            (_ExpenseSortOrder.newestFirst, 'Newest first'),
+                            (_ExpenseSortOrder.oldestFirst, 'Oldest first'),
+                            (_ExpenseSortOrder.highestAmount,
+                                'Highest amount'),
+                            (_ExpenseSortOrder.lowestAmount,
+                                'Lowest amount'),
+                          ])
+                            _FilterChip(
+                              label: label,
+                              selected: _sort == s,
+                              onTap: () => setState(() => _sort = s),
+                              isDark: isDark,
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Paid by
+                    if (widget.allPayers.length > 1) ...[
+                      _SheetSection(
+                        title: 'Paid by',
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            for (final payer in widget.allPayers)
+                              _FilterChip(
+                                label: payer,
+                                selected: _payers.contains(payer),
+                                onTap: () => setState(() {
+                                  if (_payers.contains(payer)) {
+                                    _payers.remove(payer);
+                                  } else {
+                                    _payers.add(payer);
+                                  }
+                                }),
+                                isDark: isDark,
+                                color: AppColors.secondary,
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+
+                    // Amount range
+                    _SheetSection(
+                      title: 'Amount range',
+                      child: Column(
+                        children: [
+                          RangeSlider(
+                            values: RangeValues(_sliderMin, _sliderMax),
+                            min: 0,
+                            max: widget.sliderMax,
+                            divisions: 20,
+                            activeColor: AppColors.primary,
+                            inactiveColor:
+                                AppColors.primary.withValues(alpha: 0.15),
+                            onChanged: (v) => setState(() {
+                              _sliderMin = v.start;
+                              _sliderMax = v.end;
+                            }),
+                          ),
+                          Row(
+                            mainAxisAlignment:
+                                MainAxisAlignment.spaceBetween,
+                            children: [
+                              _AmountBound(
+                                  label: 'Min',
+                                  value: _sliderMin > 0
+                                      ? _sliderMin
+                                          .toStringAsFixed(0)
+                                      : 'Any'),
+                              _AmountBound(
+                                  label: 'Max',
+                                  value: _sliderMax < widget.sliderMax
+                                      ? _sliderMax
+                                          .toStringAsFixed(0)
+                                      : 'Any'),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                  ],
+                ),
+              ),
+              // Apply
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                    20, 12, 20, 20 + MediaQuery.of(context).padding.bottom),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                    ),
+                    onPressed: _apply,
+                    child: const Text(
+                      'Apply Filters',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w700, fontSize: 15),
+                    ),
                   ),
                 ),
-                onDelete: () =>
-                    _confirmDeleteExpense(context, ref, expense.id),
-              );
-            },
+              ),
+            ],
           ),
         );
       },
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────
+// Shared filter sheet sub-widgets (scoped to this file)
+// ─────────────────────────────────────────────────────
+
+class _SheetSection extends StatelessWidget {
+  final String title;
+  final Widget child;
+  const _SheetSection({required this.title, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title.toUpperCase(),
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.8,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 10),
+        child,
+      ],
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final bool isDark;
+  final Color color;
+
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    required this.isDark,
+    this.color = AppColors.primary,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected
+              ? color.withValues(alpha: 0.12)
+              : isDark
+                  ? AppColors.darkCard
+                  : const Color(0xFFF4F4F6),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected
+                ? color
+                : isDark
+                    ? AppColors.darkBorder
+                    : AppColors.lightBorder,
+            width: selected ? 1.2 : 0.5,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? color : AppColors.textSecondary,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+            fontSize: 13,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ActiveChip extends StatelessWidget {
+  final String label;
+  final VoidCallback onRemove;
+  const _ActiveChip({required this.label, required this.onRemove});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Container(
+        padding:
+            const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                color: AppColors.primary,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 4),
+            GestureDetector(
+              onTap: onRemove,
+              child: const Icon(Icons.close_rounded,
+                  size: 13, color: AppColors.primary),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AmountBound extends StatelessWidget {
+  final String label;
+  final String value;
+  const _AmountBound({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: const TextStyle(
+                fontSize: 10,
+                color: AppColors.textTertiary,
+                fontWeight: FontWeight.w500)),
+        Text(value,
+            style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primary)),
+      ],
     );
   }
 }

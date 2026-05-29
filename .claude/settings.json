@@ -24,7 +24,9 @@
       "Read(//Users/surajkrmkr/Storage/Xiaomi\\\\ Contract/Repos/dimeflow/lib/data/models/**)",
       "Read(//Users/surajkrmkr/Storage/Xiaomi\\\\ Contract/Repos/dimeflow/lib/data/services/**)",
       "Bash(dart analyze *)",
-      "Read(//Users/surajkrmkr/Storage/Xiaomi\\\\ Contract/Repos/dimeflow/lib/providers/**)"
+      "Read(//Users/surajkrmkr/Storage/Xiaomi\\\\ Contract/Repos/dimeflow/lib/providers/**)",
+      "Bash(xargs sed -n '394,430p')",
+      "Bash(xargs sed -n '310,360p')"
     ]
   }
 }

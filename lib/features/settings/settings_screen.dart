@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../core/constants/app_colors.dart';
 import '../debug/debug_log_screen.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/reminder_provider.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../data/services/biometric_service.dart';
 import '../../data/models/custom_category.dart';
@@ -43,6 +46,14 @@ class SettingsScreen extends ConsumerWidget {
                       _CurrencyTile(currency: currency, ref: ref),
                       _Divider(),
                       _CategoriesTile(ref: ref),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  _SectionLabel(label: 'Notifications'),
+                  const SizedBox(height: 12),
+                  _SettingsGroup(
+                    children: [
+                      _NotificationsTile(),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -102,6 +113,16 @@ class SettingsScreen extends ConsumerWidget {
                         title: 'Privacy Policy',
                         subtitle: 'How we handle your data',
                         onTap: () => _showComingSoon(context),
+                      ),
+                      _Divider(),
+                      _SettingsTile(
+                        icon: Icons.share_rounded,
+                        iconColor: AppColors.primary,
+                        title: 'Share DimeFlow',
+                        subtitle: 'Invite friends to track expenses together',
+                        onTap: () => Share.share(
+                          'Check out DimeFlow — the smart expense tracker for individuals and groups! 💸\nhttps://play.google.com/store/apps/details?id=com.dimeflow.app',
+                        ),
                       ),
                     ],
                   ),
@@ -1103,6 +1124,27 @@ class _LogoutTile extends StatelessWidget {
           await ref.read(authProvider.notifier).signOut();
         }
       },
+    );
+  }
+}
+
+
+// ── Notifications nav tile ────────────────────────────────────────────────────
+
+class _NotificationsTile extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final daily = ref.watch(dailyReminderProvider).valueOrNull;
+    final enabled = daily?.enabled ?? false;
+
+    return _SettingsTile(
+      icon: Icons.notifications_active_rounded,
+      iconColor: AppColors.income,
+      title: 'Reminders',
+      subtitle: enabled
+          ? 'Daily reminder on · ${daily!.time.format(context)}'
+          : 'Daily reminders and recurring alerts',
+      onTap: () => context.push('/settings/notifications'),
     );
   }
 }

@@ -21,8 +21,7 @@ class GroupsScreen extends ConsumerWidget {
     final filteredGroups = ref.watch(searchedGroupsProvider);
 
     return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.darkBg : AppColors.lightBg,
+      backgroundColor: isDark ? AppColors.darkBg : AppColors.lightBg,
       body: SafeArea(
         child: RefreshIndicator(
           color: AppColors.primary,
@@ -46,9 +45,8 @@ class GroupsScreen extends ConsumerWidget {
                               style: TextStyle(
                                 fontSize: 30,
                                 fontWeight: FontWeight.w800,
-                                color: isDark
-                                    ? Colors.white
-                                    : AppColors.textLight,
+                                color:
+                                    isDark ? Colors.white : AppColors.textLight,
                                 letterSpacing: -0.5,
                               ),
                             ),
@@ -69,10 +67,14 @@ class GroupsScreen extends ConsumerWidget {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: isDark ? AppColors.darkCard : AppColors.lightCard,
+                            color: isDark
+                                ? AppColors.darkCard
+                                : AppColors.lightCard,
                             borderRadius: BorderRadius.circular(13),
                             border: Border.all(
-                              color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                              color: isDark
+                                  ? AppColors.darkBorder
+                                  : AppColors.lightBorder,
                             ),
                           ),
                           child: Icon(
@@ -81,7 +83,10 @@ class GroupsScreen extends ConsumerWidget {
                             size: 22,
                           ),
                         ),
-                      ).animate().fadeIn(duration: 300.ms).scale(begin: const Offset(0.8, 0.8)),
+                      )
+                          .animate()
+                          .fadeIn(duration: 300.ms)
+                          .scale(begin: const Offset(0.8, 0.8)),
                       const SizedBox(width: 10),
                       // Create group button
                       GestureDetector(
@@ -94,8 +99,8 @@ class GroupsScreen extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(13),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.primary
-                                    .withValues(alpha: 0.35),
+                                color:
+                                    AppColors.primary.withValues(alpha: 0.35),
                                 blurRadius: 12,
                                 offset: const Offset(0, 4),
                               ),
@@ -107,14 +112,18 @@ class GroupsScreen extends ConsumerWidget {
                             size: 24,
                           ),
                         ),
-                      ).animate().fadeIn(duration: 300.ms).scale(begin: const Offset(0.8, 0.8)),
+                      )
+                          .animate()
+                          .fadeIn(duration: 300.ms)
+                          .scale(begin: const Offset(0.8, 0.8)),
                     ],
                   ).animate().fadeIn(duration: 300.ms).slideY(begin: -0.1),
                 ),
               ),
 
               // Search bar (only when data has loaded)
-              if (groupsAsync.hasValue && (groupsAsync.valueOrNull?.isNotEmpty ?? false))
+              if (groupsAsync.hasValue &&
+                  (groupsAsync.valueOrNull?.isNotEmpty ?? false))
                 SliverToBoxAdapter(
                   child: AppSearchBar(
                     hintText: 'Search groups...',
@@ -137,8 +146,7 @@ class GroupsScreen extends ConsumerWidget {
                     title: 'Could not load groups',
                     subtitle: e.toString(),
                     actionLabel: 'Retry',
-                    onAction: () =>
-                        ref.read(groupsProvider.notifier).refresh(),
+                    onAction: () => ref.read(groupsProvider.notifier).refresh(),
                   ),
                 ),
                 data: (groups) {
@@ -175,8 +183,7 @@ class GroupsScreen extends ConsumerWidget {
                         return GroupCard(
                           group: group,
                           index: index - 1,
-                          onTap: () =>
-                              context.push('/groups/${group.id}'),
+                          onTap: () => context.push('/groups/${group.id}'),
                         );
                       },
                       childCount: filteredGroups.length + 1,

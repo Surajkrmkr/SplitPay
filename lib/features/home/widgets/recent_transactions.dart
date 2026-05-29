@@ -235,7 +235,7 @@ class _TransactionItem extends ConsumerWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         Text(
-                          DateFormatter.formatDate(transaction.date),
+                          '${DateFormatter.formatDate(transaction.date)} · ${DateFormatter.formatTime(transaction.date)}',
                           style: const TextStyle(
                             color: AppColors.textTertiary,
                             fontSize: 11,

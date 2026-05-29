@@ -186,16 +186,43 @@ final monthlyIncomeTrendProvider = Provider<List<double>>((ref) {
 
 enum TransactionFilter { all, today, week, month }
 
+enum TransactionTypeFilter { all, income, expense }
+
+enum TransactionSortOrder { newestFirst, oldestFirst, highestAmount, lowestAmount }
+
+// Amount range — null bounds mean no limit on that side.
+class AmountRange {
+  final double? min;
+  final double? max;
+  const AmountRange({this.min, this.max});
+  bool get isActive => min != null || max != null;
+}
+
 final filterProvider = StateProvider<TransactionFilter>(
   (_) => TransactionFilter.month,
 );
 
+final transactionTypeFilterProvider =
+    StateProvider<TransactionTypeFilter>((_) => TransactionTypeFilter.all);
+
+final transactionSortProvider =
+    StateProvider<TransactionSortOrder>((_) => TransactionSortOrder.newestFirst);
+
+// Set of category keys (Category.name or customCategoryId). Empty = all.
+final categoryFilterProvider = StateProvider<Set<String>>((_) => const {});
+
+final amountRangeProvider = StateProvider<AmountRange>((_) => const AmountRange());
+
 final filteredTransactionsProvider = Provider<List<Transaction>>((ref) {
   final txs = ref.watch(transactionProvider);
   final filter = ref.watch(filterProvider);
+  final typeFilter = ref.watch(transactionTypeFilterProvider);
+  final sort = ref.watch(transactionSortProvider);
+  final categories = ref.watch(categoryFilterProvider);
+  final amountRange = ref.watch(amountRangeProvider);
   final now = DateTime.now();
 
-  return switch (filter) {
+  var result = switch (filter) {
     TransactionFilter.all => txs,
     TransactionFilter.today => txs.where((t) {
         return t.date.year == now.year &&
@@ -210,6 +237,68 @@ final filteredTransactionsProvider = Provider<List<Transaction>>((ref) {
         return t.date.year == now.year && t.date.month == now.month;
       }).toList(),
   };
+
+  if (typeFilter == TransactionTypeFilter.income) {
+    result = result.where((t) => t.type == TransactionType.income).toList();
+  } else if (typeFilter == TransactionTypeFilter.expense) {
+    result = result.where((t) => t.type == TransactionType.expense).toList();
+  }
+
+  if (categories.isNotEmpty) {
+    result = result.where((t) {
+      final key = t.customCategoryId ?? t.category.name;
+      return categories.contains(key);
+    }).toList();
+  }
+
+  if (amountRange.isActive) {
+    result = result.where((t) {
+      if (amountRange.min != null && t.amount < amountRange.min!) return false;
+      if (amountRange.max != null && t.amount > amountRange.max!) return false;
+      return true;
+    }).toList();
+  }
+
+  result = List.from(result);
+  switch (sort) {
+    case TransactionSortOrder.newestFirst:
+      result.sort((a, b) => b.date.compareTo(a.date));
+    case TransactionSortOrder.oldestFirst:
+      result.sort((a, b) => a.date.compareTo(b.date));
+    case TransactionSortOrder.highestAmount:
+      result.sort((a, b) => b.amount.compareTo(a.amount));
+    case TransactionSortOrder.lowestAmount:
+      result.sort((a, b) => a.amount.compareTo(b.amount));
+  }
+
+  return result;
+});
+
+// Count of active non-default filters (used for the badge on the filter button).
+final activeFilterCountProvider = Provider<int>((ref) {
+  int count = 0;
+  if (ref.watch(transactionTypeFilterProvider) != TransactionTypeFilter.all) count++;
+  if (ref.watch(transactionSortProvider) != TransactionSortOrder.newestFirst) count++;
+  if (ref.watch(categoryFilterProvider).isNotEmpty) count++;
+  if (ref.watch(amountRangeProvider).isActive) count++;
+  return count;
+});
+
+// Recurring transactions — used by the notification settings screen.
+final recurringTransactionsProvider = Provider<List<Transaction>>((ref) {
+  return ref
+      .watch(transactionProvider)
+      .where((t) => t.recurrence.isRecurring)
+      .toList();
+});
+
+// Max transaction amount across all transactions — used for the amount slider ceiling.
+final maxTransactionAmountProvider = Provider<double>((ref) {
+  final txs = ref.watch(transactionProvider);
+  if (txs.isEmpty) return 50000.0;
+  final max = txs.map((t) => t.amount).reduce((a, b) => a > b ? a : b);
+  // Round up to the nearest 1000 for a clean slider max.
+  return ((max / 1000).ceil() * 1000).toDouble().clamp(1000.0, 1000000.0);
 });
 
 final searchQueryProvider = StateProvider<String>((_) => '');

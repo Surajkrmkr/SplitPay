@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/utils/currency_formatter.dart';
 import '../../data/models/transaction_model.dart';
+import '../../providers/settings_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../shared/widgets/app_back_button.dart';
 import '../../shared/widgets/empty_state.dart';
@@ -25,7 +27,8 @@ class TransactionsScreen extends ConsumerWidget {
             const _Header(),
             const _SyncRow(),
             const _SearchBar(),
-            const _FilterChips(),
+            const _PeriodChips(),
+            const _ActiveFiltersRow(),
             const Expanded(child: _TransactionList()),
           ],
         ),
@@ -34,28 +37,121 @@ class TransactionsScreen extends ConsumerWidget {
   }
 }
 
-class _Header extends StatelessWidget {
+// ── Header ────────────────────────────────────────────────────────────────────
+
+class _Header extends ConsumerWidget {
   const _Header();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activeCount = ref.watch(activeFilterCountProvider);
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      padding: const EdgeInsets.fromLTRB(20, 16, 12, 0),
       child: Row(
         children: [
           const AppBackButton(),
           const SizedBox(width: 14),
-          Text(
-            'Transactions',
-            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
+          Expanded(
+            child: Text(
+              'Transactions',
+              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
           ),
+          // Filter & Sort button
+          GestureDetector(
+            onTap: () => _showFilterSheet(context, ref),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: activeCount > 0
+                        ? AppColors.primary.withValues(alpha: 0.12)
+                        : (Theme.of(context).brightness == Brightness.dark
+                            ? AppColors.darkCard
+                            : AppColors.lightCard),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: activeCount > 0
+                          ? AppColors.primary
+                          : (Theme.of(context).brightness == Brightness.dark
+                              ? AppColors.darkBorder
+                              : AppColors.lightBorder),
+                      width: activeCount > 0 ? 1.0 : 0.5,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.tune_rounded,
+                        size: 16,
+                        color: activeCount > 0
+                            ? AppColors.primary
+                            : AppColors.textSecondary,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        'Filter',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: activeCount > 0
+                              ? AppColors.primary
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (activeCount > 0)
+                  Positioned(
+                    top: -5,
+                    right: -5,
+                    child: Container(
+                      width: 18,
+                      height: 18,
+                      decoration: const BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        '$activeCount',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
         ],
       ),
     ).animate().fadeIn(duration: 400.ms);
   }
+
+  void _showFilterSheet(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useRootNavigator: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _FilterSheet(),
+    );
+  }
 }
+
+// ── Sync row ──────────────────────────────────────────────────────────────────
 
 class _SyncRow extends ConsumerWidget {
   const _SyncRow();
@@ -75,6 +171,8 @@ class _SyncRow extends ConsumerWidget {
     );
   }
 }
+
+// ── Search bar ────────────────────────────────────────────────────────────────
 
 class _SearchBar extends ConsumerWidget {
   const _SearchBar();
@@ -107,8 +205,10 @@ class _SearchBar extends ConsumerWidget {
   }
 }
 
-class _FilterChips extends ConsumerWidget {
-  const _FilterChips();
+// ── Period chips (All / Today / Week / Month) ─────────────────────────────────
+
+class _PeriodChips extends ConsumerWidget {
+  const _PeriodChips();
 
   static const _filters = [
     (TransactionFilter.all, 'All'),
@@ -120,11 +220,12 @@ class _FilterChips extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(filterProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return SizedBox(
-      height: 52,
+      height: 48,
       child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         scrollDirection: Axis.horizontal,
         itemCount: _filters.length,
         separatorBuilder: (_, __) => const SizedBox(width: 8),
@@ -136,18 +237,18 @@ class _FilterChips extends ConsumerWidget {
             onTap: () => ref.read(filterProvider.notifier).state = filter,
             child: AnimatedContainer(
               duration: 200.ms,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
               decoration: BoxDecoration(
                 color: isSelected
                     ? AppColors.primary
-                    : Theme.of(context).brightness == Brightness.dark
+                    : isDark
                         ? AppColors.darkCard
                         : AppColors.lightCard,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: isSelected
                       ? AppColors.primary
-                      : Theme.of(context).brightness == Brightness.dark
+                      : isDark
                           ? AppColors.darkBorder
                           : AppColors.lightBorder,
                   width: 0.5,
@@ -157,8 +258,7 @@ class _FilterChips extends ConsumerWidget {
                 label,
                 style: TextStyle(
                   color: isSelected ? Colors.white : AppColors.textSecondary,
-                  fontWeight:
-                      isSelected ? FontWeight.w600 : FontWeight.w500,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   fontSize: 13,
                 ),
               ),
@@ -169,6 +269,597 @@ class _FilterChips extends ConsumerWidget {
     ).animate(delay: 150.ms).fadeIn();
   }
 }
+
+// ── Active filters row ────────────────────────────────────────────────────────
+
+class _ActiveFiltersRow extends ConsumerWidget {
+  const _ActiveFiltersRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final type = ref.watch(transactionTypeFilterProvider);
+    final sort = ref.watch(transactionSortProvider);
+    final categories = ref.watch(categoryFilterProvider);
+    final amount = ref.watch(amountRangeProvider);
+    final currency = ref.watch(currencyProvider);
+
+    final chips = <(String label, VoidCallback onRemove)>[];
+
+    if (sort != TransactionSortOrder.newestFirst) {
+      final label = switch (sort) {
+        TransactionSortOrder.oldestFirst => 'Oldest first',
+        TransactionSortOrder.highestAmount => 'Highest amount',
+        TransactionSortOrder.lowestAmount => 'Lowest amount',
+        TransactionSortOrder.newestFirst => '',
+      };
+      chips.add((
+        label,
+        () => ref.read(transactionSortProvider.notifier).state =
+            TransactionSortOrder.newestFirst,
+      ));
+    }
+
+    if (type != TransactionTypeFilter.all) {
+      chips.add((
+        type == TransactionTypeFilter.income ? 'Income' : 'Expense',
+        () => ref.read(transactionTypeFilterProvider.notifier).state =
+            TransactionTypeFilter.all,
+      ));
+    }
+
+    for (final cat in categories) {
+      final label = _categoryLabel(cat, ref);
+      chips.add((
+        label,
+        () {
+          final current = Set<String>.from(ref.read(categoryFilterProvider));
+          current.remove(cat);
+          ref.read(categoryFilterProvider.notifier).state = current;
+        },
+      ));
+    }
+
+    if (amount.isActive) {
+      final minStr = amount.min != null
+          ? CurrencyFormatter.format(amount.min!, symbol: currency)
+          : '';
+      final maxStr = amount.max != null
+          ? CurrencyFormatter.format(amount.max!, symbol: currency)
+          : '';
+      final label = amount.min != null && amount.max != null
+          ? '$minStr – $maxStr'
+          : amount.min != null
+              ? '≥ $minStr'
+              : '≤ $maxStr';
+      chips.add((
+        label,
+        () => ref.read(amountRangeProvider.notifier).state =
+            const AmountRange(),
+      ));
+    }
+
+    if (chips.isEmpty) return const SizedBox.shrink();
+
+    return SizedBox(
+      height: 36,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        scrollDirection: Axis.horizontal,
+        itemCount: chips.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, i) {
+          final (label, onRemove) = chips[i];
+          return _ActiveChip(label: label, onRemove: onRemove);
+        },
+      ),
+    ).animate().fadeIn(duration: 200.ms);
+  }
+
+  String _categoryLabel(String key, WidgetRef ref) {
+    try {
+      return Category.values.byName(key).label;
+    } catch (_) {
+      final custom = ref.read(customCategoriesProvider);
+      return custom.firstWhere((c) => c.id == key, orElse: () => throw '').label;
+    }
+  }
+}
+
+class _ActiveChip extends StatelessWidget {
+  final String label;
+  final VoidCallback onRemove;
+  const _ActiveChip({required this.label, required this.onRemove});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.primary,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(width: 4),
+          GestureDetector(
+            onTap: onRemove,
+            child: const Icon(Icons.close_rounded,
+                size: 14, color: AppColors.primary),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Filter bottom sheet ───────────────────────────────────────────────────────
+
+class _FilterSheet extends ConsumerStatefulWidget {
+  const _FilterSheet();
+
+  @override
+  ConsumerState<_FilterSheet> createState() => _FilterSheetState();
+}
+
+class _FilterSheetState extends ConsumerState<_FilterSheet> {
+  // Local copies — committed on close, allowing "Reset" to clear everything.
+  late TransactionSortOrder _sort;
+  late TransactionTypeFilter _type;
+  late Set<String> _categories;
+  late AmountRange _amount;
+  double _sliderMin = 0;
+  double _sliderMax = 50000;
+
+  @override
+  void initState() {
+    super.initState();
+    _sort = ref.read(transactionSortProvider);
+    _type = ref.read(transactionTypeFilterProvider);
+    _categories = Set.from(ref.read(categoryFilterProvider));
+    _amount = ref.read(amountRangeProvider);
+  }
+
+  void _apply() {
+    ref.read(transactionSortProvider.notifier).state = _sort;
+    ref.read(transactionTypeFilterProvider.notifier).state = _type;
+    ref.read(categoryFilterProvider.notifier).state = _categories;
+    ref.read(amountRangeProvider.notifier).state = _amount;
+    Navigator.pop(context);
+  }
+
+  void _reset() {
+    setState(() {
+      _sort = TransactionSortOrder.newestFirst;
+      _type = TransactionTypeFilter.all;
+      _categories = {};
+      _amount = const AmountRange();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final sliderCeil = ref.watch(maxTransactionAmountProvider);
+    final currency = ref.watch(currencyProvider);
+    final customCats = ref.watch(customCategoriesProvider);
+
+    _sliderMin = _amount.min ?? 0;
+    _sliderMax = _amount.max ?? sliderCeil;
+
+    final hasChanges = _sort != TransactionSortOrder.newestFirst ||
+        _type != TransactionTypeFilter.all ||
+        _categories.isNotEmpty ||
+        _amount.isActive;
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      builder: (context, scrollController) {
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.darkSurface : Colors.white,
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              // Handle
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(top: 12),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              // Title row
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                child: Row(
+                  children: [
+                    Text(
+                      'Filter & Sort',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleLarge
+                          ?.copyWith(fontWeight: FontWeight.w800),
+                    ),
+                    const Spacer(),
+                    if (hasChanges)
+                      TextButton(
+                        onPressed: _reset,
+                        child: const Text(
+                          'Reset',
+                          style: TextStyle(
+                              color: AppColors.expense,
+                              fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              // Scrollable content
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                  children: [
+                    // ── Sort by ──────────────────────────────────────────────
+                    _SheetSection(
+                      title: 'Sort by',
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final (s, label) in [
+                            (TransactionSortOrder.newestFirst, 'Newest first'),
+                            (TransactionSortOrder.oldestFirst, 'Oldest first'),
+                            (TransactionSortOrder.highestAmount, 'Highest amount'),
+                            (TransactionSortOrder.lowestAmount, 'Lowest amount'),
+                          ])
+                            _ChoiceChip(
+                              label: label,
+                              selected: _sort == s,
+                              onTap: () => setState(() => _sort = s),
+                              isDark: isDark,
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // ── Type ─────────────────────────────────────────────────
+                    _SheetSection(
+                      title: 'Type',
+                      child: Row(
+                        children: [
+                          for (final (t, label, color) in [
+                            (TransactionTypeFilter.all, 'All', AppColors.primary),
+                            (TransactionTypeFilter.income, 'Income', AppColors.income),
+                            (TransactionTypeFilter.expense, 'Expense', AppColors.expense),
+                          ])
+                            Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: _ChoiceChip(
+                                label: label,
+                                selected: _type == t,
+                                onTap: () => setState(() => _type = t),
+                                isDark: isDark,
+                                color: color,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // ── Categories ───────────────────────────────────────────
+                    _SheetSection(
+                      title: 'Categories',
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final cat in Category.values)
+                            _CategoryChip(
+                              label: cat.label,
+                              icon: cat.icon,
+                              color: cat.color,
+                              selected: _categories.contains(cat.name),
+                              onTap: () => setState(() {
+                                if (_categories.contains(cat.name)) {
+                                  _categories.remove(cat.name);
+                                } else {
+                                  _categories.add(cat.name);
+                                }
+                              }),
+                              isDark: isDark,
+                            ),
+                          for (final cat in customCats)
+                            _CategoryChip(
+                              label: cat.label,
+                              icon: cat.icon,
+                              color: cat.color,
+                              selected: _categories.contains(cat.id),
+                              onTap: () => setState(() {
+                                if (_categories.contains(cat.id)) {
+                                  _categories.remove(cat.id);
+                                } else {
+                                  _categories.add(cat.id);
+                                }
+                              }),
+                              isDark: isDark,
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // ── Amount range ─────────────────────────────────────────
+                    _SheetSection(
+                      title: 'Amount range',
+                      child: Column(
+                        children: [
+                          RangeSlider(
+                            values: RangeValues(_sliderMin, _sliderMax),
+                            min: 0,
+                            max: sliderCeil,
+                            divisions: 20,
+                            activeColor: AppColors.primary,
+                            inactiveColor:
+                                AppColors.primary.withValues(alpha: 0.15),
+                            onChanged: (v) {
+                              setState(() {
+                                _sliderMin = v.start;
+                                _sliderMax = v.end;
+                                _amount = AmountRange(
+                                  min: v.start > 0 ? v.start : null,
+                                  max: v.end < sliderCeil ? v.end : null,
+                                );
+                              });
+                            },
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              _AmountLabel(
+                                  label: 'Min',
+                                  value: _sliderMin > 0
+                                      ? CurrencyFormatter.format(_sliderMin,
+                                          symbol: currency)
+                                      : 'Any'),
+                              _AmountLabel(
+                                  label: 'Max',
+                                  value: _sliderMax < sliderCeil
+                                      ? CurrencyFormatter.format(_sliderMax,
+                                          symbol: currency)
+                                      : 'Any'),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                  ],
+                ),
+              ),
+              // Apply button
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                    20, 12, 20, 20 + MediaQuery.of(context).padding.bottom),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                    ),
+                    onPressed: _apply,
+                    child: const Text(
+                      'Apply Filters',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w700, fontSize: 15),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ── Filter sheet sub-widgets ──────────────────────────────────────────────────
+
+class _SheetSection extends StatelessWidget {
+  final String title;
+  final Widget child;
+  const _SheetSection({required this.title, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title.toUpperCase(),
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.8,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        child,
+      ],
+    );
+  }
+}
+
+class _ChoiceChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final bool isDark;
+  final Color color;
+
+  const _ChoiceChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    required this.isDark,
+    this.color = AppColors.primary,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected
+              ? color.withValues(alpha: 0.12)
+              : isDark
+                  ? AppColors.darkCard
+                  : const Color(0xFFF4F4F6),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected
+                ? color
+                : isDark
+                    ? AppColors.darkBorder
+                    : AppColors.lightBorder,
+            width: selected ? 1.2 : 0.5,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? color : AppColors.textSecondary,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+            fontSize: 13,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final bool selected;
+  final VoidCallback onTap;
+  final bool isDark;
+
+  const _CategoryChip({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.selected,
+    required this.onTap,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected
+              ? color.withValues(alpha: 0.12)
+              : isDark
+                  ? AppColors.darkCard
+                  : const Color(0xFFF4F4F6),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected
+                ? color
+                : isDark
+                    ? AppColors.darkBorder
+                    : AppColors.lightBorder,
+            width: selected ? 1.2 : 0.5,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: selected ? color : AppColors.textSecondary),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                color: selected ? color : AppColors.textSecondary,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                fontSize: 13,
+              ),
+            ),
+            if (selected) ...[
+              const SizedBox(width: 4),
+              Icon(Icons.check_rounded, size: 13, color: color),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AmountLabel extends StatelessWidget {
+  final String label;
+  final String value;
+  const _AmountLabel({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+              fontSize: 10,
+              color: AppColors.textTertiary,
+              fontWeight: FontWeight.w500),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primary),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Transaction list ──────────────────────────────────────────────────────────
 
 class _TransactionList extends ConsumerWidget {
   const _TransactionList();
@@ -197,7 +888,40 @@ class _TransactionList extends ConsumerWidget {
       );
     }
 
-    // Group by date
+    // Group by date only when sorting by date; otherwise show flat list.
+    final sort = ref.watch(transactionSortProvider);
+    final isDateSort = sort == TransactionSortOrder.newestFirst ||
+        sort == TransactionSortOrder.oldestFirst;
+
+    if (!isDateSort) {
+      return RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: () =>
+            ref.read(transactionProvider.notifier).syncAndReload(),
+        child: ListView.builder(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+          itemCount: transactions.length,
+          itemBuilder: (context, i) {
+            final tx = transactions[i];
+            return TransactionTile(
+              transaction: tx,
+              index: i,
+              onDelete: () =>
+                  ref.read(transactionProvider.notifier).delete(tx.id),
+              onEdit: () => showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                useRootNavigator: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => EditTransactionSheet(transaction: tx),
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    // Date-grouped list
     final grouped = <String, List<_IndexedTx>>{};
     var globalIndex = 0;
     for (final tx in transactions) {
@@ -206,37 +930,40 @@ class _TransactionList extends ConsumerWidget {
       grouped[key]!.add(_IndexedTx(tx, globalIndex++));
     }
 
+    final keys = grouped.keys.toList();
+
     return RefreshIndicator(
       color: AppColors.primary,
       onRefresh: () =>
           ref.read(transactionProvider.notifier).syncAndReload(),
       child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
-        physics: const BouncingScrollPhysics(
-          parent: AlwaysScrollableScrollPhysics(),
-        ),
-        itemCount: grouped.length,
-        itemBuilder: (context, i) {
-          final key = grouped.keys.elementAt(i);
-          final txs = grouped[key]!;
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+        itemCount: keys.length,
+        itemBuilder: (context, groupIdx) {
+          final key = keys[groupIdx];
+          final items = grouped[key]!;
+
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _DateHeader(label: key),
-              ...txs.map((item) => TransactionTile(
-                    transaction: item.tx,
-                    index: item.index,
-                    onDelete: () =>
-                        ref.read(transactionProvider.notifier).delete(item.tx.id),
-                    onEdit: () => showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      useRootNavigator: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (_) =>
-                          EditTransactionSheet(transaction: item.tx),
-                    ),
-                  )),
+              ...items.map(
+                (item) => TransactionTile(
+                  transaction: item.tx,
+                  index: item.index,
+                  onDelete: () => ref
+                      .read(transactionProvider.notifier)
+                      .delete(item.tx.id),
+                  onEdit: () => showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    useRootNavigator: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) =>
+                        EditTransactionSheet(transaction: item.tx),
+                  ),
+                ),
+              ),
             ],
           );
         },
@@ -247,11 +974,17 @@ class _TransactionList extends ConsumerWidget {
   String _dateKey(DateTime date) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
     final d = DateTime(date.year, date.month, date.day);
     if (d == today) return 'Today';
-    if (d == today.subtract(const Duration(days: 1))) return 'Yesterday';
-    return '${date.day}/${date.month}/${date.year}';
+    if (d == yesterday) return 'Yesterday';
+    return '${date.day} ${_monthAbbr(date.month)} ${date.year}';
   }
+
+  String _monthAbbr(int m) => const [
+        '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      ][m];
 }
 
 class _IndexedTx {
@@ -266,15 +999,17 @@ class _DateHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
-      padding: const EdgeInsets.only(top: 16, bottom: 8),
+      padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),
       child: Text(
         label,
-        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w700,
-              fontSize: 12,
-            ),
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: isDark ? AppColors.textSecondary : AppColors.textLightSecondary,
+          letterSpacing: 0.3,
+        ),
       ),
     );
   }

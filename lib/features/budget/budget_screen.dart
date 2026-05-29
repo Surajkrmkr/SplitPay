@@ -56,10 +56,14 @@ class BudgetScreen extends ConsumerWidget {
 
                   // ── Search ──
                   if (activeBudgets.isNotEmpty || showArchived)
-                    AppSearchBar(
-                      hintText: 'Search budgets...',
-                      onChanged: (v) =>
-                          ref.read(budgetSearchQueryProvider.notifier).state = v,
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10.0),
+                      child: AppSearchBar(
+                        hintText: 'Search budgets...',
+                        onChanged: (v) => ref
+                            .read(budgetSearchQueryProvider.notifier)
+                            .state = v,
+                      ),
                     ),
 
                   // ── Archive toggle ──

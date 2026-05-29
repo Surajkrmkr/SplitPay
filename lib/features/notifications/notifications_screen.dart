@@ -132,12 +132,14 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       body: Column(
         children: [
           if (asyncNotifications.hasValue &&
-              (asyncNotifications.valueOrNull?.isNotEmpty ?? false))
+              (asyncNotifications.valueOrNull?.isNotEmpty ?? false)) ...[
             AppSearchBar(
               hintText: 'Search notifications...',
               onChanged: (v) =>
                   ref.read(notificationSearchQueryProvider.notifier).state = v,
             ),
+            _NotificationTypeFilter(),
+          ],
           Expanded(
             child: asyncNotifications.when(
               loading: () => _SkeletonList(),
@@ -217,6 +219,76 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             onPressed: () => _confirmClearAll(context),
           ),
       ],
+    );
+  }
+}
+
+// ── Notification Type Filter ──────────────────────────────────────────────────
+
+class _NotificationTypeFilter extends ConsumerWidget {
+  static const _filters = [
+    (NotificationTypeFilter.all, 'All'),
+    (NotificationTypeFilter.expense, 'Expenses'),
+    (NotificationTypeFilter.settlement, 'Settlements'),
+    (NotificationTypeFilter.group, 'Groups'),
+    (NotificationTypeFilter.reminder, 'Reminders'),
+  ];
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selected = ref.watch(notificationTypeFilterProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return SizedBox(
+      height: 40,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        scrollDirection: Axis.horizontal,
+        itemCount: _filters.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, i) {
+          final (filter, label) = _filters[i];
+          final isSelected = selected == filter;
+
+          return GestureDetector(
+            onTap: () => ref
+                .read(notificationTypeFilterProvider.notifier)
+                .state = filter,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppColors.primary.withValues(alpha: 0.15)
+                    : isDark
+                        ? AppColors.darkCard
+                        : AppColors.lightCard,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isSelected
+                      ? AppColors.primary
+                      : isDark
+                          ? AppColors.darkBorder
+                          : AppColors.lightBorder,
+                  width: isSelected ? 1.0 : 0.5,
+                ),
+              ),
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: isSelected
+                      ? AppColors.primary
+                      : AppColors.textSecondary,
+                  fontWeight:
+                      isSelected ? FontWeight.w600 : FontWeight.w500,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }

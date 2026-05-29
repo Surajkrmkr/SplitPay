@@ -14,6 +14,7 @@ import 'app.dart';
 import 'core/services/app_logger.dart';
 import 'data/services/hive_service.dart';
 import 'data/services/notification_service.dart';
+import 'data/services/reminder_service.dart';
 
 void main() {
   // Funnel all debugPrint calls into AppLogger so they appear in the console.
@@ -65,6 +66,7 @@ Future<void> _init() async {
 
   try {
     await NotificationService.instance.initialize();
+    await ReminderService.instance.init();
     AppLogger.instance.i('NotificationService ready', tag: 'Init');
   } catch (e) {
     AppLogger.instance.e('NotificationService init failed: $e', tag: 'Init');

@@ -126,7 +126,7 @@ class TransactionTile extends ConsumerWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         Text(
-                          DateFormatter.formatDate(transaction.date),
+                          '${DateFormatter.formatDate(transaction.date)} · ${DateFormatter.formatTime(transaction.date)}',
                           style: TextStyle(
                             color: AppColors.textTertiary,
                             fontSize: 11,
