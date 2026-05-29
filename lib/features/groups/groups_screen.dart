@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../providers/group_provider.dart';
+import '../../shared/widgets/app_search_bar.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/skeleton_loader.dart';
 import 'create_group/create_group_sheet.dart';
@@ -17,6 +18,7 @@ class GroupsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final groupsAsync = ref.watch(groupsProvider);
+    final filteredGroups = ref.watch(searchedGroupsProvider);
 
     return Scaffold(
       backgroundColor:
@@ -111,6 +113,16 @@ class GroupsScreen extends ConsumerWidget {
                 ),
               ),
 
+              // Search bar (only when data has loaded)
+              if (groupsAsync.hasValue && (groupsAsync.valueOrNull?.isNotEmpty ?? false))
+                SliverToBoxAdapter(
+                  child: AppSearchBar(
+                    hintText: 'Search groups...',
+                    onChanged: (v) =>
+                        ref.read(groupSearchQueryProvider.notifier).state = v,
+                  ),
+                ),
+
               // Body
               groupsAsync.when(
                 loading: () => SliverList(
@@ -143,13 +155,23 @@ class GroupsScreen extends ConsumerWidget {
                     );
                   }
 
+                  if (filteredGroups.isEmpty) {
+                    return const SliverFillRemaining(
+                      child: EmptyState(
+                        icon: Icons.search_off_rounded,
+                        title: 'No groups found',
+                        subtitle: 'Try a different search term.',
+                      ),
+                    );
+                  }
+
                   return SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
                         if (index == 0) {
                           return const MyBalanceSummary();
                         }
-                        final group = groups[index - 1];
+                        final group = filteredGroups[index - 1];
                         return GroupCard(
                           group: group,
                           index: index - 1,
@@ -157,7 +179,7 @@ class GroupsScreen extends ConsumerWidget {
                               context.push('/groups/${group.id}'),
                         );
                       },
-                      childCount: groups.length + 1,
+                      childCount: filteredGroups.length + 1,
                     ),
                   );
                 },

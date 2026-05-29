@@ -7,6 +7,7 @@ import '../../providers/theme_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/utils/currency_formatter.dart';
+import '../../data/services/biometric_service.dart';
 import '../../data/models/custom_category.dart';
 import '../../data/models/transaction_model.dart';
 
@@ -42,6 +43,14 @@ class SettingsScreen extends ConsumerWidget {
                       _CurrencyTile(currency: currency, ref: ref),
                       _Divider(),
                       _CategoriesTile(ref: ref),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  _SectionLabel(label: 'Security'),
+                  const SizedBox(height: 12),
+                  _SettingsGroup(
+                    children: [
+                      _BiometricTile(),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -974,6 +983,86 @@ class _SettingsTile extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _BiometricTile extends ConsumerStatefulWidget {
+  @override
+  ConsumerState<_BiometricTile> createState() => _BiometricTileState();
+}
+
+class _BiometricTileState extends ConsumerState<_BiometricTile> {
+  bool _busy = false;
+
+  Future<void> _toggle(bool enabled) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+
+    try {
+      if (enabled) {
+        final available = await BiometricService.instance.isAvailable();
+        if (!available) {
+          _showSnackBar('Biometrics not available on this device');
+          return;
+        }
+        final result = await BiometricService.instance.authenticate(
+          reason: 'Verify your identity to enable biometric lock',
+        );
+        switch (result) {
+          case BiometricResult.success:
+            break;
+          case BiometricResult.cancelled:
+            _showSnackBar('Authentication cancelled');
+            return;
+          case BiometricResult.notEnrolled:
+            _showSnackBar('No biometrics enrolled. Set up fingerprint or Face ID in device settings.');
+            return;
+          case BiometricResult.notAvailable:
+            _showSnackBar('Biometrics not available on this device');
+            return;
+          case BiometricResult.lockedOut:
+            _showSnackBar('Too many attempts. Use your PIN to unlock the device first.');
+            return;
+          case BiometricResult.failed:
+            _showSnackBar('Authentication failed. Please try again.');
+            return;
+        }
+      }
+      await ref.read(biometricLockProvider.notifier).setEnabled(enabled);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  void _showSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = ref.watch(biometricLockProvider);
+    return _SettingsTile(
+      icon: Icons.fingerprint_rounded,
+      iconColor: AppColors.primary,
+      title: 'Biometric Lock',
+      subtitle: enabled ? 'Unlock app with biometrics' : 'Disabled',
+      trailing: _busy
+          ? const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : Switch(
+              value: enabled,
+              onChanged: _toggle,
+              activeThumbColor: AppColors.primary,
+              activeTrackColor: AppColors.primary.withValues(alpha: 0.4),
+            ),
+      onTap: () => _toggle(!enabled),
     );
   }
 }

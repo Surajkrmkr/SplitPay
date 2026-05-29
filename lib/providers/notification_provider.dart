@@ -104,6 +104,20 @@ final hasUnreadProvider = Provider<bool>((ref) {
   return ref.watch(unreadCountProvider) > 0;
 });
 
+final notificationSearchQueryProvider = StateProvider<String>((_) => '');
+
+final searchedNotificationsProvider = Provider<List<NotificationModel>>((ref) {
+  final notifications = ref.watch(notificationsProvider).valueOrNull ?? [];
+  final query =
+      ref.watch(notificationSearchQueryProvider).toLowerCase().trim();
+  if (query.isEmpty) return notifications;
+  return notifications.where((n) {
+    return n.title.toLowerCase().contains(query) ||
+        n.body.toLowerCase().contains(query) ||
+        (n.actorName?.toLowerCase().contains(query) ?? false);
+  }).toList();
+});
+
 // ── Foreground notification stream (for in-app banner) ────────────────────────
 
 final foregroundNotificationProvider =

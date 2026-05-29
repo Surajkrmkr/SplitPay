@@ -208,6 +208,19 @@ export async function joinViaInvite(code: string, userId: string): Promise<Group
     })
     .catch(() => {});
 
+  // Notify the invite creator that their invite was accepted
+  const joiner = group?.members.find((m) => m.userId === userId);
+  if (joiner && invite.createdById !== userId) {
+    notificationsService
+      .notifyMemberJoined({
+        inviterId: invite.createdById,
+        groupId: invite.groupId,
+        groupName: invite.group.name,
+        joinerName: joiner.user.name,
+      })
+      .catch(() => {});
+  }
+
   return group!;
 }
 

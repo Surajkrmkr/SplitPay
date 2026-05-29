@@ -19,7 +19,12 @@
       "Bash(find ~/.pub-cache -path \"*/upi_india-3*/lib/*.dart\" 2>/dev/null | head -20)",
       "Read(//Users/surajkrmkr/.pub-cache/**)",
       "Bash(grep -v \"^$\")",
-      "Bash(flutter --version)"
+      "Bash(flutter --version)",
+      "Read(//Users/surajkrmkr/Storage/Xiaomi\\\\ Contract/Repos/dimeflow/lib/features/groups/add_expense/**)",
+      "Read(//Users/surajkrmkr/Storage/Xiaomi\\\\ Contract/Repos/dimeflow/lib/data/models/**)",
+      "Read(//Users/surajkrmkr/Storage/Xiaomi\\\\ Contract/Repos/dimeflow/lib/data/services/**)",
+      "Bash(dart analyze *)",
+      "Read(//Users/surajkrmkr/Storage/Xiaomi\\\\ Contract/Repos/dimeflow/lib/providers/**)"
     ]
   }
 }

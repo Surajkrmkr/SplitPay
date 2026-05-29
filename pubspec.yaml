@@ -54,6 +54,9 @@ dependencies:
   # Secure Storage
   flutter_secure_storage: ^9.2.2
 
+  # Biometric authentication
+  local_auth: ^2.3.0
+
   # Image
   cached_network_image: ^3.4.1
 

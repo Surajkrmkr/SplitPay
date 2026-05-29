@@ -204,6 +204,19 @@ class HiveService {
         .length;
   }
 
+  // ─── Lifecycle ────────────────────────────────────────────────────────────
+
+  /// Wipes all user-specific data on logout / session expiry.
+  /// Settings are intentionally preserved (app-level prefs, not user data).
+  static Future<void> clearUserData() async {
+    await Future.wait([
+      _transactions.clear(),
+      _customCats.clear(),
+      _notifications.clear(),
+      _budgets.clear(),
+    ]);
+  }
+
   // ─── Settings ─────────────────────────────────────────────────────────────
 
   static T? getSetting<T>(String key) => _settings.get(key) as T?;

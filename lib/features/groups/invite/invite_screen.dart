@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -116,6 +119,54 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
     await Share.share(message, subject: 'Join my SplitPay group');
   }
 
+  Future<void> _shareQrCode() async {
+    if (_generatedCode == null) return;
+    const qrSize   = 400.0;
+    const padding  = 40.0;
+    const total    = qrSize + padding * 2;
+
+    final recorder = ui.PictureRecorder();
+    final canvas   = Canvas(recorder);
+
+    // White background
+    canvas.drawRect(
+      const Rect.fromLTWH(0, 0, total, total),
+      Paint()..color = Colors.white,
+    );
+
+    final painter = QrPainter(
+      data: 'dimeflow://join/$_generatedCode',
+      version: QrVersions.auto,
+      eyeStyle: const QrEyeStyle(
+        eyeShape: QrEyeShape.square,
+        color: AppColors.primary,
+      ),
+      dataModuleStyle: const QrDataModuleStyle(
+        dataModuleShape: QrDataModuleShape.square,
+        color: Color(0xFF1A1A2E),
+      ),
+    );
+
+    canvas.save();
+    canvas.translate(padding, padding);
+    painter.paint(canvas, const Size(qrSize, qrSize));
+    canvas.restore();
+
+    final picture  = recorder.endRecording();
+    final image    = await picture.toImage(total.toInt(), total.toInt());
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    final bytes    = byteData!.buffer.asUint8List();
+
+    final file = File('${Directory.systemTemp.path}/splitpay_invite_$_generatedCode.png');
+    await file.writeAsBytes(bytes, flush: true);
+
+    await Share.shareXFiles(
+      [XFile(file.path, mimeType: 'image/png')],
+      text: 'Join my SplitPay group!\nCode: $_generatedCode',
+      subject: 'SplitPay Group Invite',
+    );
+  }
+
   // ── Join ────────────────────────────────────────────────────
 
   Future<void> _previewInvite(String code) async {
@@ -147,6 +198,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
       final group =
           await ref.read(groupApiServiceProvider).joinViaInvite(code);
       ref.invalidate(groupsProvider);
+      ref.invalidate(groupDetailProvider(group.id));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Joined "${group.name}" successfully!'),
@@ -259,6 +311,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
                   onGenerate: _generateCode,
                   onCopy: _copyCode,
                   onShare: _shareCode,
+                  onShareQr: _shareQrCode,
                 ),
                 _JoinTab(
                   isDark: isDark,
@@ -287,6 +340,7 @@ class _GenerateTab extends StatelessWidget {
   final VoidCallback onGenerate;
   final VoidCallback onCopy;
   final VoidCallback onShare;
+  final VoidCallback onShareQr;
 
   const _GenerateTab({
     required this.isDark,
@@ -297,6 +351,7 @@ class _GenerateTab extends StatelessWidget {
     required this.onGenerate,
     required this.onCopy,
     required this.onShare,
+    required this.onShareQr,
   });
 
   @override
@@ -417,6 +472,18 @@ class _GenerateTab extends StatelessWidget {
                         ),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: onShareQr,
+                      icon: const Icon(Icons.qr_code_rounded, size: 16),
+                      label: const Text('Share QR Code'),
+                      style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primary)),
+                    ),
                   ),
                 ],
               ),

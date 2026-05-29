@@ -91,7 +91,7 @@ class ActivityModel {
       expenseId: json['expenseId'] as String?,
       settlementId: json['settlementId'] as String?,
       metadata: json['metadata'] as Map<String, dynamic>?,
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      createdAt: DateTime.parse(json['createdAt'] as String).toLocal(),
     );
   }
 }

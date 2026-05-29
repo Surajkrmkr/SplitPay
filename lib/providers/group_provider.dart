@@ -125,3 +125,19 @@ final groupSettlementsProvider =
     return ref.read(groupApiServiceProvider).getGroupSettlements(groupId);
   },
 );
+
+// ──────────────────────────────────────────────
+// Group search
+// ──────────────────────────────────────────────
+
+final groupSearchQueryProvider = StateProvider<String>((_) => '');
+
+final searchedGroupsProvider = Provider<List<GroupModel>>((ref) {
+  final groups = ref.watch(groupsProvider).valueOrNull ?? [];
+  final query = ref.watch(groupSearchQueryProvider).toLowerCase().trim();
+  if (query.isEmpty) return groups;
+  return groups.where((g) {
+    return g.name.toLowerCase().contains(query) ||
+        (g.description?.toLowerCase().contains(query) ?? false);
+  }).toList();
+});

@@ -166,16 +166,20 @@ class _DebugLogScreenState extends State<DebugLogScreen> {
         onPressed: () => Navigator.of(context).pop(),
       ),
       title: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           _LiveDot(),
           const SizedBox(width: 8),
-          const Text(
-            'Debug Console',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.3,
-              color: Colors.white,
+          const Flexible(
+            child: Text(
+              'Debug Console',
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.3,
+                color: Colors.white,
+              ),
             ),
           ),
           const SizedBox(width: 8),

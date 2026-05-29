@@ -7,6 +7,7 @@ import '../../core/constants/app_colors.dart';
 import '../../data/models/notification_model.dart';
 import '../../providers/notification_provider.dart';
 import '../../shared/widgets/app_back_button.dart';
+import '../../shared/widgets/app_search_bar.dart';
 import 'widgets/notification_card.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
@@ -122,25 +123,43 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final asyncNotifications = ref.watch(notificationsProvider);
+    final filteredNotifications = ref.watch(searchedNotificationsProvider);
 
     return Scaffold(
       backgroundColor:
           isDark ? AppColors.darkBg : AppColors.lightBg,
       appBar: _buildAppBar(context, isDark, asyncNotifications),
-      body: asyncNotifications.when(
-        loading: () => _SkeletonList(),
-        error: (_, __) => _ErrorState(
-          onRetry: () => ref.read(notificationsProvider.notifier).refresh(),
-        ),
-        data: (notifications) {
-          if (notifications.isEmpty) return const _EmptyState();
-          return _NotificationList(
-            notifications: notifications,
-            onTap: _onTap,
-            onDismiss: (id) =>
-                ref.read(notificationsProvider.notifier).delete(id),
-          );
-        },
+      body: Column(
+        children: [
+          if (asyncNotifications.hasValue &&
+              (asyncNotifications.valueOrNull?.isNotEmpty ?? false))
+            AppSearchBar(
+              hintText: 'Search notifications...',
+              onChanged: (v) =>
+                  ref.read(notificationSearchQueryProvider.notifier).state = v,
+            ),
+          Expanded(
+            child: asyncNotifications.when(
+              loading: () => _SkeletonList(),
+              error: (_, __) => _ErrorState(
+                onRetry: () =>
+                    ref.read(notificationsProvider.notifier).refresh(),
+              ),
+              data: (notifications) {
+                if (notifications.isEmpty) return const _EmptyState();
+                if (filteredNotifications.isEmpty) {
+                  return const _EmptyState(isSearchResult: true);
+                }
+                return _NotificationList(
+                  notifications: filteredNotifications,
+                  onTap: _onTap,
+                  onDismiss: (id) =>
+                      ref.read(notificationsProvider.notifier).delete(id),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -279,7 +298,8 @@ class _NotificationList extends StatelessWidget {
 // ── Empty State ───────────────────────────────────────────────────────────────
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState();
+  final bool isSearchResult;
+  const _EmptyState({this.isSearchResult = false});
 
   @override
   Widget build(BuildContext context) {
@@ -295,15 +315,17 @@ class _EmptyState extends StatelessWidget {
               color: isDark ? AppColors.darkCard : AppColors.lightCard,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.notifications_off_outlined,
+            child: Icon(
+              isSearchResult
+                  ? Icons.search_off_rounded
+                  : Icons.notifications_off_outlined,
               size: 36,
               color: AppColors.textTertiary,
             ),
           ),
           const SizedBox(height: 20),
           Text(
-            'No notifications yet',
+            isSearchResult ? 'No notifications found' : 'No notifications yet',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: isDark ? AppColors.textPrimary : AppColors.textLight,
                   fontWeight: FontWeight.w600,
@@ -311,7 +333,9 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Group activity, settlements, and\nreminders will appear here.',
+            isSearchResult
+                ? 'Try a different search term.'
+                : 'Group activity, settlements, and\nreminders will appear here.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,

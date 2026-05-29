@@ -40,18 +40,18 @@ class ServerTransaction {
     return ServerTransaction(
       id: json['id'] as String,
       localId: json['localId'] as String,
-      amount: (json['amount'] as num).toDouble(),
+      amount: double.parse(json['amount'].toString()),
       type: json['transactionType'] as String? ?? json['type'] as String,
       categoryKey: json['categoryKey'] as String,
       customCategoryId: json['customCategoryId'] as String?,
       appIcon: json['appIcon'] as String?,
       note: json['note'] as String?,
-      date: DateTime.parse(json['date'] as String),
+      date: DateTime.parse(json['date'] as String).toLocal(),
       recurrence: json['recurrence'] as String? ?? 'NONE',
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      createdAt: DateTime.parse(json['createdAt'] as String).toLocal(),
+      updatedAt: DateTime.parse(json['updatedAt'] as String).toLocal(),
       deletedAt: json['deletedAt'] != null
-          ? DateTime.parse(json['deletedAt'] as String)
+          ? DateTime.parse(json['deletedAt'] as String).toLocal()
           : null,
     );
   }
@@ -118,7 +118,7 @@ class SyncPushResult {
       categories: (json['categories'] as List<dynamic>? ?? [])
           .map((e) => SyncItemResult.fromJson(e as Map<String, dynamic>))
           .toList(),
-      syncedAt: DateTime.parse(json['syncedAt'] as String),
+      syncedAt: DateTime.parse(json['syncedAt'] as String).toLocal(),
     );
   }
 }

@@ -132,7 +132,7 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
         'userId': uid,
         'userName': member.name,
         'userAvatar': member.avatar,
-        'share': share,
+        if (_splitType != 'PERCENTAGE') 'share': share,
         if (percentage != null) 'percentage': percentage,
       };
     }).toList();

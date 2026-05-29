@@ -188,3 +188,38 @@ export async function notifyAddedToGroup(opts: {
     }).catch(() => {});
   }
 }
+
+/**
+ * Notify the invite creator that someone joined their group via their invite.
+ */
+export async function notifyMemberJoined(opts: {
+  inviterId: string;
+  groupId: string;
+  groupName: string;
+  joinerName: string;
+}): Promise<void> {
+  const { inviterId, groupId, groupName, joinerName } = opts;
+  const title = 'New member joined';
+  const body = `${joinerName} joined "${groupName}" via your invite`;
+
+  const tokens = await notificationsRepository.getUserFcmTokens(inviterId);
+
+  await notificationsRepository.createNotification({
+    userId: inviterId,
+    type: 'GROUP_ACTIVITY',
+    title,
+    body,
+    groupId,
+    actorName: joinerName,
+    data: { type: 'GROUP_ACTIVITY', groupId },
+  });
+
+  if (tokens.length > 0) {
+    sendPushNotification({
+      tokens,
+      title,
+      body,
+      data: { type: 'GROUP_ACTIVITY', groupId, actorName: joinerName },
+    }).catch(() => {});
+  }
+}

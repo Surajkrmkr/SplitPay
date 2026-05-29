@@ -48,8 +48,8 @@ class GroupExpenseModel {
           .toList(),
       notes: json['notes'] as String?,
       appIcon: json['appIcon'] as String?,
-      date: DateTime.parse(json['date'] as String),
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      date: DateTime.parse(json['date'] as String).toLocal(),
+      createdAt: DateTime.parse(json['createdAt'] as String).toLocal(),
     );
   }
 

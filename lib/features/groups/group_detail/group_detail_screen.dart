@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../data/models/activity_model.dart';
+import '../../../data/models/group_expense_model.dart';
 import '../../../data/models/group_model.dart';
 import '../../../data/models/settlement_model.dart';
 import '../../../data/services/group_api_service.dart';
@@ -12,6 +13,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../providers/group_provider.dart';
 import '../../../providers/settings_provider.dart';
 import '../../../shared/widgets/app_back_button.dart';
+import '../../../shared/widgets/app_search_bar.dart';
 import '../../../shared/widgets/avatar_widget.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/skeleton_loader.dart';
@@ -532,14 +534,31 @@ Future<void> _confirmDeleteExpense(
 // Expenses Tab
 // ─────────────────────────────────────────────────────
 
-class _ExpensesTab extends ConsumerWidget {
+class _ExpensesTab extends ConsumerStatefulWidget {
   final String groupId;
   final GroupModel group;
   const _ExpensesTab({required this.groupId, required this.group});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final expensesAsync = ref.watch(groupExpensesProvider(groupId));
+  ConsumerState<_ExpensesTab> createState() => _ExpensesTabState();
+}
+
+class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
+  String _query = '';
+
+  List<GroupExpenseModel> _filter(List<GroupExpenseModel> expenses) {
+    if (_query.isEmpty) return expenses;
+    final q = _query.toLowerCase();
+    return expenses.where((e) {
+      return e.title.toLowerCase().contains(q) ||
+          e.paidByName.toLowerCase().contains(q) ||
+          (e.notes?.toLowerCase().contains(q) ?? false);
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final expensesAsync = ref.watch(groupExpensesProvider(widget.groupId));
 
     return expensesAsync.when(
       loading: () => ListView(
@@ -550,7 +569,8 @@ class _ExpensesTab extends ConsumerWidget {
       ),
       error: (e, _) => RefreshIndicator(
         color: AppColors.primary,
-        onRefresh: () async => ref.invalidate(groupExpensesProvider(groupId)),
+        onRefresh: () async =>
+            ref.invalidate(groupExpensesProvider(widget.groupId)),
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
@@ -567,7 +587,7 @@ class _ExpensesTab extends ConsumerWidget {
           return RefreshIndicator(
             color: AppColors.primary,
             onRefresh: () async =>
-                ref.invalidate(groupExpensesProvider(groupId)),
+                ref.invalidate(groupExpensesProvider(widget.groupId)),
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               children: const [
@@ -581,27 +601,47 @@ class _ExpensesTab extends ConsumerWidget {
           );
         }
 
+        final filtered = _filter(expenses);
+
         return RefreshIndicator(
           color: AppColors.primary,
-          onRefresh: () async => ref.invalidate(groupExpensesProvider(groupId)),
+          onRefresh: () async =>
+              ref.invalidate(groupExpensesProvider(widget.groupId)),
           child: ListView.builder(
             padding: const EdgeInsets.only(top: 8, bottom: 100),
-            itemCount: expenses.length,
-            itemBuilder: (context, i) => ExpenseTile(
-              expense: expenses[i],
-              onEdit: () => showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                useRootNavigator: true,
-                backgroundColor: Colors.transparent,
-                builder: (_) => EditExpenseSheet(
-                  expense: expenses[i],
-                  group: group,
+            itemCount: filtered.isEmpty ? 2 : filtered.length + 1,
+            itemBuilder: (context, i) {
+              if (i == 0) {
+                return AppSearchBar(
+                  hintText: 'Search expenses...',
+                  onChanged: (v) => setState(() => _query = v),
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                );
+              }
+              if (filtered.isEmpty) {
+                return const EmptyState(
+                  icon: Icons.search_off_rounded,
+                  title: 'No expenses found',
+                  subtitle: 'Try a different search term.',
+                );
+              }
+              final expense = filtered[i - 1];
+              return ExpenseTile(
+                expense: expense,
+                onEdit: () => showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  useRootNavigator: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => EditExpenseSheet(
+                    expense: expense,
+                    group: widget.group,
+                  ),
                 ),
-              ),
-              onDelete: () =>
-                  _confirmDeleteExpense(context, ref, expenses[i].id),
-            ),
+                onDelete: () =>
+                    _confirmDeleteExpense(context, ref, expense.id),
+              );
+            },
           ),
         );
       },

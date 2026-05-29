@@ -28,14 +28,14 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      body: Column(
-        children: [
-          // Offline / sync-error banner (animates in/out automatically).
-          const OfflineBanner(),
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            // Offline / sync-error banner (animates in/out automatically).
+            const OfflineBanner(),
 
-          Expanded(
-            child: SafeArea(
-              bottom: false,
+            Expanded(
               child: RefreshIndicator(
                 color: AppColors.primary,
                 onRefresh: () =>
@@ -73,8 +73,8 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

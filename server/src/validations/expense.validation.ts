@@ -2,8 +2,8 @@ import { z } from 'zod';
 
 const participantSchema = z.object({
   userId: z.string().uuid('Invalid user ID'),
-  share: z.number().positive('Share must be positive').optional(),
-  percentage: z.number().positive('Percentage must be positive').max(100).optional(),
+  share: z.number().min(0, 'Share cannot be negative').optional(),
+  percentage: z.number().min(0, 'Percentage cannot be negative').max(100).optional(),
 });
 
 export const createExpenseSchema = z

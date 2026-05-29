@@ -87,3 +87,17 @@ class HiddenCategoriesNotifier extends StateNotifier<Set<String>> {
 
   bool isHidden(Category category) => state.contains(category.name);
 }
+
+final biometricLockProvider =
+    StateNotifierProvider<BiometricLockNotifier, bool>(
+        (ref) => BiometricLockNotifier());
+
+class BiometricLockNotifier extends StateNotifier<bool> {
+  BiometricLockNotifier()
+      : super(HiveService.getSetting<bool>('biometric_lock') ?? false);
+
+  Future<void> setEnabled(bool value) async {
+    state = value;
+    await HiveService.setSetting('biometric_lock', value);
+  }
+}

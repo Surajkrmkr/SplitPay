@@ -127,8 +127,8 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                 states.contains(WidgetState.selected)
                     ? Colors.white
                     : AppColors.primary),
-            dayPeriodBorderSide: const BorderSide(
-                color: AppColors.primary, width: 1),
+            dayPeriodBorderSide:
+                const BorderSide(color: AppColors.primary, width: 1),
           ),
         ),
         child: child!,
@@ -318,7 +318,9 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeOut,
                 padding: EdgeInsets.fromLTRB(
-                  24, 12, 24,
+                  24,
+                  12,
+                  24,
                   (keyboardHeight > 0 ? keyboardHeight : safeAreaBottom) + 16,
                 ),
                 decoration: BoxDecoration(
@@ -671,14 +673,16 @@ class _DateSelector extends StatelessWidget {
             Icon(Icons.calendar_today_rounded,
                 size: 18, color: AppColors.primary),
             const SizedBox(width: 12),
-            Text(
-              DateFormat('d MMM yyyy').format(date),
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(fontWeight: FontWeight.w500),
+            Flexible(
+              child: Text(
+                DateFormat('d MMM yyyy').format(date),
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(fontWeight: FontWeight.w500),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-            const Spacer(),
             Icon(Icons.chevron_right_rounded,
                 color: AppColors.textTertiary, size: 18),
           ],
@@ -715,8 +719,7 @@ class _TimeSelector extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(Icons.access_time_rounded,
-                size: 18, color: AppColors.primary),
+            Icon(Icons.access_time_rounded, size: 18, color: AppColors.primary),
             const SizedBox(width: 10),
             Text(
               TimeOfDay.fromDateTime(date).format(context),
@@ -762,8 +765,7 @@ class _RecurrencePicker extends StatelessWidget {
             },
             child: AnimatedContainer(
               duration: 180.ms,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: isSelected
                     ? AppColors.primary.withValues(alpha: 0.15)
@@ -772,9 +774,7 @@ class _RecurrencePicker extends StatelessWidget {
                 border: Border.all(
                   color: isSelected
                       ? AppColors.primary
-                      : (isDark
-                          ? AppColors.darkBorder
-                          : AppColors.lightBorder),
+                      : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
                   width: isSelected ? 1.2 : 0.5,
                 ),
               ),

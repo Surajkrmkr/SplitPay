@@ -51,6 +51,8 @@ final budgetPeriodFilterProvider =
 
 final showArchivedBudgetsProvider = StateProvider<bool>((_) => false);
 
+final budgetSearchQueryProvider = StateProvider<String>((_) => '');
+
 // ─── Derived budget lists ────────────────────────────────────────────────────
 
 final activeBudgetsProvider = Provider<List<Budget>>((ref) =>
@@ -60,18 +62,22 @@ final filteredBudgetsProvider = Provider<List<Budget>>((ref) {
   final budgets = ref.watch(budgetProvider);
   final periodFilter = ref.watch(budgetPeriodFilterProvider);
   final showArchived = ref.watch(showArchivedBudgetsProvider);
+  final query = ref.watch(budgetSearchQueryProvider).toLowerCase().trim();
 
   return budgets.where((b) {
     if (b.isArchived != showArchived) return false;
-    if (periodFilter == BudgetPeriodFilter.all) return true;
-    final match = switch (periodFilter) {
-      BudgetPeriodFilter.daily => BudgetPeriod.daily,
-      BudgetPeriodFilter.weekly => BudgetPeriod.weekly,
-      BudgetPeriodFilter.monthly => BudgetPeriod.monthly,
-      BudgetPeriodFilter.yearly => BudgetPeriod.yearly,
-      BudgetPeriodFilter.all => null,
-    };
-    return match == null || b.period == match;
+    if (periodFilter != BudgetPeriodFilter.all) {
+      final match = switch (periodFilter) {
+        BudgetPeriodFilter.daily => BudgetPeriod.daily,
+        BudgetPeriodFilter.weekly => BudgetPeriod.weekly,
+        BudgetPeriodFilter.monthly => BudgetPeriod.monthly,
+        BudgetPeriodFilter.yearly => BudgetPeriod.yearly,
+        BudgetPeriodFilter.all => null,
+      };
+      if (match != null && b.period != match) return false;
+    }
+    if (query.isNotEmpty && !b.title.toLowerCase().contains(query)) return false;
+    return true;
   }).toList();
 });
 

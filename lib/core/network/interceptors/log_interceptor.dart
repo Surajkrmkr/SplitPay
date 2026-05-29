@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' as dev;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -100,7 +101,7 @@ class PrettyLogInterceptor extends Interceptor {
       }
     }
     lines.write('$color╚${'═' * 60}$_reset');
-    debugPrint(lines.toString());
+    dev.log(lines.toString(), name: 'Network');
   }
 
   String _encode(dynamic data) {

@@ -48,7 +48,7 @@ class SettlementModel {
       payeeAvatar: payee?['avatar'] as String? ?? json['payeeAvatar'] as String?,
       amount: double.parse(json['amount'].toString()),
       notes: json['notes'] as String?,
-      settledAt: DateTime.parse(json['settledAt'] as String),
+      settledAt: DateTime.parse(json['settledAt'] as String).toLocal(),
       paymentMethod: json['paymentMethod'] as String?,
       settlementType: json['settlementType'] as String?,
       transactionId: json['transactionId'] as String?,

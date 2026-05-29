@@ -7,6 +7,7 @@ import '../core/storage/token_storage.dart';
 import '../data/models/auth_user_model.dart';
 import '../data/repositories/notification_repository.dart';
 import '../data/services/firebase_auth_service.dart';
+import '../data/services/hive_service.dart';
 import '../data/services/notification_service.dart';
 
 enum AuthStatus { initial, loading, authenticated, unauthenticated, error }
@@ -183,6 +184,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       await Future.wait([
         tokenStorage.clearTokens(),
         firebaseAuth.signOut(),
+        HiveService.clearUserData(),
       ]);
 
       state = AsyncValue.data(
@@ -196,11 +198,15 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }
 
   Future<void> _handleSessionExpired() async {
-    // Tokens are already cleared by AuthInterceptor; sign out of Firebase and
-    // notification token so the next sign-in starts clean, then flip state.
+    // Tokens are already cleared by AuthInterceptor; sign out of Firebase,
+    // delete notification token, and wipe local DB so stale data can't bleed
+    // into the next user's session.
     try {
-      await NotificationService.instance.deleteToken();
-      await ref.read(firebaseAuthServiceProvider).signOut();
+      await Future.wait([
+        NotificationService.instance.deleteToken(),
+        ref.read(firebaseAuthServiceProvider).signOut(),
+        HiveService.clearUserData(),
+      ]);
     } catch (_) {}
     state = AsyncValue.data(
       const AuthState(status: AuthStatus.unauthenticated),
