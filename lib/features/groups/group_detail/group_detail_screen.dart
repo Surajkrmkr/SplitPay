@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../../../data/models/activity_model.dart';
 import '../../../data/models/group_expense_model.dart';
 import '../../../data/models/group_model.dart';
@@ -12,7 +13,6 @@ import '../../../data/services/group_api_service.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/group_provider.dart';
 import '../../../providers/settings_provider.dart';
-import '../../../shared/widgets/app_back_button.dart';
 import '../../../shared/widgets/avatar_widget.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/skeleton_loader.dart';
@@ -243,6 +243,11 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
                 searchCtrl: _searchCtrl,
                 searchFocus: _searchFocus,
                 isExpensesTab: _tabController.index == 1,
+                hasExpenses: ref
+                        .watch(groupExpensesProvider(widget.groupId))
+                        .valueOrNull
+                        ?.isNotEmpty ==
+                    true,
                 onSearchOpen: _openSearch,
                 onSearchClose: _closeSearch,
                 isDark: isDark,
@@ -277,6 +282,7 @@ class _GroupInfoBar extends StatelessWidget {
   final TextEditingController searchCtrl;
   final FocusNode searchFocus;
   final bool isExpensesTab;
+  final bool hasExpenses;
   final VoidCallback onSearchOpen;
   final VoidCallback onSearchClose;
   final bool isDark;
@@ -287,6 +293,7 @@ class _GroupInfoBar extends StatelessWidget {
     required this.searchCtrl,
     required this.searchFocus,
     required this.isExpensesTab,
+    required this.hasExpenses,
     required this.onSearchOpen,
     required this.onSearchClose,
     required this.isDark,
@@ -337,6 +344,7 @@ class _GroupInfoBar extends StatelessWidget {
                   key: const ValueKey('ir'),
                   group: group,
                   isExpensesTab: isExpensesTab,
+                  hasExpenses: hasExpenses,
                   onSearchOpen: onSearchOpen,
                   isDark: isDark,
                 ),
@@ -349,6 +357,7 @@ class _GroupInfoBar extends StatelessWidget {
 class _InfoRow extends StatelessWidget {
   final GroupModel group;
   final bool isExpensesTab;
+  final bool hasExpenses;
   final VoidCallback onSearchOpen;
   final bool isDark;
 
@@ -356,6 +365,7 @@ class _InfoRow extends StatelessWidget {
     super.key,
     required this.group,
     required this.isExpensesTab,
+    required this.hasExpenses,
     required this.onSearchOpen,
     required this.isDark,
   });
@@ -382,7 +392,7 @@ class _InfoRow extends StatelessWidget {
           )
         else
           const Spacer(),
-        if (isExpensesTab) ...[
+        if (isExpensesTab && hasExpenses) ...[
           const SizedBox(width: 8),
           GestureDetector(
             onTap: onSearchOpen,

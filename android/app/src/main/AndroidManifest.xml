@@ -5,6 +5,9 @@
     <uses-permission android:name="android.permission.USE_FINGERPRINT"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Allows exact-time alarms (granted by default on API 31-32;
+         user must approve on API 33+ via Settings → Special app access). -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
     <application
         android:label="SplitPay"
         android:name="${applicationName}"

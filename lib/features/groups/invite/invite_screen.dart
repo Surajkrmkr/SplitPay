@@ -10,10 +10,10 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../shared/widgets/app_back_button.dart';
 import '../../../data/services/group_api_service.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/group_provider.dart';
-import '../../../shared/widgets/app_back_button.dart';
 import '../../../shared/widgets/sp_button.dart';
 
 const _playStoreUrl =

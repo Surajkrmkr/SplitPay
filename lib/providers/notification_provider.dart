@@ -106,50 +106,16 @@ final hasUnreadProvider = Provider<bool>((ref) {
 
 final notificationSearchQueryProvider = StateProvider<String>((_) => '');
 
-enum NotificationTypeFilter {
-  all,
-  expense,
-  settlement,
-  group,
-  reminder,
-}
-
-final notificationTypeFilterProvider =
-    StateProvider<NotificationTypeFilter>((_) => NotificationTypeFilter.all);
-
 final searchedNotificationsProvider = Provider<List<NotificationModel>>((ref) {
   final notifications = ref.watch(notificationsProvider).valueOrNull ?? [];
   final query =
       ref.watch(notificationSearchQueryProvider).toLowerCase().trim();
-  final typeFilter = ref.watch(notificationTypeFilterProvider);
-
-  var result = notifications;
-
-  if (typeFilter != NotificationTypeFilter.all) {
-    final matchTypes = switch (typeFilter) {
-      NotificationTypeFilter.expense => [NotificationType.groupExpenseAdded],
-      NotificationTypeFilter.settlement => [
-          NotificationType.settlementReceived
-        ],
-      NotificationTypeFilter.group => [
-          NotificationType.addedToGroup,
-          NotificationType.groupActivity,
-        ],
-      NotificationTypeFilter.reminder => [NotificationType.paymentReminder],
-      NotificationTypeFilter.all => <NotificationType>[],
-    };
-    result = result.where((n) => matchTypes.contains(n.type)).toList();
-  }
-
-  if (query.isNotEmpty) {
-    result = result.where((n) {
-      return n.title.toLowerCase().contains(query) ||
-          n.body.toLowerCase().contains(query) ||
-          (n.actorName?.toLowerCase().contains(query) ?? false);
-    }).toList();
-  }
-
-  return result;
+  if (query.isEmpty) return notifications;
+  return notifications.where((n) {
+    return n.title.toLowerCase().contains(query) ||
+        n.body.toLowerCase().contains(query) ||
+        (n.actorName?.toLowerCase().contains(query) ?? false);
+  }).toList();
 });
 
 // ── Foreground notification stream (for in-app banner) ────────────────────────

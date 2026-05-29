@@ -4,9 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/services/app_logger.dart';
 import '../data/models/transaction_model.dart';
 import '../data/services/reminder_service.dart';
 import 'transaction_provider.dart';
+
+const _tag = 'ReminderProvider';
 
 // ── Keys ──────────────────────────────────────────────────────────────────────
 
@@ -46,31 +49,55 @@ class DailyReminderNotifier extends AsyncNotifier<DailyReminderConfig> {
   }
 
   Future<void> setEnabled(bool value) async {
+    final log = AppLogger.instance;
+    log.i('setEnabled($value) called', tag: _tag);
     final current = state.valueOrNull;
-    if (current == null) return;
+    if (current == null) {
+      log.w('setEnabled: state not loaded yet, aborting', tag: _tag);
+      return;
+    }
+    log.i('Current config: enabled=${current.enabled} '
+        'time=${current.time.hour}:${current.time.minute.toString().padLeft(2, '0')}',
+        tag: _tag);
     final updated = current.copyWith(enabled: value);
     state = AsyncData(updated);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_kDailyEnabled, value);
+    log.i('Persisted enabled=$value to SharedPreferences', tag: _tag);
     if (value) {
+      log.i('Calling scheduleDailyReminder at '
+          '${updated.time.hour}:${updated.time.minute.toString().padLeft(2, '0')}',
+          tag: _tag);
       await ReminderService.instance
           .scheduleDailyReminder(updated.time.hour, updated.time.minute);
     } else {
+      log.i('Cancelling daily reminder', tag: _tag);
       await ReminderService.instance.cancelDailyReminder();
     }
+    log.i('setEnabled($value) done', tag: _tag);
   }
 
   Future<void> setTime(TimeOfDay time) async {
+    final log = AppLogger.instance;
+    log.i('setTime(${time.hour}:${time.minute.toString().padLeft(2, '0')}) called',
+        tag: _tag);
     final current = state.valueOrNull;
-    if (current == null) return;
+    if (current == null) {
+      log.w('setTime: state not loaded yet, aborting', tag: _tag);
+      return;
+    }
     final updated = current.copyWith(time: time);
     state = AsyncData(updated);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_kDailyHour, time.hour);
     await prefs.setInt(_kDailyMinute, time.minute);
+    log.i('Persisted new time to SharedPreferences', tag: _tag);
     if (updated.enabled) {
+      log.i('Re-scheduling after time change', tag: _tag);
       await ReminderService.instance
           .scheduleDailyReminder(time.hour, time.minute);
+    } else {
+      log.i('Reminder is disabled — skipping reschedule', tag: _tag);
     }
   }
 }

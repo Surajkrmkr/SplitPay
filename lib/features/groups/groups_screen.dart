@@ -23,9 +23,9 @@ class GroupsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBg : AppColors.lightBg,
       body: SafeArea(
+        bottom: false,
         child: RefreshIndicator(
           color: AppColors.primary,
-          backgroundColor: isDark ? AppColors.darkCard : Colors.white,
           onRefresh: () => ref.read(groupsProvider.notifier).refresh(),
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -192,7 +192,11 @@ class GroupsScreen extends ConsumerWidget {
                 },
               ),
 
-              const SliverToBoxAdapter(child: SizedBox(height: 32)),
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: 100 + MediaQuery.of(context).padding.bottom,
+                ),
+              ),
             ],
           ),
         ),

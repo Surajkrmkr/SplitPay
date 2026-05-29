@@ -29,6 +29,12 @@ class NotificationService {
   final _messaging = FirebaseMessaging.instance;
   final _localNotifications = FlutterLocalNotificationsPlugin();
 
+  // Exposed so ReminderService can share the same already-initialised plugin
+  // instance without calling initialize() a second time (which would wipe the
+  // notification-tap callback registered below).
+  FlutterLocalNotificationsPlugin get localNotifications =>
+      _localNotifications;
+
   // Foreground messages broadcast to UI
   final _foregroundController = StreamController<NotificationModel>.broadcast();
   Stream<NotificationModel> get foregroundStream => _foregroundController.stream;
