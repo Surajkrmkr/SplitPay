@@ -7,11 +7,13 @@ import 'interceptors/auth_interceptor.dart';
 import 'interceptors/error_interceptor.dart';
 import 'interceptors/log_interceptor.dart';
 import '../storage/token_storage.dart';
+import '../../data/services/firebase_auth_service.dart';
 
 class ApiClient {
   static Dio create(
     TokenStorage tokenStorage, {
     VoidCallback? onSessionExpired,
+    Future<String?> Function()? getGoogleIdToken,
   }) {
     final dio = Dio(
       BaseOptions(
@@ -22,7 +24,12 @@ class ApiClient {
       ),
     );
     dio.interceptors.add(
-      AuthInterceptor(dio, tokenStorage, onSessionExpired: onSessionExpired),
+      AuthInterceptor(
+        dio,
+        tokenStorage,
+        onSessionExpired: onSessionExpired,
+        getGoogleIdToken: getGoogleIdToken,
+      ),
     );
     dio.interceptors.add(ErrorInterceptor());
     if (kDebugMode) {
@@ -34,10 +41,12 @@ class ApiClient {
 
 final dioProvider = Provider<Dio>((ref) {
   final tokenStorage = ref.watch(tokenStorageProvider);
+  final firebaseAuth = ref.watch(firebaseAuthServiceProvider);
   return ApiClient.create(
     tokenStorage,
     onSessionExpired: () {
       ref.read(sessionExpiredProvider.notifier).state++;
     },
+    getGoogleIdToken: firebaseAuth.getSilentGoogleIdToken,
   );
 });

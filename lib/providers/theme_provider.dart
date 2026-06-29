@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../data/services/hive_service.dart';
+
+import '../core/storage/preferences_service.dart';
 
 final themeModeProvider = StateNotifierProvider<ThemeModeNotifier, ThemeMode>(
   (ref) => ThemeModeNotifier(),
@@ -12,14 +13,14 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
   }
 
   void _load() {
-    final isDark = HiveService.getSetting<bool>('isDarkMode') ?? true;
+    final isDark = PreferencesService.get<bool>('isDarkMode') ?? true;
     state = isDark ? ThemeMode.dark : ThemeMode.light;
   }
 
   Future<void> toggle() async {
     final isDark = state == ThemeMode.dark;
     state = isDark ? ThemeMode.light : ThemeMode.dark;
-    await HiveService.setSetting('isDarkMode', !isDark);
+    await PreferencesService.set('isDarkMode', !isDark);
   }
 
   bool get isDark => state == ThemeMode.dark;

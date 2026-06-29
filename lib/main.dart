@@ -8,11 +8,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-
 import 'app.dart';
 import 'core/services/app_logger.dart';
-import 'data/services/hive_service.dart';
+import 'core/storage/preferences_service.dart';
 import 'data/services/notification_service.dart';
 import 'data/services/reminder_service.dart';
 
@@ -60,9 +58,7 @@ Future<void> _init() async {
     AppLogger.instance.e('Firebase init failed: $e', tag: 'Init');
   }
 
-  await Hive.initFlutter();
-  await HiveService.init();
-  AppLogger.instance.i('Hive ready', tag: 'Init');
+  await PreferencesService.init();
 
   try {
     await NotificationService.instance.initialize();

@@ -1,51 +1,45 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/models/transaction_model.dart';
 import '../data/repositories/transaction_repository.dart';
-import '../data/services/hive_service.dart';
 
-// All transactions, sorted by date desc — reads from Hive (offline-first).
 final transactionProvider =
     StateNotifierProvider<TransactionNotifier, List<Transaction>>(
-  (ref) => TransactionNotifier(ref.watch(transactionRepositoryProvider), ref)..load(),
+  (ref) {
+    final notifier =
+        TransactionNotifier(ref.watch(transactionRepositoryProvider));
+    Future.microtask(notifier.load);
+    return notifier;
+  },
 );
 
 class TransactionNotifier extends StateNotifier<List<Transaction>> {
   final TransactionRepository _repo;
-  final Ref _ref;
 
-  TransactionNotifier(this._repo, this._ref) : super([]);
+  TransactionNotifier(this._repo) : super([]);
 
-  void load() {
-    state = _repo.getAll();
+  Future<void> load() async {
+    try {
+      state = await _repo.getAll();
+    } catch (_) {}
   }
 
   Future<void> add(Transaction tx) async {
-    await _repo.add(tx);
-    load();
+    await _repo.create(tx);
+    await load();
   }
 
-  Future<void> delete(String id) async {
-    await _repo.delete(id);
-    load();
+  Future<void> delete(Transaction tx) async {
+    await _repo.delete(tx);
+    await load();
   }
 
   Future<void> update(Transaction tx) async {
     await _repo.update(tx);
-    load();
+    await load();
   }
 
-  /// Pull-to-refresh: full server sync then reload local state.
-  Future<void> syncAndReload() async {
-    final result = await _repo.syncNow();
-    load();
-    if (result.errorMessage == null) {
-      await HiveService.setSetting(
-        'lastSyncedAt',
-        result.syncedAt.millisecondsSinceEpoch,
-      );
-      _ref.read(lastSyncedAtProvider.notifier).state = result.syncedAt;
-    }
-  }
+  /// Pull-to-refresh: reload from server.
+  Future<void> syncAndReload() => load();
 }
 
 // ─── Month selector ───────────────────────────────────────────────────────────

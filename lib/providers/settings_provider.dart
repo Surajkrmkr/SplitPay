@@ -1,16 +1,21 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../core/network/api_client.dart';
+import '../core/network/api_constants.dart';
+import '../core/storage/preferences_service.dart';
 import '../data/models/custom_category.dart';
 import '../data/models/transaction_model.dart';
-import '../data/services/hive_service.dart';
 
-// Reads synchronously from Hive so the router redirect can check it without async.
+// ─── Onboarding ───────────────────────────────────────────────────────────────
+
 class OnboardingNotifier extends StateNotifier<bool> {
   OnboardingNotifier()
-      : super(HiveService.getSetting<bool>('onboarding_completed') ?? false);
+      : super(PreferencesService.get<bool>('onboarding_completed') ?? false);
 
   Future<void> complete() async {
     state = true;
-    await HiveService.setSetting('onboarding_completed', true);
+    await PreferencesService.set('onboarding_completed', true);
   }
 }
 
@@ -18,54 +23,66 @@ final onboardingCompletedProvider =
     StateNotifierProvider<OnboardingNotifier, bool>(
         (ref) => OnboardingNotifier());
 
+// ─── Currency ─────────────────────────────────────────────────────────────────
+
+class CurrencyNotifier extends StateNotifier<String> {
+  CurrencyNotifier()
+      : super(PreferencesService.get<String>('currency') ?? '\$');
+
+  Future<void> setCurrency(String symbol) async {
+    state = symbol;
+    await PreferencesService.set('currency', symbol);
+  }
+}
+
 final currencyProvider = StateNotifierProvider<CurrencyNotifier, String>(
   (ref) => CurrencyNotifier(),
 );
 
-class CurrencyNotifier extends StateNotifier<String> {
-  CurrencyNotifier() : super('\$') {
+// ─── Custom Categories (API-backed) ───────────────────────────────────────────
+
+class CustomCategoriesNotifier extends StateNotifier<List<CustomCategory>> {
+  CustomCategoriesNotifier(this._dio) : super([]) {
     _load();
   }
 
-  void _load() {
-    state = HiveService.getSetting<String>('currency') ?? '\$';
+  final Dio _dio;
+
+  Future<void> _load() async {
+    try {
+      final res = await _dio.get(ApiConstants.categories);
+      final list = res.data['data'] as List<dynamic>;
+      state = list
+          .map((e) => CustomCategory.fromMap(e as Map<String, dynamic>))
+          .toList();
+    } catch (_) {
+      state = [];
+    }
   }
 
-  Future<void> setCurrency(String symbol) async {
-    state = symbol;
-    await HiveService.setSetting('currency', symbol);
+  Future<void> add(CustomCategory cat) async {
+    try {
+      final res = await _dio.post(ApiConstants.categories, data: cat.toMap());
+      final created =
+          CustomCategory.fromMap(res.data['data'] as Map<String, dynamic>);
+      state = [...state, created];
+    } catch (_) {}
+  }
+
+  Future<void> remove(String id) async {
+    try {
+      await _dio.delete(ApiConstants.categoryById(id));
+      state = state.where((c) => c.id != id).toList();
+    } catch (_) {}
   }
 }
 
 final customCategoriesProvider =
     StateNotifierProvider<CustomCategoriesNotifier, List<CustomCategory>>(
-  (ref) => CustomCategoriesNotifier(),
+  (ref) => CustomCategoriesNotifier(ref.watch(dioProvider)),
 );
 
-class CustomCategoriesNotifier extends StateNotifier<List<CustomCategory>> {
-  CustomCategoriesNotifier() : super([]) {
-    _load();
-  }
-
-  void _load() {
-    state = HiveService.getCustomCategories();
-  }
-
-  Future<void> add(CustomCategory cat) async {
-    await HiveService.saveCustomCategory(cat);
-    _load();
-  }
-
-  Future<void> remove(String id) async {
-    await HiveService.deleteCustomCategory(id);
-    _load();
-  }
-}
-
-final hiddenCategoriesProvider =
-    StateNotifierProvider<HiddenCategoriesNotifier, Set<String>>(
-  (ref) => HiddenCategoriesNotifier(),
-);
+// ─── Hidden Categories ────────────────────────────────────────────────────────
 
 class HiddenCategoriesNotifier extends StateNotifier<Set<String>> {
   HiddenCategoriesNotifier() : super({}) {
@@ -73,8 +90,8 @@ class HiddenCategoriesNotifier extends StateNotifier<Set<String>> {
   }
 
   void _load() {
-    final stored = HiveService.getSetting<List>('hiddenCategories');
-    state = stored?.map((e) => e as String).toSet() ?? {};
+    final stored = PreferencesService.getStringList('hiddenCategories');
+    state = stored?.toSet() ?? {};
   }
 
   Future<void> toggle(Category category) async {
@@ -82,22 +99,29 @@ class HiddenCategoriesNotifier extends StateNotifier<Set<String>> {
     state = state.contains(name)
         ? ({...state}..remove(name))
         : {...state, name};
-    await HiveService.setSetting('hiddenCategories', state.toList());
+    await PreferencesService.set('hiddenCategories', state.toList());
   }
 
   bool isHidden(Category category) => state.contains(category.name);
 }
 
-final biometricLockProvider =
-    StateNotifierProvider<BiometricLockNotifier, bool>(
-        (ref) => BiometricLockNotifier());
+final hiddenCategoriesProvider =
+    StateNotifierProvider<HiddenCategoriesNotifier, Set<String>>(
+  (ref) => HiddenCategoriesNotifier(),
+);
+
+// ─── Biometric Lock ───────────────────────────────────────────────────────────
 
 class BiometricLockNotifier extends StateNotifier<bool> {
   BiometricLockNotifier()
-      : super(HiveService.getSetting<bool>('biometric_lock') ?? false);
+      : super(PreferencesService.get<bool>('biometric_lock') ?? false);
 
   Future<void> setEnabled(bool value) async {
     state = value;
-    await HiveService.setSetting('biometric_lock', value);
+    await PreferencesService.set('biometric_lock', value);
   }
 }
+
+final biometricLockProvider =
+    StateNotifierProvider<BiometricLockNotifier, bool>(
+        (ref) => BiometricLockNotifier());

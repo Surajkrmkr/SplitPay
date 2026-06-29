@@ -50,6 +50,20 @@ class FirebaseAuthService {
   Future<String?> getCurrentIdToken({bool forceRefresh = false}) async {
     return FirebaseAuth.instance.currentUser?.getIdToken(forceRefresh);
   }
+
+  /// Silently re-authenticates the previously signed-in Google account.
+  /// Returns the Google OAuth2 ID token (not Firebase token) without showing
+  /// any UI. Returns null if silent sign-in is not available.
+  Future<String?> getSilentGoogleIdToken() async {
+    try {
+      final account = await _googleSignIn.signInSilently();
+      if (account == null) return null;
+      final auth = await account.authentication;
+      return auth.idToken;
+    } catch (_) {
+      return null;
+    }
+  }
 }
 
 final firebaseAuthServiceProvider =

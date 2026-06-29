@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -295,7 +293,7 @@ class _GoogleSignInButton extends StatelessWidget {
               : Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const _GoogleIcon(size: 22),
+                    Image.asset('assets/icon/google_logo.png', width: 22, height: 22),
                     const SizedBox(width: 12),
                     const Text(
                       'Continue with Google',
@@ -313,57 +311,3 @@ class _GoogleSignInButton extends StatelessWidget {
   }
 }
 
-// ── Google "G" logo ──────────────────────────────────────────────────────────
-
-class _GoogleIcon extends StatelessWidget {
-  const _GoogleIcon({this.size = 22});
-  final double size;
-
-  @override
-  Widget build(BuildContext context) =>
-      SizedBox.square(dimension: size, child: CustomPaint(painter: _GoogleGPainter()));
-}
-
-class _GoogleGPainter extends CustomPainter {
-  static const _blue   = Color(0xFF4285F4);
-  static const _red    = Color(0xFFDB4437);
-  static const _yellow = Color(0xFFF4B400);
-  static const _green  = Color(0xFF34A853);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final cx  = size.width / 2;
-    final cy  = size.height / 2;
-    final r   = size.width * 0.44;
-    final sw  = size.width * 0.22;
-    final arc = Paint()
-      ..style       = PaintingStyle.stroke
-      ..strokeCap   = StrokeCap.butt
-      ..strokeWidth = sw;
-
-    final oval = Rect.fromCircle(center: Offset(cx, cy), radius: r - sw / 2);
-
-    // Arcs clockwise from 0° (right). Gap from 0°→30° is where the bar sits.
-    // Blue top:  300°→360°  (60°)
-    arc.color = _blue;
-    canvas.drawArc(oval, 5 * pi / 3, pi / 3, false, arc);
-    // Red:       30°→120°  (90°)
-    arc.color = _red;
-    canvas.drawArc(oval, pi / 6, pi / 2, false, arc);
-    // Yellow:    120°→195° (75°)
-    arc.color = _yellow;
-    canvas.drawArc(oval, 2 * pi / 3, 5 * pi / 12, false, arc);
-    // Green:     195°→300° (105°)
-    arc.color = _green;
-    canvas.drawArc(oval, 13 * pi / 12, 7 * pi / 12, false, arc);
-
-    // Blue horizontal bar (center → right edge, filling the gap)
-    canvas.drawRect(
-      Rect.fromLTRB(cx, cy - sw / 2, cx + r, cy + sw / 2),
-      Paint()..color = _blue,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter _) => false;
-}

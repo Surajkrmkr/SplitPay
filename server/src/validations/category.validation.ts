@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
 export const createCategorySchema = z.object({
-  localId: z.string().uuid('Invalid local ID'),
   label: z.string().min(1, 'Label is required').max(100),
   colorValue: z.number().int(),
   iconCodePoint: z.number().int().positive(),

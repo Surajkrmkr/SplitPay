@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
 export const createTransactionSchema = z.object({
-  localId: z.string().uuid('Invalid local ID'),
   amount: z.number().positive('Amount must be positive'),
   type: z.enum(['INCOME', 'EXPENSE', 'TRANSFER']),
   categoryKey: z.string().min(1, 'Category key is required'),

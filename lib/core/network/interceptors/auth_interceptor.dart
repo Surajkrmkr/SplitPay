@@ -14,6 +14,10 @@ class AuthInterceptor extends Interceptor {
   final TokenStorage _tokenStorage;
   final VoidCallback? onSessionExpired;
 
+  // Called when the backend refresh token is expired. Should perform a silent
+  // Google sign-in and return the Google OAuth2 ID token, or null if unavailable.
+  final Future<String?> Function()? getGoogleIdToken;
+
   // Single in-flight refresh shared across concurrent 401s.
   Completer<String?>? _refreshCompleter;
 
@@ -21,6 +25,7 @@ class AuthInterceptor extends Interceptor {
     this._dio,
     this._tokenStorage, {
     this.onSessionExpired,
+    this.getGoogleIdToken,
   });
 
   @override
@@ -54,9 +59,9 @@ class AuthInterceptor extends Interceptor {
 
     final options = err.requestOptions;
 
-    // A 401 from the refresh endpoint itself means the refresh token is dead.
+    // A 401 from the refresh endpoint propagates back to _refreshAccessToken's
+    // catch block, which handles silent reauth and/or session invalidation.
     if (_isRefreshEndpoint(options)) {
-      await _invalidateSession();
       return handler.next(err);
     }
 
@@ -126,7 +131,39 @@ class AuthInterceptor extends Interceptor {
       );
       completer.complete(newAccess);
       return newAccess;
-    } catch (_) {
+    } catch (e) {
+      // Refresh token is confirmed expired — try to silently re-authenticate
+      // via Google before giving up and logging the user out.
+      if (e is DioException &&
+          e.response?.statusCode == 401 &&
+          getGoogleIdToken != null) {
+        try {
+          final googleIdToken = await getGoogleIdToken!();
+          if (googleIdToken != null) {
+            final res = await _dio.post(
+              ApiConstants.authGoogle,
+              data: {'idToken': googleIdToken},
+            );
+            final data = res.data is Map<String, dynamic>
+                ? res.data['data'] as Map<String, dynamic>?
+                : null;
+            final newAccess = data?['accessToken'] as String?;
+            final newRefresh = data?['refreshToken'] as String?;
+            if (newAccess != null && newAccess.isNotEmpty) {
+              await _tokenStorage.saveTokens(
+                access: newAccess,
+                refresh: (newRefresh != null && newRefresh.isNotEmpty)
+                    ? newRefresh
+                    : refreshToken,
+              );
+              completer.complete(newAccess);
+              return newAccess;
+            }
+          }
+        } catch (_) {
+          // Silent reauth failed — fall through to session invalidation.
+        }
+      }
       await _invalidateSession();
       completer.complete(null);
       return null;

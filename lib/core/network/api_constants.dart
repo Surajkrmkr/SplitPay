@@ -1,7 +1,7 @@
 class ApiConstants {
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://192.168.1.60:3000/api/v1',
+    defaultValue: 'http://192.168.1.68:3000/api/v1',
   );
 
   // Auth

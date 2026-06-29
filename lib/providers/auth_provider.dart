@@ -7,7 +7,7 @@ import '../core/storage/token_storage.dart';
 import '../data/models/auth_user_model.dart';
 import '../data/repositories/notification_repository.dart';
 import '../data/services/firebase_auth_service.dart';
-import '../data/services/hive_service.dart';
+import '../core/storage/preferences_service.dart';
 import '../data/services/notification_service.dart';
 
 enum AuthStatus { initial, loading, authenticated, unauthenticated, error }
@@ -184,7 +184,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       await Future.wait([
         tokenStorage.clearTokens(),
         firebaseAuth.signOut(),
-        HiveService.clearUserData(),
+        PreferencesService.clearUserData(),
       ]);
 
       state = AsyncValue.data(
@@ -205,7 +205,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       await Future.wait([
         NotificationService.instance.deleteToken(),
         ref.read(firebaseAuthServiceProvider).signOut(),
-        HiveService.clearUserData(),
+        PreferencesService.clearUserData(),
       ]);
     } catch (_) {}
     state = AsyncValue.data(

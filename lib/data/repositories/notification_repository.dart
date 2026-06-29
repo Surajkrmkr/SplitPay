@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_constants.dart';
 import '../models/notification_model.dart';
-import '../services/hive_service.dart';
 import '../services/notification_service.dart';
 
 class NotificationRepository {
@@ -47,59 +46,38 @@ class NotificationRepository {
 
   // ── Notifications API ─────────────────────────────────────────────────────
 
-  /// Fetches from API and syncs local cache. Falls back to cache on error.
   Future<List<NotificationModel>> getNotifications({int page = 1}) async {
-    try {
-      final res = await _dio.get(
-        ApiConstants.notifications,
-        queryParameters: {'page': page, 'limit': 30},
-      );
-      final items = (res.data['data'] as List<dynamic>)
-          .map((e) => NotificationModel.fromJson(e as Map<String, dynamic>))
-          .toList();
-
-      if (page == 1) {
-        // Replace cache with fresh data on first page
-        await HiveService.saveNotifications(items);
-      }
-      return items;
-    } on DioException {
-      // Return cached data so the screen works offline
-      return HiveService.getNotifications();
-    }
+    final res = await _dio.get(
+      ApiConstants.notifications,
+      queryParameters: {'page': page, 'limit': 30},
+    );
+    return (res.data['data'] as List<dynamic>)
+        .map((e) => NotificationModel.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<void> markRead(String id) async {
-    await HiveService.markNotificationRead(id);
     try {
       await _dio.patch(ApiConstants.notificationRead(id));
     } catch (_) {}
   }
 
   Future<void> markAllRead() async {
-    await HiveService.markAllNotificationsRead();
     try {
       await _dio.patch(ApiConstants.notificationsReadAll);
     } catch (_) {}
   }
 
   Future<void> delete(String id) async {
-    await HiveService.deleteNotification(id);
     try {
       await _dio.delete(ApiConstants.notificationById(id));
     } catch (_) {}
   }
 
   Future<void> deleteAll() async {
-    await HiveService.clearAllNotifications();
     try {
       await _dio.delete(ApiConstants.notifications);
     } catch (_) {}
-  }
-
-  /// Prepend a locally-received FCM notification to the cache.
-  Future<void> cacheIncoming(NotificationModel notification) async {
-    await HiveService.saveNotification(notification);
   }
 }
 

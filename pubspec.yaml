@@ -17,9 +17,6 @@ dependencies:
   # Navigation
   go_router: ^14.2.7
 
-  # Local Storage
-  hive_flutter: ^1.1.0
-
   # Charts
   fl_chart: ^0.68.0
 
@@ -84,6 +81,9 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  integration_test:
+    sdk: flutter
+  mocktail: ^1.0.4
   flutter_lints: ^4.0.0
 
 flutter:

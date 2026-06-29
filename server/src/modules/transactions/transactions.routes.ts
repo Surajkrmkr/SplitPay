@@ -12,7 +12,7 @@ const router = Router();
 router.get('/', validate(listTransactionsSchema, 'query'), controller.getTransactions);
 router.post('/', validate(createTransactionSchema), controller.createTransaction);
 router.get('/:id', controller.getTransactionById);
-router.put('/:id', validate(updateTransactionSchema), controller.updateTransaction);
+router.patch('/:id', validate(updateTransactionSchema), controller.updateTransaction);
 router.delete('/:id', controller.deleteTransaction);
 
 export default router;

@@ -7,7 +7,6 @@ import '../models/transaction_model.dart';
 /// DTO returned by the server for a single transaction.
 class ServerTransaction {
   final String id;
-  final String localId;
   final double amount;
   final String type;
   final String categoryKey;
@@ -22,7 +21,6 @@ class ServerTransaction {
 
   const ServerTransaction({
     required this.id,
-    required this.localId,
     required this.amount,
     required this.type,
     required this.categoryKey,
@@ -39,7 +37,6 @@ class ServerTransaction {
   factory ServerTransaction.fromJson(Map<String, dynamic> json) {
     return ServerTransaction(
       id: json['id'] as String,
-      localId: json['localId'] as String,
       amount: double.parse(json['amount'].toString()),
       type: json['transactionType'] as String? ?? json['type'] as String,
       categoryKey: json['categoryKey'] as String,
@@ -56,13 +53,12 @@ class ServerTransaction {
     );
   }
 
-  /// Converts to a local [Transaction], using the local ID as the key.
-  Transaction toLocalTransaction() {
+  Transaction toApiTransaction() {
     final txType = type == 'INCOME' ? TransactionType.income : TransactionType.expense;
     final cat = _categoryFromKey(categoryKey);
     final rec = _recurrenceFromServer(recurrence);
     return Transaction(
-      id: localId,
+      id: id,
       serverId: id,
       amount: amount,
       type: txType,
@@ -74,8 +70,7 @@ class ServerTransaction {
       createdAt: createdAt,
       updatedAt: updatedAt,
       recurrence: rec,
-      syncStatus: deletedAt != null ? SyncStatus.pendingDelete : SyncStatus.synced,
-      lastSyncedAt: DateTime.now(),
+      syncStatus: SyncStatus.synced,
       isDeleted: deletedAt != null,
     );
   }
@@ -199,6 +194,29 @@ class TransactionApiService {
         .map((e) => ServerTransaction.fromJson(e as Map<String, dynamic>))
         .toList();
   }
+
+  Future<void> createTransaction(Transaction tx) async {
+    await _dio.post(ApiConstants.transactions, data: _toPayload(tx));
+  }
+
+  Future<void> updateTransaction(String serverId, Transaction tx) async {
+    await _dio.patch(ApiConstants.transactionById(serverId), data: _toPayload(tx));
+  }
+
+  Future<void> deleteTransaction(String serverId) async {
+    await _dio.delete(ApiConstants.transactionById(serverId));
+  }
+
+  static Map<String, dynamic> _toPayload(Transaction tx) => {
+    'amount': tx.amount,
+    'type': tx.type == TransactionType.income ? 'INCOME' : 'EXPENSE',
+    'categoryKey': tx.category.name,
+    if (tx.customCategoryId != null) 'customCategoryId': tx.customCategoryId,
+    if (tx.appIcon != null) 'appIcon': tx.appIcon,
+    if (tx.note != null) 'note': tx.note,
+    'date': tx.date.toUtc().toIso8601String(),
+    'recurrence': tx.recurrence.serverValue,
+  };
 }
 
 final transactionApiServiceProvider = Provider<TransactionApiService>((ref) {

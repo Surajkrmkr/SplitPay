@@ -8,8 +8,6 @@ import '../../data/models/transaction_model.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../shared/widgets/empty_state.dart';
-import '../../shared/widgets/offline_banner.dart';
-import '../../shared/widgets/sync_status_indicator.dart';
 import 'widgets/edit_transaction_sheet.dart';
 import 'widgets/transaction_tile.dart';
 
@@ -23,9 +21,7 @@ class TransactionsScreen extends ConsumerWidget {
         bottom: false,
         child: Column(
           children: [
-            const OfflineBanner(),
             const _Header(),
-            const _SyncRow(),
             const _SearchBar(),
             const _PeriodChips(),
             const _ActiveFiltersRow(),
@@ -147,27 +143,6 @@ class _Header extends ConsumerWidget {
       useRootNavigator: true,
       backgroundColor: Colors.transparent,
       builder: (_) => const _FilterSheet(),
-    );
-  }
-}
-
-// ── Sync row ──────────────────────────────────────────────────────────────────
-
-class _SyncRow extends ConsumerWidget {
-  const _SyncRow();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-      child: Row(
-        children: [
-          SyncStatusIndicator(
-            onSyncTap: () =>
-                ref.read(transactionProvider.notifier).syncAndReload(),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -907,7 +882,7 @@ class _TransactionList extends ConsumerWidget {
               transaction: tx,
               index: i,
               onDelete: () =>
-                  ref.read(transactionProvider.notifier).delete(tx.id),
+                  ref.read(transactionProvider.notifier).delete(tx),
               onEdit: () => showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
@@ -953,7 +928,7 @@ class _TransactionList extends ConsumerWidget {
                   index: item.index,
                   onDelete: () => ref
                       .read(transactionProvider.notifier)
-                      .delete(item.tx.id),
+                      .delete(item.tx),
                   onEdit: () => showModalBottomSheet(
                     context: context,
                     isScrollControlled: true,

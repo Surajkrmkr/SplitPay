@@ -26,7 +26,10 @@
       "Bash(dart analyze *)",
       "Read(//Users/surajkrmkr/Storage/Xiaomi\\\\ Contract/Repos/dimeflow/lib/providers/**)",
       "Bash(xargs sed -n '394,430p')",
-      "Bash(xargs sed -n '310,360p')"
+      "Bash(xargs sed -n '310,360p')",
+      "Bash(ls \"/Users/surajkrmkr/Storage/Xiaomi Contract/Repos/\")",
+      "Read(//Users/surajkrmkr/Storage/Xiaomi Contract/Repos/**)",
+      "Bash(node -e \"console.log\\(process.version\\)\")"
     ]
   }
 }

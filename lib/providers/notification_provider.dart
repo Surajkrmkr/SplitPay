@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/models/notification_model.dart';
 import '../data/repositories/notification_repository.dart';
-import '../data/services/hive_service.dart';
 import '../data/services/notification_service.dart';
 
 // ── Notifications List ────────────────────────────────────────────────────────
@@ -15,38 +14,24 @@ class NotificationsNotifier
 
   @override
   Future<List<NotificationModel>> build() async {
-    // Load from cache immediately for instant UI
-    final cached = HiveService.getNotifications();
-
-    // Subscribe to foreground FCM messages and prepend them live
     _foregroundSub?.cancel();
     _foregroundSub = NotificationService.instance.foregroundStream.listen(
       _onForegroundNotification,
     );
     ref.onDispose(() => _foregroundSub?.cancel());
 
-    // Fetch fresh from API in background
-    _fetchFromApi();
-
-    return cached;
-  }
-
-  Future<void> _fetchFromApi() async {
     try {
       final repo = ref.read(notificationRepositoryProvider);
-      final fresh = await repo.getNotifications();
-      state = AsyncValue.data(fresh);
+      return await repo.getNotifications();
     } catch (_) {
-      // Cache already shown — no need to update state on error
+      return [];
     }
   }
 
   void _onForegroundNotification(NotificationModel notification) {
     final current = state.valueOrNull ?? [];
-    // Avoid duplicates
     if (current.any((n) => n.id == notification.id)) return;
     state = AsyncValue.data([notification, ...current]);
-    ref.read(notificationRepositoryProvider).cacheIncoming(notification);
   }
 
   Future<void> refresh() async {

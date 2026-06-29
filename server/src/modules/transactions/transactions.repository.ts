@@ -3,7 +3,6 @@ import { PersonalTxType, TxRecurrenceType } from '@prisma/client';
 
 export interface CreateTransactionData {
   userId: string;
-  localId: string;
   amount: number;
   type: PersonalTxType;
   categoryKey: string;
@@ -39,31 +38,12 @@ export interface TransactionFilters {
 }
 
 export async function createTransaction(data: CreateTransactionData) {
-  return prisma.transaction.create({
-    data: {
-      ...data,
-      amount: data.amount,
-    },
-  });
-}
-
-export async function upsertByLocalId(userId: string, localId: string, data: Omit<CreateTransactionData, 'userId' | 'localId'>) {
-  return prisma.transaction.upsert({
-    where: { userId_localId: { userId, localId } },
-    create: { userId, localId, ...data },
-    update: { ...data },
-  });
+  return prisma.transaction.create({ data });
 }
 
 export async function findTransactionById(id: string, userId: string) {
   return prisma.transaction.findFirst({
     where: { id, userId, deletedAt: null },
-  });
-}
-
-export async function findTransactionByLocalId(userId: string, localId: string) {
-  return prisma.transaction.findUnique({
-    where: { userId_localId: { userId, localId } },
   });
 }
 
@@ -118,33 +98,5 @@ export async function softDeleteTransaction(id: string, userId: string) {
   return prisma.transaction.update({
     where: { id },
     data: { deletedAt: new Date() },
-  });
-}
-
-export async function softDeleteByLocalId(userId: string, localId: string) {
-  const tx = await prisma.transaction.findUnique({
-    where: { userId_localId: { userId, localId } },
-  });
-  if (!tx) return null;
-  return prisma.transaction.update({
-    where: { id: tx.id },
-    data: { deletedAt: new Date() },
-  });
-}
-
-export async function findChangedSince(userId: string, since: Date) {
-  return prisma.transaction.findMany({
-    where: {
-      userId,
-      updatedAt: { gt: since },
-    },
-    orderBy: { updatedAt: 'asc' },
-  });
-}
-
-export async function findAllForUser(userId: string) {
-  return prisma.transaction.findMany({
-    where: { userId, deletedAt: null },
-    orderBy: { updatedAt: 'asc' },
   });
 }

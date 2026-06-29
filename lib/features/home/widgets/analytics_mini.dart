@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/transaction_model.dart';
 import '../../../providers/transaction_provider.dart';
 import '../../../providers/settings_provider.dart';
 
-/// Compact weekly-spending bar + top-category row shown on the home screen.
-/// Tapping "Full report →" navigates to the standalone analytics screen.
 class AnalyticsMini extends ConsumerWidget {
   const AnalyticsMini({super.key});
 
@@ -18,14 +17,25 @@ class AnalyticsMini extends ConsumerWidget {
     final weekly = ref.watch(weeklySpendingProvider);
     final breakdown = ref.watch(categoryBreakdownProvider);
     final currency = ref.watch(currencyProvider);
+    final selectedMonth = ref.watch(selectedMonthProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final weekTotal = weekly.fold(0.0, (a, b) => a + b);
     if (weekTotal == 0 && breakdown.isEmpty) return const SizedBox.shrink();
 
+    final now = DateTime.now();
+    final isCurrent =
+        selectedMonth.year == now.year && selectedMonth.month == now.month;
+    final monthLabel =
+        isCurrent ? 'This month' : DateFormat('MMM yyyy').format(selectedMonth);
+
+    final total = breakdown.values.fold(0.0, (a, b) => a + b);
+    final sorted = breakdown.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final top = sorted.take(4).toList();
+
     final bgColor = isDark ? AppColors.darkCard : AppColors.lightSurface;
-    final borderColor =
-        isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -45,7 +55,7 @@ class AnalyticsMini extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Header row ──
+          // ── Header ──
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -55,35 +65,48 @@ class AnalyticsMini extends ConsumerWidget {
                       fontWeight: FontWeight.w700,
                     ),
               ),
-              GestureDetector(
-                onTap: () => context.push('/analytics'),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Full report',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.secondary,
-                        fontWeight: FontWeight.w600,
-                      ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    monthLabel,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
                     ),
-                    const SizedBox(width: 3),
-                    const Icon(
-                      Icons.arrow_forward_rounded,
-                      size: 14,
-                      color: AppColors.secondary,
+                  ),
+                  const SizedBox(width: 10),
+                  GestureDetector(
+                    onTap: () => context.push('/analytics'),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Full report',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.secondary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(width: 3),
+                        Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 14,
+                          color: AppColors.secondary,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ],
           ),
 
-          const SizedBox(height: 14),
-
           // ── Weekly mini bar chart ──
           if (weekTotal > 0) ...[
+            const SizedBox(height: 14),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -109,13 +132,46 @@ class AnalyticsMini extends ConsumerWidget {
             _MiniBarChart(weekly: weekly, isDark: isDark),
           ],
 
-          // ── Top 3 categories ──
-          if (breakdown.isNotEmpty) ...[
+          // ── Top categories grid ──
+          if (top.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Divider(color: borderColor, height: 1),
             const SizedBox(height: 14),
-            _TopCategories(
-              breakdown: breakdown,
-              currency: currency,
-              isDark: isDark,
+            const Text(
+              'Top Categories',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 10),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: EdgeInsets.zero,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                mainAxisExtent: 120,
+              ),
+              itemCount: top.length,
+              itemBuilder: (context, i) {
+                final entry = top[i];
+                final pct = total > 0 ? entry.value / total : 0.0;
+                return _CategoryCard(
+                  category: entry.key,
+                  amount: entry.value,
+                  percentage: pct,
+                  currency: currency,
+                  isDark: isDark,
+                ).animate(delay: (i * 80).ms).fadeIn().slideY(
+                      begin: 0.2,
+                      end: 0,
+                      curve: Curves.easeOutCubic,
+                    );
+              },
             ),
           ],
         ],
@@ -124,7 +180,7 @@ class AnalyticsMini extends ConsumerWidget {
   }
 }
 
-// ── Mini 7-day bar chart using plain containers ───────────────────────────────
+// ── Mini 7-day bar chart ──────────────────────────────────────────────────────
 
 class _MiniBarChart extends StatelessWidget {
   final List<double> weekly;
@@ -176,8 +232,7 @@ class _MiniBarChart extends StatelessWidget {
                   _days[i],
                   style: TextStyle(
                     fontSize: 10,
-                    fontWeight:
-                        isToday ? FontWeight.w700 : FontWeight.w400,
+                    fontWeight: isToday ? FontWeight.w700 : FontWeight.w400,
                     color:
                         isToday ? AppColors.primary : AppColors.textTertiary,
                   ),
@@ -191,100 +246,102 @@ class _MiniBarChart extends StatelessWidget {
   }
 }
 
-// ── Top 3 categories as compact rows ─────────────────────────────────────────
+// ── Category card (2×2 grid item) ────────────────────────────────────────────
 
-class _TopCategories extends StatelessWidget {
-  final Map<Category, double> breakdown;
+class _CategoryCard extends StatelessWidget {
+  final Category category;
+  final double amount;
+  final double percentage;
   final String currency;
   final bool isDark;
 
-  const _TopCategories({
-    required this.breakdown,
+  const _CategoryCard({
+    required this.category,
+    required this.amount,
+    required this.percentage,
     required this.currency,
     required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
-    final sorted = breakdown.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    final total = breakdown.values.fold(0.0, (a, b) => a + b);
-    final top = sorted.take(3).toList();
+    final color = category.color;
+    final bgColor = isDark ? AppColors.darkElevated : AppColors.lightCard;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
 
-    return Column(
-      children: top.asMap().entries.map((entry) {
-        final i = entry.key;
-        final item = entry.value;
-        final cat = item.key;
-        final pct = total > 0 ? item.value / total : 0.0;
-        final color = cat.color;
-
-        return Padding(
-          padding: EdgeInsets.only(top: i == 0 ? 0 : 8),
-          child: Row(
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor, width: 0.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                width: 28,
-                height: 28,
+                padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(cat.icon, color: color, size: 14),
+                child: Icon(category.icon, color: color, size: 15),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          cat.label,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: isDark
-                                ? Colors.white
-                                : AppColors.textLight,
-                          ),
-                        ),
-                        Text(
-                          CurrencyFormatter.format(item.value,
-                              symbol: currency),
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: color,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(3),
-                      child: TweenAnimationBuilder<double>(
-                        duration: 800.ms,
-                        tween: Tween(begin: 0, end: pct),
-                        curve: Curves.easeOutCubic,
-                        builder: (_, v, __) => LinearProgressIndicator(
-                          value: v,
-                          minHeight: 4,
-                          backgroundColor:
-                              color.withValues(alpha: 0.1),
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(color),
-                        ),
-                      ),
-                    ),
-                  ],
+              Text(
+                '${(percentage * 100).toStringAsFixed(0)}%',
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
           ),
-        );
-      }).toList(),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                category.label,
+                style: TextStyle(
+                  color: isDark
+                      ? AppColors.textSecondary
+                      : AppColors.textLightSecondary,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 1),
+              Text(
+                CurrencyFormatter.format(amount, symbol: currency),
+                style: TextStyle(
+                  color: isDark ? Colors.white : AppColors.textLight,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 5),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: TweenAnimationBuilder<double>(
+                  duration: 800.ms,
+                  tween: Tween(begin: 0, end: percentage),
+                  curve: Curves.easeOutCubic,
+                  builder: (_, value, __) => LinearProgressIndicator(
+                    value: value,
+                    backgroundColor: color.withValues(alpha: 0.1),
+                    valueColor: AlwaysStoppedAnimation<Color>(color),
+                    minHeight: 4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

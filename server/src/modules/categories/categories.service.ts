@@ -3,7 +3,8 @@ import * as repo from './categories.repository';
 import { CreateCategoryInput, UpdateCategoryInput } from '../../validations/category.validation';
 
 export async function createCategory(userId: string, input: CreateCategoryInput) {
-  return repo.upsertByLocalId(userId, input.localId, {
+  return repo.createCategory({
+    userId,
     label: input.label,
     colorValue: input.colorValue,
     iconCodePoint: input.iconCodePoint,

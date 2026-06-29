@@ -4,11 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../providers/transaction_provider.dart';
-import '../../shared/widgets/offline_banner.dart';
 import '../add_transaction/add_transaction_sheet.dart';
 import 'widgets/analytics_mini.dart';
 import 'widgets/balance_card.dart';
-import 'widgets/category_overview.dart';
 import 'widgets/greeting_header.dart';
 import 'widgets/recent_transactions.dart';
 
@@ -32,9 +30,6 @@ class HomeScreen extends ConsumerWidget {
         bottom: false,
         child: Column(
           children: [
-            // Offline / sync-error banner (animates in/out automatically).
-            const OfflineBanner(),
-
             Expanded(
               child: RefreshIndicator(
                 color: AppColors.primary,
@@ -53,8 +48,6 @@ class HomeScreen extends ConsumerWidget {
                           const GreetingHeader(),
                           const SizedBox(height: 24),
                           const BalanceCard(),
-                          const SizedBox(height: 28),
-                          const CategoryOverview(),
                           const SizedBox(height: 28),
                           const AnalyticsMini(),
                           const SizedBox(height: 28),

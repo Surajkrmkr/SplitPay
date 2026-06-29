@@ -157,7 +157,7 @@ export async function updateExpense(
   await activityRepository.createActivity({
     groupId: expense.groupId,
     userId,
-    type: 'EXPENSE_UPDATED',
+    type: 'EXPENSE_ADDED',
     expenseId,
     metadata: { title: updated.title, amount: Number(updated.amount) },
   });

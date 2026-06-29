@@ -4,7 +4,8 @@ import * as repo from './transactions.repository';
 import { CreateTransactionInput, UpdateTransactionInput, ListTransactionsQuery } from '../../validations/transaction.validation';
 
 export async function createTransaction(userId: string, input: CreateTransactionInput) {
-  const data = {
+  return repo.createTransaction({
+    userId,
     amount: input.amount,
     type: input.type as PersonalTxType,
     categoryKey: input.categoryKey,
@@ -15,9 +16,7 @@ export async function createTransaction(userId: string, input: CreateTransaction
     recurrence: (input.recurrence ?? 'NONE') as TxRecurrenceType,
     groupId: input.groupId ?? null,
     deviceId: input.deviceId ?? null,
-  };
-
-  return repo.upsertByLocalId(userId, input.localId, data);
+  });
 }
 
 export async function getTransactions(userId: string, query: ListTransactionsQuery) {
