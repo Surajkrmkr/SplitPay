@@ -69,7 +69,7 @@ const limiter = rateLimit({
   skip: (req) => req.url === `${env.API_PREFIX}/health`,
 });
 
-app.use(limiter);
+// app.use(limiter);
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
 app.use(env.API_PREFIX, router);

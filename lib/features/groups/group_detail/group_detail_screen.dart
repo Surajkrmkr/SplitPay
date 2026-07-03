@@ -538,7 +538,10 @@ class _BalancesTab extends ConsumerWidget {
       ),
       error: (e, _) => RefreshIndicator(
         color: AppColors.primary,
-        onRefresh: () async => ref.invalidate(groupBalancesProvider(groupId)),
+        onRefresh: () async {
+          ref.invalidate(groupDetailProvider(groupId));
+          ref.invalidate(groupBalancesProvider(groupId));
+        },
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
@@ -554,8 +557,10 @@ class _BalancesTab extends ConsumerWidget {
         if (summary.balances.isEmpty) {
           return RefreshIndicator(
             color: AppColors.primary,
-            onRefresh: () async =>
-                ref.invalidate(groupBalancesProvider(groupId)),
+            onRefresh: () async {
+              ref.invalidate(groupDetailProvider(groupId));
+              ref.invalidate(groupBalancesProvider(groupId));
+            },
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               children: const [
@@ -571,7 +576,10 @@ class _BalancesTab extends ConsumerWidget {
 
         return RefreshIndicator(
           color: AppColors.primary,
-          onRefresh: () async => ref.invalidate(groupBalancesProvider(groupId)),
+          onRefresh: () async {
+          ref.invalidate(groupDetailProvider(groupId));
+          ref.invalidate(groupBalancesProvider(groupId));
+        },
           child: ListView(
             padding: const EdgeInsets.only(top: 12, bottom: 100),
             children: [
@@ -991,8 +999,10 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
       ),
       error: (e, _) => RefreshIndicator(
         color: AppColors.primary,
-        onRefresh: () async =>
-            ref.invalidate(groupExpensesProvider(widget.groupId)),
+        onRefresh: () async {
+          ref.invalidate(groupDetailProvider(widget.groupId));
+          ref.invalidate(groupExpensesProvider(widget.groupId));
+        },
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
@@ -1008,8 +1018,10 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
         if (expenses.isEmpty) {
           return RefreshIndicator(
             color: AppColors.primary,
-            onRefresh: () async =>
-                ref.invalidate(groupExpensesProvider(widget.groupId)),
+            onRefresh: () async {
+              ref.invalidate(groupDetailProvider(widget.groupId));
+              ref.invalidate(groupExpensesProvider(widget.groupId));
+            },
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               children: const [
@@ -1214,8 +1226,10 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
             Expanded(
               child: RefreshIndicator(
                 color: AppColors.primary,
-                onRefresh: () async =>
-                    ref.invalidate(groupExpensesProvider(widget.groupId)),
+                onRefresh: () async {
+                  ref.invalidate(groupDetailProvider(widget.groupId));
+                  ref.invalidate(groupExpensesProvider(widget.groupId));
+                },
                 child: filtered.isEmpty
                     ? ListView(
                         physics: const AlwaysScrollableScrollPhysics(),
@@ -1696,7 +1710,10 @@ class _ActivityTab extends ConsumerWidget {
       ),
       error: (e, _) => RefreshIndicator(
         color: AppColors.primary,
-        onRefresh: () async => ref.invalidate(groupActivityProvider(groupId)),
+        onRefresh: () async {
+          ref.invalidate(groupDetailProvider(groupId));
+          ref.invalidate(groupActivityProvider(groupId));
+        },
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
@@ -1712,8 +1729,10 @@ class _ActivityTab extends ConsumerWidget {
         if (activities.isEmpty) {
           return RefreshIndicator(
             color: AppColors.primary,
-            onRefresh: () async =>
-                ref.invalidate(groupActivityProvider(groupId)),
+            onRefresh: () async {
+              ref.invalidate(groupDetailProvider(groupId));
+              ref.invalidate(groupActivityProvider(groupId));
+            },
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               children: const [
@@ -1729,7 +1748,10 @@ class _ActivityTab extends ConsumerWidget {
 
         return RefreshIndicator(
           color: AppColors.primary,
-          onRefresh: () async => ref.invalidate(groupActivityProvider(groupId)),
+          onRefresh: () async {
+          ref.invalidate(groupDetailProvider(groupId));
+          ref.invalidate(groupActivityProvider(groupId));
+        },
           child: ListView.builder(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
             itemCount: activities.length,

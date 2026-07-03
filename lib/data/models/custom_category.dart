@@ -156,17 +156,16 @@ class CustomCategory {
   Color get color => colors[colorIndex % colors.length];
 
   Map<String, dynamic> toMap() => {
-        'id': id,
         'label': label,
-        'iconIndex': iconIndex,
-        'colorIndex': colorIndex,
+        'colorValue': colorIndex,
+        'iconCodePoint': iconIndex,
       };
 
   factory CustomCategory.fromMap(Map map) => CustomCategory(
         id: map['id'] as String,
         label: map['label'] as String,
-        iconIndex: map['iconIndex'] as int,
-        colorIndex: map['colorIndex'] as int,
+        colorIndex: map['colorValue'] as int,
+        iconIndex: map['iconCodePoint'] as int,
       );
 }
 

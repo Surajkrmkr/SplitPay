@@ -9,6 +9,11 @@ import '../data/repositories/notification_repository.dart';
 import '../data/services/firebase_auth_service.dart';
 import '../core/storage/preferences_service.dart';
 import '../data/services/notification_service.dart';
+import 'transaction_provider.dart';
+import 'budget_provider.dart';
+import 'notification_provider.dart';
+import 'group_provider.dart';
+import 'settings_provider.dart';
 
 enum AuthStatus { initial, loading, authenticated, unauthenticated, error }
 
@@ -187,6 +192,8 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         PreferencesService.clearUserData(),
       ]);
 
+      _clearCache();
+
       state = AsyncValue.data(
         const AuthState(status: AuthStatus.unauthenticated),
       );
@@ -195,6 +202,14 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         AuthState(status: AuthStatus.error, error: e.toString()),
       );
     }
+  }
+
+  void _clearCache() {
+    ref.invalidate(transactionProvider);
+    ref.invalidate(budgetProvider);
+    ref.invalidate(notificationsProvider);
+    ref.invalidate(groupsProvider);
+    ref.invalidate(customCategoriesProvider);
   }
 
   Future<void> _handleSessionExpired() async {
@@ -208,6 +223,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         PreferencesService.clearUserData(),
       ]);
     } catch (_) {}
+    _clearCache();
     state = AsyncValue.data(
       const AuthState(status: AuthStatus.unauthenticated),
     );

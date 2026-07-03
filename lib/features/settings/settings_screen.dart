@@ -118,10 +118,10 @@ class SettingsScreen extends ConsumerWidget {
                       _SettingsTile(
                         icon: Icons.share_rounded,
                         iconColor: AppColors.primary,
-                        title: 'Share DimeFlow',
+                        title: 'Share SplitPay',
                         subtitle: 'Invite friends to track expenses together',
                         onTap: () => Share.share(
-                          'Check out DimeFlow — the smart expense tracker for individuals and groups! 💸\nhttps://play.google.com/store/apps/details?id=com.dimeflow.app',
+                          'Check out SplitPay — the smart expense tracker for individuals and groups! 💸\nhttps://play.google.com/store/apps/details?id=com.SplitPay.app',
                         ),
                       ),
                     ],
