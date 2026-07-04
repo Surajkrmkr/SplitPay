@@ -99,9 +99,8 @@ class HiddenCategoriesNotifier extends StateNotifier<Set<String>> {
     // always stay visible.
     if (category == Category.other) return;
     final name = category.name;
-    state = state.contains(name)
-        ? ({...state}..remove(name))
-        : {...state, name};
+    state =
+        state.contains(name) ? ({...state}..remove(name)) : {...state, name};
     await PreferencesService.set('hiddenCategories', state.toList());
   }
 

@@ -692,8 +692,7 @@ class _CategoryManagerSheet extends ConsumerWidget {
                                 .read(hiddenCategoriesProvider.notifier)
                                 .toggle(cat),
                             activeThumbColor: cat.color,
-                            activeTrackColor:
-                                cat.color.withValues(alpha: 0.35),
+                            activeTrackColor: cat.color.withValues(alpha: 0.35),
                           ),
                   );
                 }),
@@ -1041,13 +1040,15 @@ class _BiometricTileState extends ConsumerState<_BiometricTile> {
             _showSnackBar('Authentication cancelled');
             return;
           case BiometricResult.notEnrolled:
-            _showSnackBar('No biometrics enrolled. Set up fingerprint or Face ID in device settings.');
+            _showSnackBar(
+                'No biometrics enrolled. Set up fingerprint or Face ID in device settings.');
             return;
           case BiometricResult.notAvailable:
             _showSnackBar('Biometrics not available on this device');
             return;
           case BiometricResult.lockedOut:
-            _showSnackBar('Too many attempts. Use your PIN to unlock the device first.');
+            _showSnackBar(
+                'Too many attempts. Use your PIN to unlock the device first.');
             return;
           case BiometricResult.failed:
             _showSnackBar('Authentication failed. Please try again.');
@@ -1131,7 +1132,6 @@ class _LogoutTile extends StatelessWidget {
     );
   }
 }
-
 
 // ── Notifications nav tile ────────────────────────────────────────────────────
 

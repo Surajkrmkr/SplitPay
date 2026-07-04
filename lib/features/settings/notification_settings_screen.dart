@@ -49,8 +49,16 @@ class NotificationSettingsScreen extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Row(
                       children: [
-                        Expanded(
-                          child: _SectionLabel(label: 'RECURRING PAYMENTS'),
+                        const Expanded(
+                          child: Text(
+                            'RECURRING PAYMENTS',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.8,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
                         ),
                         GestureDetector(
                           onTap: () => _openAddTransactionSheet(context),
@@ -244,8 +252,7 @@ class _DailyReminderCard extends ConsumerWidget {
                             .read(dailyReminderProvider.notifier)
                             .setEnabled(v),
                     activeThumbColor: AppColors.income,
-                    activeTrackColor:
-                        AppColors.income.withValues(alpha: 0.4),
+                    activeTrackColor: AppColors.income.withValues(alpha: 0.4),
                   ),
                 ],
               ),
@@ -331,6 +338,21 @@ class _RecurringTransactionsList extends ConsumerWidget {
                   height: 1.5,
                 ),
               ),
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                onPressed: () => _openAddTransactionSheet(context),
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: const Text('Add Transaction'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -352,8 +374,7 @@ class _RecurringTransactionsList extends ConsumerWidget {
 class _RecurringReminderCard extends ConsumerWidget {
   final RecurringReminderEntry entry;
   final int index;
-  const _RecurringReminderCard(
-      {required this.entry, required this.index});
+  const _RecurringReminderCard({required this.entry, required this.index});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -363,21 +384,19 @@ class _RecurringReminderCard extends ConsumerWidget {
     final currency = ref.watch(currencyProvider);
     final enabled = config.enabled;
 
-    final amountStr =
-        CurrencyFormatter.format(tx.amount, symbol: currency);
+    final amountStr = CurrencyFormatter.format(tx.amount, symbol: currency);
     final recurrenceLabel = tx.recurrence.label;
     final categoryLabel = tx.customCategoryId != null
         ? (ref
-            .read(customCategoriesProvider)
-            .cast<dynamic>()
-            .firstWhere((c) => c.id == tx.customCategoryId,
-                orElse: () => null)
-            ?.label as String? ??
+                .read(customCategoriesProvider)
+                .cast<dynamic>()
+                .firstWhere((c) => c.id == tx.customCategoryId,
+                    orElse: () => null)
+                ?.label as String? ??
             tx.category.label)
         : tx.category.label;
 
-    final displayName =
-        tx.note?.isNotEmpty == true ? tx.note! : categoryLabel;
+    final displayName = tx.note?.isNotEmpty == true ? tx.note! : categoryLabel;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
@@ -447,8 +466,7 @@ class _RecurringReminderCard extends ConsumerWidget {
                         .read(transactionRemindersProvider.notifier)
                         .setEnabled(tx, v),
                     activeThumbColor: AppColors.warning,
-                    activeTrackColor:
-                        AppColors.warning.withValues(alpha: 0.4),
+                    activeTrackColor: AppColors.warning.withValues(alpha: 0.4),
                   ),
                 ],
               ),
@@ -583,9 +601,7 @@ class _DaysBeforePicker extends StatelessWidget {
               height: 4,
               margin: const EdgeInsets.only(top: 10, bottom: 16),
               decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.darkBorder
-                    : AppColors.lightBorder,
+                color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -602,8 +618,7 @@ class _DaysBeforePicker extends StatelessWidget {
             ),
             for (final (days, label) in _options)
               ListTile(
-                title: Text(label,
-                    style: const TextStyle(fontSize: 14)),
+                title: Text(label, style: const TextStyle(fontSize: 14)),
                 trailing: value == days
                     ? const Icon(Icons.check_rounded,
                         color: AppColors.primary, size: 20)
