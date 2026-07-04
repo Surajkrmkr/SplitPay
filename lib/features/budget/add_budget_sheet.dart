@@ -32,6 +32,14 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
 
   bool get _isEdit => widget.editBudgetId != null;
 
+  bool get _isValid {
+    final amount = double.tryParse(_amountController.text.replaceAll(',', ''));
+    return _titleController.text.trim().isNotEmpty &&
+        amount != null &&
+        amount > 0 &&
+        _selectedCategoryIds.isNotEmpty;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -66,10 +74,9 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
   }
 
   Future<void> _save() async {
+    if (!_isValid) return;
     final title = _titleController.text.trim();
-    if (title.isEmpty) return;
-    final amount = double.tryParse(_amountController.text.replaceAll(',', ''));
-    if (amount == null || amount <= 0) return;
+    final amount = double.tryParse(_amountController.text.replaceAll(',', ''))!;
 
     setState(() => _saving = true);
     try {
@@ -197,6 +204,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
                     TextField(
                       controller: _titleController,
                       textCapitalization: TextCapitalization.sentences,
+                      onChanged: (_) => setState(() {}),
                       decoration: const InputDecoration(
                         hintText: 'e.g. Monthly Food Budget',
                         prefixIcon: Icon(Icons.label_rounded, size: 20),
@@ -211,6 +219,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
                     _AmountField(
                       controller: _amountController,
                       currency: ref.watch(currencyProvider),
+                      onChanged: (_) => setState(() {}),
                     ).animate(delay: 80.ms).fadeIn().slideY(begin: 0.1),
 
                     const SizedBox(height: 16),
@@ -227,8 +236,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
                     const SizedBox(height: 16),
 
                     // Categories
-                    _Label(
-                        'Categories (optional — leave empty for all expenses)'),
+                    _Label('Categories *'),
                     const SizedBox(height: 8),
                     _CategoryPicker(
                       selectedIds: _selectedCategoryIds,
@@ -236,6 +244,16 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
                       isDark: isDark,
                       onToggle: _toggleCategory,
                     ).animate(delay: 140.ms).fadeIn().slideY(begin: 0.1),
+                    if (_selectedCategoryIds.isEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        'Select at least one category',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.expense,
+                        ),
+                      ),
+                    ],
 
                     const SizedBox(height: 16),
 
@@ -302,6 +320,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
                 ),
                 child: _SaveButton(
                   saving: _saving,
+                  enabled: _isValid,
                   isEdit: _isEdit,
                   color: Color(_colorValue),
                   onPressed: _save,
@@ -336,13 +355,19 @@ class _Label extends StatelessWidget {
 class _AmountField extends StatelessWidget {
   final TextEditingController controller;
   final String currency;
+  final ValueChanged<String>? onChanged;
 
-  const _AmountField({required this.controller, required this.currency});
+  const _AmountField({
+    required this.controller,
+    required this.currency,
+    this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
+      onChanged: onChanged,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       inputFormatters: [
         FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
@@ -689,12 +714,14 @@ class _IconPicker extends StatelessWidget {
 
 class _SaveButton extends StatelessWidget {
   final bool saving;
+  final bool enabled;
   final bool isEdit;
   final Color color;
   final VoidCallback onPressed;
 
   const _SaveButton({
     required this.saving,
+    required this.enabled,
     required this.isEdit,
     required this.color,
     required this.onPressed,
@@ -702,6 +729,8 @@ class _SaveButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final canSubmit = enabled && !saving;
+
     return SizedBox(
       width: double.infinity,
       height: 56,
@@ -712,35 +741,40 @@ class _SaveButton extends StatelessWidget {
             colors: [color, color.withValues(alpha: 0.75)],
           ),
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.4),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
+          boxShadow: canSubmit
+              ? [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.4),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ]
+              : [],
         ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: saving ? null : onPressed,
-            borderRadius: BorderRadius.circular(16),
-            child: Center(
-              child: saving
-                  ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2.5, color: Colors.white),
-                    )
-                  : Text(
-                      isEdit ? 'Update Budget' : 'Create Budget',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
+        child: Opacity(
+          opacity: canSubmit ? 1 : 0.4,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: canSubmit ? onPressed : null,
+              borderRadius: BorderRadius.circular(16),
+              child: Center(
+                child: saving
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2.5, color: Colors.white),
+                      )
+                    : Text(
+                        isEdit ? 'Update Budget' : 'Create Budget',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
                       ),
-                    ),
+              ),
             ),
           ),
         ),

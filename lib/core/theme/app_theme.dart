@@ -110,7 +110,8 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.darkSurface,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.darkBorder),
@@ -162,6 +163,22 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
           side: const BorderSide(color: AppColors.darkBorder),
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: AppColors.darkElevated,
+        contentTextStyle: GoogleFonts.plusJakartaSans(
+          color: AppColors.textPrimary,
+          fontSize: 13.5,
+          fontWeight: FontWeight.w500,
+        ),
+        actionTextColor: AppColors.primary,
+        behavior: SnackBarBehavior.floating,
+        elevation: 6,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: const BorderSide(color: AppColors.darkBorder, width: 0.5),
         ),
       ),
     );
@@ -219,7 +236,8 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.lightCard,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.lightBorder),
@@ -230,7 +248,8 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primaryDark, width: 1.5),
+          borderSide:
+              const BorderSide(color: AppColors.primaryDark, width: 1.5),
         ),
         hintStyle: const TextStyle(color: AppColors.textLightSecondary),
       ),
@@ -246,6 +265,21 @@ class AppTheme {
         foregroundColor: Colors.white,
         elevation: 4,
         shape: StadiumBorder(),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: AppColors.textLight,
+        contentTextStyle: GoogleFonts.plusJakartaSans(
+          color: Colors.white,
+          fontSize: 13.5,
+          fontWeight: FontWeight.w500,
+        ),
+        actionTextColor: AppColors.primaryLight,
+        behavior: SnackBarBehavior.floating,
+        elevation: 6,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
       ),
     );
   }

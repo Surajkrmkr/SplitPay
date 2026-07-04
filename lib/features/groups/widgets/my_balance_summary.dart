@@ -13,16 +13,45 @@ class MyBalanceSummary extends ConsumerWidget {
     final currency = ref.watch(currencyProvider);
     final groups = ref.watch(groupsProvider).valueOrNull ?? [];
 
-    // Aggregate balances across all groups
+    // Aggregate balances across all groups. While any group's balance is
+    // still loading, hold off rendering totals to avoid a premature ₹0 flash.
     double totalOwed = 0;
     double totalLent = 0;
+    bool anyLoading = false;
 
     for (final group in groups) {
-      final balances = ref.watch(groupBalancesProvider(group.id)).valueOrNull;
+      final balancesAsync = ref.watch(groupBalancesProvider(group.id));
+      if (balancesAsync.isLoading) {
+        anyLoading = true;
+        continue;
+      }
+      final balances = balancesAsync.valueOrNull;
       if (balances != null) {
         totalOwed += balances.totalOwed;
         totalLent += balances.totalLent;
       }
+    }
+
+    if (anyLoading) {
+      return Container(
+        margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+        padding: const EdgeInsets.symmetric(vertical: 28),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkCard : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppColors.primary.withValues(alpha: 0.3),
+            width: 1.5,
+          ),
+        ),
+        child: const Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+          ),
+        ),
+      );
     }
 
     final net = totalLent - totalOwed;

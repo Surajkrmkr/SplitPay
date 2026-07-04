@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,12 +15,68 @@ import '../../../providers/settings_provider.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../transactions/widgets/edit_transaction_sheet.dart';
 
-class RecentTransactions extends ConsumerWidget {
+class RecentTransactions extends ConsumerStatefulWidget {
   const RecentTransactions({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final transactions = ref.watch(recentTransactionsProvider);
+  ConsumerState<RecentTransactions> createState() => _RecentTransactionsState();
+}
+
+class _RecentTransactionsState extends ConsumerState<RecentTransactions> {
+  static const _undoWindow = Duration(seconds: 4);
+
+  // Items the user just swiped away — hidden from view immediately (so the
+  // Dismissible contract is satisfied) but not actually deleted until the
+  // undo window passes.
+  final Map<String, Transaction> _pendingDeletes = {};
+  final Map<String, Timer> _timers = {};
+
+  @override
+  void dispose() {
+    for (final timer in _timers.values) {
+      timer.cancel();
+    }
+    super.dispose();
+  }
+
+  void _handleSwipeDelete(Transaction tx) {
+    setState(() => _pendingDeletes[tx.id] = tx);
+
+    _timers[tx.id] = Timer(_undoWindow, () {
+      _timers.remove(tx.id);
+      if (_pendingDeletes.remove(tx.id) != null) {
+        ref.read(transactionProvider.notifier).delete(tx);
+      }
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.delete_outline_rounded,
+                color: AppColors.expense, size: 18),
+            const SizedBox(width: 10),
+            const Expanded(child: Text('Transaction deleted')),
+          ],
+        ),
+        duration: _undoWindow,
+        action: SnackBarAction(
+          label: 'UNDO',
+          onPressed: () {
+            _timers.remove(tx.id)?.cancel();
+            if (mounted) setState(() => _pendingDeletes.remove(tx.id));
+          },
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final transactions = ref
+        .watch(recentTransactionsProvider)
+        .where((t) => !_pendingDeletes.containsKey(t.id))
+        .toList();
     final currency = ref.watch(currencyProvider);
 
     return Column(
@@ -35,7 +93,7 @@ class RecentTransactions extends ConsumerWidget {
                     ),
               ),
               const SizedBox(width: 10),
-const Spacer(),
+              const Spacer(),
               GestureDetector(
                 onTap: () => context.push('/transactions'),
                 child: Text(
@@ -68,8 +126,10 @@ const Spacer(),
                 final i = entry.key;
                 final tx = entry.value;
                 return _TransactionItem(
+                  key: ValueKey(tx.id),
                   transaction: tx,
                   currency: currency,
+                  onSwipeDelete: () => _handleSwipeDelete(tx),
                 ).animate(delay: (i * 60).ms).fadeIn().slideX(
                       begin: 0.1,
                       end: 0,
@@ -86,10 +146,13 @@ const Spacer(),
 class _TransactionItem extends ConsumerWidget {
   final Transaction transaction;
   final String currency;
+  final VoidCallback onSwipeDelete;
 
   const _TransactionItem({
+    super.key,
     required this.transaction,
     required this.currency,
+    required this.onSwipeDelete,
   });
 
   @override
@@ -103,7 +166,10 @@ class _TransactionItem extends ConsumerWidget {
     CustomCategory? customCat;
     if (transaction.customCategoryId != null) {
       for (final c in customCats) {
-        if (c.id == transaction.customCategoryId) { customCat = c; break; }
+        if (c.id == transaction.customCategoryId) {
+          customCat = c;
+          break;
+        }
       }
     }
     final color = customCat?.color ?? transaction.category.color;
@@ -113,28 +179,15 @@ class _TransactionItem extends ConsumerWidget {
     return Dismissible(
       key: Key(transaction.id),
       direction: DismissDirection.endToStart,
-      onDismissed: (_) =>
-          ref.read(transactionProvider.notifier).delete(transaction),
+      onDismissed: (_) => onSwipeDelete(),
       background: Container(
+        margin: const EdgeInsets.only(bottom: 10),
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        decoration: BoxDecoration(
-          color: AppColors.expense.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-              color: AppColors.expense.withValues(alpha: 0.3), width: 0.5),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.delete_rounded, color: AppColors.expense, size: 22),
-            const SizedBox(height: 4),
-            Text('Delete',
-                style: TextStyle(
-                    color: AppColors.expense,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600)),
-          ],
+        padding: const EdgeInsets.only(right: 18),
+        child: const Icon(
+          Icons.delete_rounded,
+          color: AppColors.expense,
+          size: 24,
         ),
       ),
       child: Container(
@@ -156,8 +209,7 @@ class _TransactionItem extends ConsumerWidget {
               isScrollControlled: true,
               useRootNavigator: true,
               backgroundColor: Colors.transparent,
-              builder: (_) =>
-                  EditTransactionSheet(transaction: transaction),
+              builder: (_) => EditTransactionSheet(transaction: transaction),
             ),
             child: Padding(
               padding: const EdgeInsets.all(14),
@@ -172,9 +224,8 @@ class _TransactionItem extends ConsumerWidget {
                       height: 48,
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: isDark
-                            ? AppColors.darkCard
-                            : AppColors.lightCard,
+                        color:
+                            isDark ? AppColors.darkCard : AppColors.lightCard,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isDark
@@ -212,9 +263,10 @@ class _TransactionItem extends ConsumerWidget {
                       children: [
                         Text(
                           label,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                         ),
                         const SizedBox(height: 3),
                         if (transaction.note?.isNotEmpty == true)

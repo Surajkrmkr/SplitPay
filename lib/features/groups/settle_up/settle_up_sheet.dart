@@ -649,7 +649,6 @@ class _UpiFormView extends ConsumerWidget {
         ),
         const SizedBox(height: 20),
 
-        // Installed app chips
         if (loadingApps)
           Center(
             child: Padding(
@@ -664,20 +663,7 @@ class _UpiFormView extends ConsumerWidget {
               ),
             ),
           )
-        else if (upiApps.isNotEmpty) ...[
-          Text('Pay with', style: TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 10),
-          SizedBox(
-            height: 56,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: upiApps.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 10),
-              itemBuilder: (_, i) => _UpiAppChip(app: upiApps[i], isDark: isDark),
-            ),
-          ),
-          const SizedBox(height: 16),
-        ] else ...[
+        else if (upiApps.isEmpty) ...[
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -1377,46 +1363,6 @@ class _UpiAppIcon extends StatelessWidget {
                   ),
                 ),
               ),
-      ),
-    );
-  }
-}
-
-class _UpiAppChip extends StatelessWidget {
-  final UpiApp app;
-  final bool isDark;
-  const _UpiAppChip({required this.app, required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : AppColors.lightCard,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (app.icon != null && app.icon!.isNotEmpty)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: Image.memory(app.icon!, width: 24, height: 24),
-            )
-          else
-            Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: const Icon(Icons.account_balance_wallet_rounded, size: 14, color: AppColors.primary),
-            ),
-          const SizedBox(width: 6),
-          Text(app.name, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: isDark ? Colors.white : AppColors.textLight)),
-        ],
       ),
     );
   }

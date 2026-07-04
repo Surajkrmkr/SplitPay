@@ -66,7 +66,8 @@ export async function deleteNotification(
 // These are called fire-and-forget from other service modules.
 
 /**
- * Notify all group members (except the actor) that a new expense was added.
+ * Notify the users involved in a newly-added expense (its participants plus
+ * whoever paid), excluding the actor who created it — not the whole group.
  */
 export async function notifyGroupExpenseAdded(opts: {
   groupId: string;
@@ -76,17 +77,16 @@ export async function notifyGroupExpenseAdded(opts: {
   actorAvatar: string | null;
   expenseTitle: string;
   amount: number;
+  recipientUserIds: string[];
   currency?: string;
 }): Promise<void> {
-  const { groupId, groupName, actorId, actorName, actorAvatar, expenseTitle, amount } = opts;
+  const { groupId, groupName, actorId, actorName, actorAvatar, expenseTitle, amount, recipientUserIds } = opts;
   const currency = opts.currency ?? '₹';
   const title = groupName;
   const body = `${actorName} added ${currency}${amount} for "${expenseTitle}"`;
 
-  const [recipientIds, tokens] = await Promise.all([
-    notificationsRepository.getGroupMemberUserIds(groupId, actorId),
-    notificationsRepository.getGroupMemberTokens(groupId, actorId),
-  ]);
+  const recipientIds = recipientUserIds.filter((id) => id !== actorId);
+  const tokens = await notificationsRepository.getUserFcmTokensFor(recipientIds);
 
   // Persist in-app notifications for each recipient
   await notificationsRepository.createNotifications(

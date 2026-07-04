@@ -46,10 +46,13 @@ export async function createExpense(
     metadata: { title: expense.title, amount },
   });
 
-  // Notify group members (fire-and-forget)
+  // Notify only the users involved in this expense (fire-and-forget)
   const group = await groupsRepository.findGroupById(groupId);
   if (group) {
     const actor = group.members.find((m) => m.userId === userId)?.user;
+    const recipientUserIds = Array.from(
+      new Set([expense.paidById, ...expense.participants.map((p) => p.userId)])
+    );
     notificationsService
       .notifyGroupExpenseAdded({
         groupId,
@@ -59,6 +62,7 @@ export async function createExpense(
         actorAvatar: actor?.avatar ?? null,
         expenseTitle: expense.title,
         amount: Number(expense.amount),
+        recipientUserIds,
       })
       .catch(() => {});
   }

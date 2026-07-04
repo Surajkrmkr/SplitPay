@@ -25,8 +25,37 @@ class _SpendingPieChartState extends ConsumerState<SpendingPieChart> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final total = breakdown.values.fold(0.0, (a, b) => a + b);
 
+    final bgColor = isDark ? AppColors.darkCard : AppColors.lightSurface;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+
     if (breakdown.isEmpty) {
-      return const SizedBox(height: 200);
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(vertical: 32),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: borderColor, width: 0.5),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.pie_chart_outline_rounded,
+              size: 32,
+              color: AppColors.textTertiary,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'No expenses this month',
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
     final sorted = breakdown.entries.toList()
@@ -61,9 +90,6 @@ class _SpendingPieChartState extends ConsumerState<SpendingPieChart> {
         badgePositionPercentageOffset: 1.3,
       );
     }).toList();
-
-    final bgColor = isDark ? AppColors.darkCard : AppColors.lightSurface;
-    final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),

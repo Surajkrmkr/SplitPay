@@ -8,6 +8,17 @@ import '../../core/utils/currency_formatter.dart';
 import '../../data/models/transaction_model.dart';
 import '../../providers/reminder_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../add_transaction/add_transaction_sheet.dart';
+
+void _openAddTransactionSheet(BuildContext context) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    useRootNavigator: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => const AddTransactionSheet(),
+  );
+}
 
 class NotificationSettingsScreen extends ConsumerWidget {
   const NotificationSettingsScreen({super.key});
@@ -34,7 +45,35 @@ class NotificationSettingsScreen extends ConsumerWidget {
                   const SizedBox(height: 12),
                   const _DailyReminderCard(),
                   const SizedBox(height: 28),
-                  _SectionLabel(label: 'RECURRING PAYMENTS'),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _SectionLabel(label: 'RECURRING PAYMENTS'),
+                        ),
+                        GestureDetector(
+                          onTap: () => _openAddTransactionSheet(context),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.add_rounded,
+                                  size: 15, color: AppColors.primary),
+                              const SizedBox(width: 3),
+                              Text(
+                                'Add',
+                                style: TextStyle(
+                                  color: AppColors.primary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   const _RecurringSubtitle(),
                   const SizedBox(height: 12),

@@ -44,18 +44,11 @@ export async function getUserFcmTokens(userId: string): Promise<string[]> {
   return rows.map((r) => r.token);
 }
 
-/** Returns all FCM tokens for group members, excluding the actor. */
-export async function getGroupMemberTokens(
-  groupId: string,
-  excludeUserId: string
-): Promise<string[]> {
+/** Returns all FCM tokens belonging to the given user IDs. */
+export async function getUserFcmTokensFor(userIds: string[]): Promise<string[]> {
+  if (userIds.length === 0) return [];
   const rows = await prisma.fcmToken.findMany({
-    where: {
-      user: {
-        groups: { some: { groupId } },
-      },
-      NOT: { userId: excludeUserId },
-    },
+    where: { userId: { in: userIds } },
     select: { token: true },
   });
   return rows.map((r) => r.token);
@@ -141,14 +134,3 @@ export async function deleteNotification(
   });
 }
 
-/** Returns all group member user IDs excluding the actor. */
-export async function getGroupMemberUserIds(
-  groupId: string,
-  excludeUserId: string
-): Promise<string[]> {
-  const members = await prisma.groupMember.findMany({
-    where: { groupId, NOT: { userId: excludeUserId } },
-    select: { userId: true },
-  });
-  return members.map((m) => m.userId);
-}

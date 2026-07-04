@@ -23,19 +23,34 @@ class TransactionNotifier extends StateNotifier<List<Transaction>> {
     } catch (_) {}
   }
 
+  // Applies the change to local state immediately so dependent providers
+  // (graphs, recents) reflect it without waiting on the network round-trip,
+  // then reconciles with the server's copy once the request settles.
   Future<void> add(Transaction tx) async {
-    await _repo.create(tx);
-    await load();
+    state = [tx, ...state];
+    try {
+      await _repo.create(tx);
+    } finally {
+      await load();
+    }
   }
 
   Future<void> delete(Transaction tx) async {
-    await _repo.delete(tx);
-    await load();
+    state = state.where((t) => t.id != tx.id).toList();
+    try {
+      await _repo.delete(tx);
+    } finally {
+      await load();
+    }
   }
 
   Future<void> update(Transaction tx) async {
-    await _repo.update(tx);
-    await load();
+    state = [for (final t in state) t.id == tx.id ? tx : t];
+    try {
+      await _repo.update(tx);
+    } finally {
+      await load();
+    }
   }
 
   /// Pull-to-refresh: reload from server.

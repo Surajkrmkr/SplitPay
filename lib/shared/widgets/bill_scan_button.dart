@@ -306,9 +306,11 @@ class _BillScanButtonState extends ConsumerState<BillScanButton> {
             gradient: _busy
                 ? null
                 : LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                     colors: [
                       AppColors.primary.withValues(alpha: 0.18),
-                      AppColors.secondary.withValues(alpha: 0.15),
+                      AppColors.primary.withValues(alpha: 0.08),
                     ],
                   ),
             color: _busy ? AppColors.primary.withValues(alpha: 0.12) : null,

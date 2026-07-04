@@ -9,6 +9,8 @@ export interface CreateSettlementData {
   amount: number;
   notes?: string;
   settledAt?: Date;
+  paymentMethod?: string;
+  transactionId?: string;
 }
 
 export type SettlementWithUsers = Settlement & {

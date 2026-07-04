@@ -91,10 +91,13 @@ class HiddenCategoriesNotifier extends StateNotifier<Set<String>> {
 
   void _load() {
     final stored = PreferencesService.getStringList('hiddenCategories');
-    state = stored?.toSet() ?? {};
+    state = (stored?.toSet() ?? {})..remove(Category.other.name);
   }
 
   Future<void> toggle(Category category) async {
+    // "Other" is the fallback bucket custom categories map to — it must
+    // always stay visible.
+    if (category == Category.other) return;
     final name = category.name;
     state = state.contains(name)
         ? ({...state}..remove(name))

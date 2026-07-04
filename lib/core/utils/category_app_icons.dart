@@ -13,16 +13,14 @@ class CategoryAppIcons {
 
   static const Map<Category, List<String>> _byCategory = {
     Category.food: [
+      'Zomato.png',
       'Swiggy.png',
-      'Magicpin.png',
+      'Swish.png',
       'Bistro.png',
-      'Bonkers corner.png',
-      'Dazzl.png',
-      'District.png',
+      'Zepto cafe.png',
       'Pronto.png',
-      'Snabbit.png',
-      'Soul store.png',
       'Toing.png',
+      'Magicpin.png',
     ],
     Category.shopping: [
       'Amazon.png',
@@ -30,8 +28,12 @@ class CategoryAppIcons {
       'Myntra.png',
       'Meesho.png',
       'Nykaa.png',
+      'Bonkers corner.png',
+      'Soul store.png',
       'First club.png',
+      'Dazzl.png',
       // Quick-commerce / grocery — often used for "shopping" too
+      'Zepto.png',
       'Amazon fresh.png',
       'Amazon now.png',
       'Bigbasket.png',
@@ -58,6 +60,7 @@ class CategoryAppIcons {
       'Jio hotstar.png',
       'Sony liv.png',
       'BookMyShow.png',
+      'District.png',
       'Spotify.png',
       'Apple music.png',
       'Apple tv.png',
@@ -65,7 +68,6 @@ class CategoryAppIcons {
       'MX player.png',
       'Crunchy roll.png',
       'Savana.png',
-      'Swish.png',
       'Star.png',
     ],
     Category.subscription: [
@@ -83,6 +85,7 @@ class CategoryAppIcons {
       'Cult.png',
       'Urban company.png',
       'Yes madam.png',
+      'Snabbit.png',
     ],
     // Bills, Salary, Other — no obvious app icons yet. Picker hides itself
     // when this list is empty so the UI stays clean.

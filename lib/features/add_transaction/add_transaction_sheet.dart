@@ -33,6 +33,11 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   RecurrenceType _recurrence = RecurrenceType.none;
   bool _saving = false;
 
+  bool get _isValid {
+    final amount = double.tryParse(_amountController.text.replaceAll(',', ''));
+    return amount != null && amount > 0;
+  }
+
   @override
   void dispose() {
     _amountController.dispose();
@@ -84,11 +89,12 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   }
 
   Future<void> _pickDate() async {
+    final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
       initialDate: _date,
       firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
+      lastDate: DateTime(now.year + 5),
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           colorScheme: Theme.of(context)
@@ -240,6 +246,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                       controller: _amountController,
                       currency: currency,
                       type: _type,
+                      onChanged: (_) => setState(() {}),
                     ).animate(delay: 50.ms).fadeIn().slideY(begin: 0.1),
                     const SizedBox(height: 16),
                     _sectionLabel(context, 'Category'),
@@ -336,6 +343,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                 ),
                 child: _SaveButton(
                   saving: _saving,
+                  enabled: _isValid,
                   type: _type,
                   onPressed: _save,
                 ).animate(delay: 250.ms).fadeIn().slideY(begin: 0.1),
@@ -435,11 +443,13 @@ class _AmountInput extends StatelessWidget {
   final TextEditingController controller;
   final String currency;
   final TransactionType type;
+  final ValueChanged<String>? onChanged;
 
   const _AmountInput({
     required this.controller,
     required this.currency,
     required this.type,
+    this.onChanged,
   });
 
   @override
@@ -449,6 +459,7 @@ class _AmountInput extends StatelessWidget {
 
     return TextField(
       controller: controller,
+      onChanged: onChanged,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       inputFormatters: [
         FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
@@ -813,11 +824,13 @@ class _RecurrencePicker extends StatelessWidget {
 
 class _SaveButton extends StatelessWidget {
   final bool saving;
+  final bool enabled;
   final TransactionType type;
   final VoidCallback onPressed;
 
   const _SaveButton({
     required this.saving,
+    required this.enabled,
     required this.type,
     required this.onPressed,
   });
@@ -826,6 +839,7 @@ class _SaveButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final isExpense = type == TransactionType.expense;
     final color = isExpense ? AppColors.expense : AppColors.income;
+    final canSubmit = enabled && !saving;
 
     return SizedBox(
       width: double.infinity,
@@ -837,50 +851,55 @@ class _SaveButton extends StatelessWidget {
             colors: [color, color.withValues(alpha: 0.7)],
           ),
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.35),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
+          boxShadow: canSubmit
+              ? [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.35),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ]
+              : [],
         ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: saving ? null : onPressed,
-            borderRadius: BorderRadius.circular(16),
-            child: Center(
-              child: saving
-                  ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: Colors.white,
-                      ),
-                    )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          isExpense
-                              ? Icons.arrow_upward_rounded
-                              : Icons.arrow_downward_rounded,
+        child: Opacity(
+          opacity: canSubmit ? 1 : 0.4,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: canSubmit ? onPressed : null,
+              borderRadius: BorderRadius.circular(16),
+              child: Center(
+                child: saving
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
                           color: Colors.white,
-                          size: 18,
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          isExpense ? 'Save Expense' : 'Save Income',
-                          style: const TextStyle(
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            isExpense
+                                ? Icons.arrow_upward_rounded
+                                : Icons.arrow_downward_rounded,
                             color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 16,
+                            size: 18,
                           ),
-                        ),
-                      ],
-                    ),
+                          const SizedBox(width: 8),
+                          Text(
+                            isExpense ? 'Save Expense' : 'Save Income',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
             ),
           ),
         ),

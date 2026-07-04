@@ -683,14 +683,18 @@ class _CategoryManagerSheet extends ConsumerWidget {
                             : AppColors.textTertiary,
                       ),
                     ),
-                    trailing: Switch(
-                      value: isVisible,
-                      onChanged: (_) => ref
-                          .read(hiddenCategoriesProvider.notifier)
-                          .toggle(cat),
-                      activeThumbColor: cat.color,
-                      activeTrackColor: cat.color.withValues(alpha: 0.35),
-                    ),
+                    trailing: cat == Category.other
+                        ? Icon(Icons.lock_outline_rounded,
+                            color: AppColors.textTertiary, size: 18)
+                        : Switch(
+                            value: isVisible,
+                            onChanged: (_) => ref
+                                .read(hiddenCategoriesProvider.notifier)
+                                .toggle(cat),
+                            activeThumbColor: cat.color,
+                            activeTrackColor:
+                                cat.color.withValues(alpha: 0.35),
+                          ),
                   );
                 }),
 

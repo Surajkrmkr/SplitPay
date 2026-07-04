@@ -265,6 +265,7 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
                       focusNode: _amountFocusNode,
                       isDark: isDark,
                       currency: currency,
+                      autofocus: true,
                       onChanged: (_) => setState(() {}),
                     ),
                     const SizedBox(height: 20),
@@ -517,6 +518,7 @@ class AmountDisplay extends StatelessWidget {
   final bool isDark;
   final String currency;
   final ValueChanged<String> onChanged;
+  final bool autofocus;
 
   const AmountDisplay({
     super.key,
@@ -525,6 +527,7 @@ class AmountDisplay extends StatelessWidget {
     required this.isDark,
     required this.currency,
     required this.onChanged,
+    this.autofocus = false,
   });
 
   @override
@@ -567,6 +570,7 @@ class AmountDisplay extends StatelessWidget {
                   child: TextField(
                     controller: controller,
                     focusNode: focusNode,
+                    autofocus: autofocus,
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
                     inputFormatters: [

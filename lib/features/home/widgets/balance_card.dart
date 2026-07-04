@@ -7,9 +7,20 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../providers/transaction_provider.dart';
 import '../../../providers/settings_provider.dart';
+import '../../add_transaction/add_transaction_sheet.dart';
 
 class BalanceCard extends ConsumerWidget {
   const BalanceCard({super.key});
+
+  void _openAddSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useRootNavigator: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const AddTransactionSheet(),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -25,28 +36,19 @@ class BalanceCard extends ConsumerWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
-        gradient: isDark
-            ? const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF1A3A2A), Color(0xFF0F1D16)],
-              )
-            : null,
-        color: isDark ? null : Colors.white,
+        color: isDark ? AppColors.darkCard : Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: isDark
-              ? AppColors.primary.withValues(alpha: 0.2)
-              : AppColors.lightBorder,
-          width: 1,
+          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+          width: isDark ? 0.5 : 1,
         ),
         boxShadow: [
           BoxShadow(
             color: isDark
-                ? AppColors.primary.withValues(alpha: 0.12)
+                ? Colors.black.withValues(alpha: 0.2)
                 : Colors.black.withValues(alpha: 0.06),
-            blurRadius: isDark ? 32 : 20,
-            offset: Offset(0, isDark ? 16 : 8),
+            blurRadius: isDark ? 24 : 20,
+            offset: Offset(0, isDark ? 12 : 8),
           ),
         ],
       ),
@@ -54,92 +56,95 @@ class BalanceCard extends ConsumerWidget {
         borderRadius: BorderRadius.circular(24),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _openAddSheet(context),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Total Balance',
-                      style: TextStyle(
-                        color: isDark
-                            ? AppColors.primary.withValues(alpha: 0.8)
-                            : AppColors.textLightSecondary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 0.5,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Total Balance',
+                          style: TextStyle(
+                            color: isDark
+                                ? AppColors.primary.withValues(alpha: 0.8)
+                                : AppColors.textLightSecondary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        _MonthSelector(selectedMonth: selectedMonth),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TweenAnimationBuilder<double>(
+                      duration: 1200.ms,
+                      tween: Tween(begin: 0, end: balance),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, value, _) => Text(
+                        CurrencyFormatter.format(value, symbol: currency),
+                        style: TextStyle(
+                          color: isDark ? Colors.white : AppColors.textLight,
+                          fontSize: 38,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -1.5,
+                          height: 1.0,
+                        ),
                       ),
                     ),
-                    _MonthSelector(selectedMonth: selectedMonth),
-                  ],
-                ),
-                const SizedBox(height: 12),
-
-                TweenAnimationBuilder<double>(
-                  duration: 1200.ms,
-                  tween: Tween(begin: 0, end: balance),
-                  curve: Curves.easeOutCubic,
-                  builder: (context, value, _) => Text(
-                    CurrencyFormatter.format(value, symbol: currency),
-                    style: TextStyle(
-                      color: isDark ? Colors.white : AppColors.textLight,
-                      fontSize: 38,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -1.5,
-                      height: 1.0,
+                    const SizedBox(height: 8),
+                    _MoMDelta(
+                      current: expense,
+                      previous: prevExpense,
+                      currency: currency,
                     ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                _MoMDelta(
-                  current: expense,
-                  previous: prevExpense,
-                  currency: currency,
-                ),
-                const SizedBox(height: 20),
-
-                Container(
-                  height: 0.5,
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.1)
-                      : AppColors.lightBorder,
-                ),
-                const SizedBox(height: 20),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: _MiniStat(
-                        label: 'Income',
-                        amount: income,
-                        currency: currency,
-                        icon: Icons.arrow_downward_rounded,
-                        color: AppColors.income,
-                      ),
-                    ),
+                    const SizedBox(height: 20),
                     Container(
-                      width: 0.5,
-                      height: 40,
+                      height: 0.5,
                       color: isDark
                           ? Colors.white.withValues(alpha: 0.1)
                           : AppColors.lightBorder,
                     ),
-                    Expanded(
-                      child: _MiniStat(
-                        label: 'Expenses',
-                        amount: expense,
-                        currency: currency,
-                        icon: Icons.arrow_upward_rounded,
-                        color: AppColors.expense,
-                        alignRight: true,
-                      ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _MiniStat(
+                            label: 'Income',
+                            amount: income,
+                            currency: currency,
+                            icon: Icons.arrow_downward_rounded,
+                            color: AppColors.income,
+                          ),
+                        ),
+                        Container(
+                          width: 0.5,
+                          height: 40,
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.1)
+                              : AppColors.lightBorder,
+                        ),
+                        Expanded(
+                          child: _MiniStat(
+                            label: 'Expenses',
+                            amount: expense,
+                            currency: currency,
+                            icon: Icons.arrow_upward_rounded,
+                            color: AppColors.expense,
+                            alignRight: true,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -336,9 +341,8 @@ class _MiniStat extends StatelessWidget {
             const SizedBox(width: 10),
           ],
           Column(
-            crossAxisAlignment: alignRight
-                ? CrossAxisAlignment.end
-                : CrossAxisAlignment.start,
+            crossAxisAlignment:
+                alignRight ? CrossAxisAlignment.end : CrossAxisAlignment.start,
             children: [
               Builder(builder: (context) {
                 final isDark = Theme.of(context).brightness == Brightness.dark;

@@ -12,7 +12,6 @@ import 'package:share_plus/share_plus.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../shared/widgets/app_back_button.dart';
 import '../../../data/services/group_api_service.dart';
-import '../../../providers/auth_provider.dart';
 import '../../../providers/group_provider.dart';
 import '../../../shared/widgets/sp_button.dart';
 
@@ -111,29 +110,92 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
     );
   }
 
+  String? get _groupName =>
+      widget.groupId == null ? null : ref.read(groupDetailProvider(widget.groupId!)).valueOrNull?.name;
+
   Future<void> _shareCode() async {
     if (_generatedCode == null) return;
+    final groupName = _groupName;
     final message =
-        'Join my SplitPay group with invite code: $_generatedCode\n\n'
+        '${groupName != null ? 'Join "$groupName" on SplitPay' : 'Join my SplitPay group'} '
+        'with invite code: $_generatedCode\n\n'
         'Download the app: $_playStoreUrl';
     await Share.share(message, subject: 'Join my SplitPay group');
   }
 
   Future<void> _shareQrCode() async {
     if (_generatedCode == null) return;
-    const qrSize   = 400.0;
-    const padding  = 40.0;
-    const total    = qrSize + padding * 2;
+    final groupName = _groupName;
+
+    const qrSize      = 360.0;
+    const sidePadding = 44.0;
+    const headerH     = 96.0;
+    const footerH     = 90.0;
+    const width       = qrSize + sidePadding * 2;
+    const height      = headerH + qrSize + footerH;
 
     final recorder = ui.PictureRecorder();
     final canvas   = Canvas(recorder);
 
-    // White background
-    canvas.drawRect(
-      const Rect.fromLTWH(0, 0, total, total),
+    // Card background
+    const cardRect = Rect.fromLTWH(0, 0, width, height);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(cardRect, const Radius.circular(28)),
       Paint()..color = Colors.white,
     );
 
+    // Header band with app icon + name
+    final headerPaint = Paint()..shader = const LinearGradient(
+      colors: [AppColors.primary, AppColors.secondary],
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+    ).createShader(const Rect.fromLTWH(0, 0, width, headerH));
+    canvas.save();
+    canvas.clipRRect(RRect.fromRectAndCorners(
+      cardRect,
+      topLeft: const Radius.circular(28),
+      topRight: const Radius.circular(28),
+    ));
+    canvas.drawRect(const Rect.fromLTWH(0, 0, width, headerH), headerPaint);
+    canvas.restore();
+
+    try {
+      final iconBytes = await rootBundle.load('assets/icon/app_icon.png');
+      final iconCodec = await ui.instantiateImageCodec(
+        iconBytes.buffer.asUint8List(),
+        targetWidth: 96,
+        targetHeight: 96,
+      );
+      final iconFrame = await iconCodec.getNextFrame();
+      const iconSize = 48.0;
+      final iconRect = Rect.fromLTWH(
+        sidePadding, (headerH - iconSize) / 2, iconSize, iconSize);
+      canvas.save();
+      canvas.clipRRect(RRect.fromRectAndRadius(iconRect, const Radius.circular(12)));
+      canvas.drawImageRect(
+        iconFrame.image,
+        Rect.fromLTWH(0, 0, iconFrame.image.width.toDouble(), iconFrame.image.height.toDouble()),
+        iconRect,
+        Paint(),
+      );
+      canvas.restore();
+    } catch (_) {
+      // Icon is optional decoration — skip silently if it can't be loaded.
+    }
+
+    final titlePainter = TextPainter(
+      text: const TextSpan(
+        text: 'SplitPay',
+        style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w800),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    titlePainter.paint(
+      canvas,
+      Offset(sidePadding + 48 + 16, (headerH - titlePainter.height) / 2),
+    );
+
+    // QR code
     final painter = QrPainter(
       data: 'dimeflow://join/$_generatedCode',
       version: QrVersions.auto,
@@ -146,14 +208,36 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
         color: Color(0xFF1A1A2E),
       ),
     );
-
     canvas.save();
-    canvas.translate(padding, padding);
-    painter.paint(canvas, const Size(qrSize, qrSize));
+    canvas.translate(sidePadding, headerH + 24);
+    painter.paint(canvas, const Size(qrSize, qrSize - 24));
     canvas.restore();
 
+    // Footer — group name + caption
+    final footerLines = [
+      if (groupName != null) groupName,
+      'Scan to join · Code: $_generatedCode',
+    ];
+    double footerY = headerH + qrSize + 14;
+    for (var i = 0; i < footerLines.length; i++) {
+      final isTitle = i == 0 && groupName != null;
+      final linePainter = TextPainter(
+        text: TextSpan(
+          text: footerLines[i],
+          style: TextStyle(
+            color: isTitle ? const Color(0xFF1A1A2E) : const Color(0xFF8A8A9E),
+            fontSize: isTitle ? 20 : 14,
+            fontWeight: isTitle ? FontWeight.w700 : FontWeight.w500,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout(maxWidth: width - sidePadding * 2);
+      linePainter.paint(canvas, Offset((width - linePainter.width) / 2, footerY));
+      footerY += linePainter.height + 6;
+    }
+
     final picture  = recorder.endRecording();
-    final image    = await picture.toImage(total.toInt(), total.toInt());
+    final image    = await picture.toImage(width.toInt(), height.toInt());
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     final bytes    = byteData!.buffer.asUint8List();
 
@@ -162,7 +246,8 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
 
     await Share.shareXFiles(
       [XFile(file.path, mimeType: 'image/png')],
-      text: 'Join my SplitPay group!\nCode: $_generatedCode',
+      text:
+          '${groupName != null ? 'Join "$groupName" on SplitPay!' : 'Join my SplitPay group!'}\nCode: $_generatedCode',
       subject: 'SplitPay Group Invite',
     );
   }
@@ -245,20 +330,6 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Only admins can generate invite codes — derived from the group's member roster.
-    bool isAdmin = false;
-    if (!_joinOnly) {
-      final groupAsync = ref.watch(groupDetailProvider(widget.groupId!));
-      final currentUserId = ref.watch(currentUserProvider)?.id;
-      final group = groupAsync.valueOrNull;
-      if (group != null && currentUserId != null) {
-        final me = group.members
-            .where((m) => m.userId == currentUserId)
-            .firstOrNull;
-        isAdmin = me?.isAdmin ?? false;
-      }
-    }
-
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBg : AppColors.lightBg,
       appBar: AppBar(
@@ -304,7 +375,6 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
               children: [
                 _GenerateTab(
                   isDark: isDark,
-                  isAdmin: isAdmin,
                   generatedCode: _generatedCode,
                   expiresAt: _expiresAt,
                   generating: _generating,
@@ -333,7 +403,6 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
 
 class _GenerateTab extends StatelessWidget {
   final bool isDark;
-  final bool isAdmin;
   final String? generatedCode;
   final DateTime? expiresAt;
   final bool generating;
@@ -344,7 +413,6 @@ class _GenerateTab extends StatelessWidget {
 
   const _GenerateTab({
     required this.isDark,
-    required this.isAdmin,
     required this.generatedCode,
     required this.expiresAt,
     required this.generating,
@@ -511,17 +579,13 @@ class _GenerateTab extends StatelessWidget {
               child: Column(
                 children: [
                   Icon(
-                    isAdmin
-                        ? Icons.qr_code_2_rounded
-                        : Icons.lock_outline_rounded,
+                    Icons.qr_code_2_rounded,
                     size: 64,
                     color: AppColors.primary.withValues(alpha: 0.5),
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    isAdmin
-                        ? 'No active invite code'
-                        : 'Admin permission required',
+                    'No active invite code',
                     style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -529,9 +593,7 @@ class _GenerateTab extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    isAdmin
-                        ? 'Tap below to generate a code + QR'
-                        : 'Only group admins can generate invite codes. Ask an admin to share an invite with you.',
+                    'Tap below to generate a code + QR',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                         fontSize: 13,
@@ -542,20 +604,11 @@ class _GenerateTab extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 32),
-            Tooltip(
-              message: isAdmin
-                  ? ''
-                  : 'Only admins can create invite codes for this group',
-              triggerMode: TooltipTriggerMode.tap,
-              showDuration: const Duration(seconds: 3),
-              child: SpButton(
-                label: 'Generate Invite Code',
-                onTap: (isAdmin && !generating) ? onGenerate : null,
-                isLoading: generating,
-                icon: isAdmin
-                    ? Icons.add_link_rounded
-                    : Icons.lock_outline_rounded,
-              ),
+            SpButton(
+              label: 'Generate Invite Code',
+              onTap: generating ? null : onGenerate,
+              isLoading: generating,
+              icon: Icons.add_link_rounded,
             ),
           ],
         ],

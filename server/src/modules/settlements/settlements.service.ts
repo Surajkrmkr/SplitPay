@@ -39,6 +39,7 @@ export async function createSettlement(
       payerId: settlement.payerId,
       payeeId: settlement.payeeId,
       amount: Number(settlement.amount),
+      paymentMethod: settlement.paymentMethod,
     },
   });
 

@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../providers/transaction_provider.dart';
-import '../add_transaction/add_transaction_sheet.dart';
 import 'widgets/analytics_mini.dart';
 import 'widgets/balance_card.dart';
 import 'widgets/greeting_header.dart';
@@ -12,16 +11,6 @@ import 'widgets/recent_transactions.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
-
-  void _openAddSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useRootNavigator: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const AddTransactionSheet(),
-    );
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -49,11 +38,11 @@ class HomeScreen extends ConsumerWidget {
                           const SizedBox(height: 24),
                           const BalanceCard(),
                           const SizedBox(height: 28),
-                          const AnalyticsMini(),
+                          const RecentTransactions(),
                           const SizedBox(height: 28),
                           const _SplitBanner(),
                           const SizedBox(height: 28),
-                          const RecentTransactions(),
+                          const AnalyticsMini(),
                           const SizedBox(height: 16),
                           _AdBannerArea(),
                           SizedBox(
@@ -126,7 +115,7 @@ class _SplitBanner extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  'Add group expenses, track who owes what, and settle up easily.',
+                  'Add group expenses and settle up easily.',
                   style: TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
@@ -140,8 +129,7 @@ class _SplitBanner extends StatelessWidget {
           GestureDetector(
             onTap: () => context.go('/groups'),
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 color: AppColors.primary,
                 borderRadius: BorderRadius.circular(12),

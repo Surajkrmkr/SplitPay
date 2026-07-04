@@ -124,6 +124,13 @@ export async function createInvite(data: {
   return prisma.groupInvite.create({ data });
 }
 
+export async function deactivateGroupInvites(groupId: string): Promise<void> {
+  await prisma.groupInvite.updateMany({
+    where: { groupId, active: true },
+    data: { active: false },
+  });
+}
+
 export async function findInviteByCode(code: string) {
   return prisma.groupInvite.findUnique({
     where: { code },

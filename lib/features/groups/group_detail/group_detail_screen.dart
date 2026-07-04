@@ -1,3 +1,4 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -43,7 +44,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _tabController.addListener(() {
       if (_isSearching && _tabController.index != 1) _closeSearch();
       if (mounted) setState(() {});
@@ -233,6 +234,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
                   Tab(text: 'Balances'),
                   Tab(text: 'Expenses'),
                   Tab(text: 'Activity'),
+                  Tab(text: 'Total'),
                 ],
               ),
             ),
@@ -264,6 +266,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
                 searchNotifier: _searchNotifier,
               ),
               _ActivityTab(groupId: widget.groupId),
+              _TotalTab(groupId: widget.groupId),
             ],
           ),
         ),
@@ -624,22 +627,19 @@ class _BalanceSummaryCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currency = ref.watch(currencyProvider);
     final net = summary.net as double;
+    final isSettled = net == 0;
     final isPositive = net >= 0;
-    final accentColor = isPositive ? AppColors.income : AppColors.expense;
+    final accentColor =
+        isSettled ? AppColors.primary : (isPositive ? AppColors.income : AppColors.expense);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: isPositive
-              ? [
-                  AppColors.income.withValues(alpha: 0.18),
-                  AppColors.income.withValues(alpha: 0.04),
-                ]
-              : [
-                  AppColors.expense.withValues(alpha: 0.18),
-                  AppColors.expense.withValues(alpha: 0.04),
-                ],
+          colors: [
+            accentColor.withValues(alpha: 0.18),
+            accentColor.withValues(alpha: 0.04),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -671,9 +671,11 @@ class _BalanceSummaryCard extends ConsumerWidget {
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    isPositive
-                        ? Icons.trending_up_rounded
-                        : Icons.trending_down_rounded,
+                    isSettled
+                        ? Icons.check_circle_outline_rounded
+                        : (isPositive
+                            ? Icons.trending_up_rounded
+                            : Icons.trending_down_rounded),
                     color: accentColor,
                     size: 20,
                   ),
@@ -683,22 +685,25 @@ class _BalanceSummaryCard extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isPositive ? "You're owed overall" : "You owe overall",
+                      isSettled
+                          ? "You're all settled up"
+                          : (isPositive ? "You're owed overall" : "You owe overall"),
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    Text(
-                      '$currency${net.abs().toStringAsFixed(0)}',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: accentColor,
-                        height: 1.1,
+                    if (!isSettled)
+                      Text(
+                        '$currency${net.abs().toStringAsFixed(0)}',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                          color: accentColor,
+                          height: 1.1,
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ],
@@ -1977,6 +1982,217 @@ class _ActivityTile extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────
+// Total Tab — total spend + your share, charted by month
+// ─────────────────────────────────────────────────────
+
+class _TotalTab extends ConsumerWidget {
+  final String groupId;
+  const _TotalTab({required this.groupId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currency = ref.watch(currencyProvider);
+    final currentUserId = ref.watch(currentUserProvider)?.id ?? 'user_1';
+    final expensesAsync = ref.watch(groupExpensesProvider(groupId));
+
+    return expensesAsync.when(
+      loading: () =>
+          const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      error: (e, _) => EmptyState(
+        icon: Icons.error_outline_rounded,
+        title: 'Could not load totals',
+        subtitle: e.toString(),
+      ),
+      data: (expenses) {
+        if (expenses.isEmpty) {
+          return const EmptyState(
+            icon: Icons.bar_chart_rounded,
+            title: 'Nothing to total yet',
+            subtitle: 'Add an expense to see spending totals for this group.',
+          );
+        }
+
+        final totalSpent = expenses.fold<double>(0, (sum, e) => sum + e.amount);
+        final yourShare = expenses.fold<double>(
+            0, (sum, e) => sum + e.shareForUser(currentUserId));
+
+        // Bucket by month, chronological, most recent 6 months with data.
+        final byMonth = <DateTime, double>{};
+        for (final e in expenses) {
+          final key = DateTime(e.date.year, e.date.month);
+          byMonth[key] = (byMonth[key] ?? 0) + e.amount;
+        }
+        final months = byMonth.keys.toList()..sort();
+        final recentMonths =
+            months.length > 6 ? months.sublist(months.length - 6) : months;
+        final maxVal = recentMonths
+            .map((m) => byMonth[m]!)
+            .fold<double>(0, (a, b) => a > b ? a : b);
+        final chartMax = maxVal == 0 ? 100.0 : maxVal * 1.25;
+
+        final bgColor = isDark ? AppColors.darkCard : AppColors.lightSurface;
+        final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+        final gridColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: _StatChip(
+                    label: 'Total Spent',
+                    value: '$currency${totalSpent.toStringAsFixed(0)}',
+                    color: AppColors.secondary,
+                    icon: Icons.groups_rounded,
+                    isDark: isDark,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _StatChip(
+                    label: 'Your Share',
+                    value: '$currency${yourShare.toStringAsFixed(0)}',
+                    color: AppColors.primary,
+                    icon: Icons.person_rounded,
+                    isDark: isDark,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: bgColor,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: borderColor, width: 0.5),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Monthly Spend',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : AppColors.textLight,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    height: 180,
+                    child: BarChart(
+                      BarChartData(
+                        maxY: chartMax,
+                        minY: 0,
+                        barGroups: recentMonths.asMap().entries.map((entry) {
+                          final i = entry.key;
+                          final month = entry.value;
+                          final val = byMonth[month]!;
+                          final isLatest = i == recentMonths.length - 1;
+                          return BarChartGroupData(
+                            x: i,
+                            barRods: [
+                              BarChartRodData(
+                                toY: val == 0 ? 0.5 : val,
+                                color: isLatest
+                                    ? AppColors.primary
+                                    : AppColors.secondary.withValues(alpha: 0.6),
+                                width: 24,
+                                borderRadius: BorderRadius.circular(6),
+                                backDrawRodData: BackgroundBarChartRodData(
+                                  show: true,
+                                  toY: chartMax,
+                                  color: isDark
+                                      ? AppColors.darkElevated
+                                      : AppColors.lightCard,
+                                ),
+                              ),
+                            ],
+                          );
+                        }).toList(),
+                        titlesData: FlTitlesData(
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              getTitlesWidget: (value, meta) {
+                                final i = value.toInt();
+                                if (i < 0 || i >= recentMonths.length) {
+                                  return const SizedBox.shrink();
+                                }
+                                final isLatest = i == recentMonths.length - 1;
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Text(
+                                    DateFormat('MMM').format(recentMonths[i]),
+                                    style: TextStyle(
+                                      color: isLatest
+                                          ? AppColors.primary
+                                          : AppColors.textTertiary,
+                                      fontSize: 11,
+                                      fontWeight: isLatest
+                                          ? FontWeight.w700
+                                          : FontWeight.w400,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          leftTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          rightTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          topTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                        ),
+                        gridData: FlGridData(
+                          show: true,
+                          drawVerticalLine: false,
+                          horizontalInterval: chartMax / 4,
+                          getDrawingHorizontalLine: (_) => FlLine(
+                            color: gridColor,
+                            strokeWidth: 0.5,
+                          ),
+                        ),
+                        borderData: FlBorderData(show: false),
+                        barTouchData: BarTouchData(
+                          touchTooltipData: BarTouchTooltipData(
+                            getTooltipColor: (_) =>
+                                isDark ? AppColors.darkElevated : Colors.white,
+                            tooltipRoundedRadius: 8,
+                            getTooltipItem: (group, groupIndex, rod, rodIndex) =>
+                                BarTooltipItem(
+                              '$currency${rod.toY.toStringAsFixed(0)}',
+                              const TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      swapAnimationDuration: 600.ms,
+                      swapAnimationCurve: Curves.easeInOutCubic,
+                    ),
+                  ).animate().fadeIn(duration: 500.ms, delay: 100.ms),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

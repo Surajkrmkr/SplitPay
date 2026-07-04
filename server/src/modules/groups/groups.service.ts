@@ -83,12 +83,13 @@ export async function addMember(
 
   await groupsRepository.addMember(groupId, userId);
 
-  // Log MEMBER_JOINED activity
+  // Log MEMBER_JOINED activity, attributed to the joining user (not the admin
+  // who added them) so the activity feed reads "X joined the group".
   await activityRepository.createActivity({
     groupId,
-    userId: requesterId,
+    userId,
     type: 'MEMBER_JOINED',
-    metadata: { addedUserId: userId },
+    metadata: { addedById: requesterId },
   });
 
   // Notify added user (fire-and-forget)
@@ -166,13 +167,15 @@ export async function generateInvite(
   if (!group) throw new NotFoundError('Group not found');
 
   const requester = await groupsRepository.findMember(groupId, requesterId);
-  if (!requester || requester.role !== GroupRole.ADMIN) {
-    throw new ForbiddenError('Only group admins can generate invites');
+  if (!requester) {
+    throw new ForbiddenError('You are not a member of this group');
   }
 
   const code = crypto.randomBytes(4).toString('hex').toUpperCase();
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
+  // Only one invite code should be valid per group at a time.
+  await groupsRepository.deactivateGroupInvites(groupId);
   await groupsRepository.createInvite({ code, groupId, createdById: requesterId, expiresAt, maxUses: 50 });
   return { code, expiresAt };
 }
@@ -180,6 +183,7 @@ export async function generateInvite(
 export async function joinViaInvite(code: string, userId: string): Promise<GroupWithMembers> {
   const invite = await groupsRepository.findInviteByCode(code);
   if (!invite) throw new NotFoundError('Invite code not found');
+  if (!invite.active) throw new BadRequestError('Invite code is no longer active');
   if (invite.expiresAt < new Date()) throw new BadRequestError('Invite code has expired');
   if (invite.usedCount >= invite.maxUses) throw new BadRequestError('Invite code has reached its usage limit');
 
@@ -227,6 +231,7 @@ export async function joinViaInvite(code: string, userId: string): Promise<Group
 export async function getInviteInfo(code: string) {
   const invite = await groupsRepository.findInviteByCode(code);
   if (!invite) throw new NotFoundError('Invite code not found');
+  if (!invite.active) throw new BadRequestError('Invite code is no longer active');
   if (invite.expiresAt < new Date()) throw new BadRequestError('Invite code has expired');
   if (invite.usedCount >= invite.maxUses) throw new BadRequestError('Invite code has reached its usage limit');
   return {
