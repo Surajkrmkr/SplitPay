@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoPage;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -87,78 +88,62 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // Transactions screen — outside the shell so the navbar is hidden
       GoRoute(
         path: '/transactions',
-        pageBuilder: (context, state) => CustomTransitionPage(
-          key: state.pageKey,
-          child: const TransactionsScreen(),
-          transitionsBuilder: _slideTransition,
-        ),
+        pageBuilder: (context, state) =>
+            _detailPage(context, state, const TransactionsScreen()),
       ),
       // Full analytics screen (accessible from home mini-analytics "Full report")
       GoRoute(
         path: '/analytics',
-        pageBuilder: (context, state) => CustomTransitionPage(
-          key: state.pageKey,
-          child: const AnalyticsScreen(),
-          transitionsBuilder: _slideTransition,
-        ),
+        pageBuilder: (context, state) =>
+            _detailPage(context, state, const AnalyticsScreen()),
       ),
       // Budget detail — outside the shell so the navbar is hidden
       GoRoute(
         path: '/budget/:budgetId',
-        pageBuilder: (context, state) => CustomTransitionPage(
-          key: state.pageKey,
-          child: BudgetDetailScreen(
-              budgetId: state.pathParameters['budgetId']!),
-          transitionsBuilder: _slideTransition,
+        pageBuilder: (context, state) => _detailPage(
+          context,
+          state,
+          BudgetDetailScreen(budgetId: state.pathParameters['budgetId']!),
         ),
       ),
       // Group detail routes — outside the shell so the navbar is hidden
       GoRoute(
         path: '/notifications',
-        pageBuilder: (context, state) => CustomTransitionPage(
-          key: state.pageKey,
-          child: const NotificationsScreen(),
-          transitionsBuilder: _slideTransition,
-        ),
+        pageBuilder: (context, state) =>
+            _detailPage(context, state, const NotificationsScreen()),
       ),
       GoRoute(
         path: '/settings/notifications',
-        pageBuilder: (context, state) => CustomTransitionPage(
-          key: state.pageKey,
-          child: const NotificationSettingsScreen(),
-          transitionsBuilder: _slideTransition,
-        ),
+        pageBuilder: (context, state) =>
+            _detailPage(context, state, const NotificationSettingsScreen()),
       ),
       GoRoute(
         path: '/groups/join',
-        pageBuilder: (context, state) => CustomTransitionPage(
-          key: state.pageKey,
-          child: const InviteScreen(),
-          transitionsBuilder: _slideTransition,
-        ),
+        pageBuilder: (context, state) =>
+            _detailPage(context, state, const InviteScreen()),
       ),
       GoRoute(
         path: '/groups/:groupId',
-        pageBuilder: (context, state) => CustomTransitionPage(
-          key: state.pageKey,
-          child: GroupDetailScreen(groupId: state.pathParameters['groupId']!),
-          transitionsBuilder: _slideTransition,
+        pageBuilder: (context, state) => _detailPage(
+          context,
+          state,
+          GroupDetailScreen(groupId: state.pathParameters['groupId']!),
         ),
         routes: [
           GoRoute(
             path: 'settings',
-            pageBuilder: (context, state) => CustomTransitionPage(
-              key: state.pageKey,
-              child: GroupSettingsScreen(groupId: state.pathParameters['groupId']!),
-              transitionsBuilder: _slideTransition,
+            pageBuilder: (context, state) => _detailPage(
+              context,
+              state,
+              GroupSettingsScreen(groupId: state.pathParameters['groupId']!),
             ),
           ),
           GoRoute(
             path: 'invite',
-            pageBuilder: (context, state) => CustomTransitionPage(
-              key: state.pageKey,
-              child: InviteScreen(groupId: state.pathParameters['groupId']!),
-              transitionsBuilder: _slideTransition,
+            pageBuilder: (context, state) => _detailPage(
+              context,
+              state,
+              InviteScreen(groupId: state.pathParameters['groupId']!),
             ),
           ),
         ],
@@ -226,6 +211,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   return router;
 });
 
+// Pushed "detail" screens: native CupertinoPage on iOS (so the edge
+// swipe-to-pop gesture works), same slide transition as before elsewhere.
+Page<void> _detailPage(
+    BuildContext context, GoRouterState state, Widget child) {
+  if (Theme.of(context).platform == TargetPlatform.iOS) {
+    return CupertinoPage<void>(key: state.pageKey, child: child);
+  }
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionsBuilder: _slideTransition,
+  );
+}
+
 Widget _fadeTransition(
   BuildContext context,
   Animation<double> animation,
@@ -242,6 +241,7 @@ Widget _slideTransition(
 ) =>
     SlideTransition(
       position: Tween<Offset>(begin: const Offset(1.0, 0), end: Offset.zero)
-          .animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+          .animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
       child: child,
     );

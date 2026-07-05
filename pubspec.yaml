@@ -23,9 +23,6 @@ dependencies:
   # Animations
   flutter_animate: ^4.5.0
 
-  # Navigation UI
-  glass_liquid_navbar: ^0.2.0
-
   # Typography
   google_fonts: ^6.2.1
 
@@ -59,11 +56,11 @@ dependencies:
   cached_network_image: ^3.4.1
 
   # On-device OCR — powers the Bill Scan flow on transaction & expense sheets
-  google_mlkit_text_recognition: ^0.13.1
+  google_mlkit_text_recognition: ^0.15.1
 
   # QR code
   qr_flutter: ^4.1.0
-  mobile_scanner: ^5.2.3
+  mobile_scanner: ^7.2.0
 
   # Sharing & media
   share_plus: ^10.0.3
@@ -77,6 +74,9 @@ dependencies:
 
   cupertino_icons: ^1.0.8
   flutter_launcher_icons: ^0.14.4
+
+  # Native iOS Liquid Glass tab bar (requires Xcode 26 beta to build for iOS)
+  cupertino_native: ^0.1.1
 
 dev_dependencies:
   flutter_test:

@@ -680,7 +680,7 @@ class _UpiFormView extends ConsumerWidget {
                     'No UPI apps found. Install Google Pay, PhonePe or Paytm to continue.',
                     style: TextStyle(color: AppColors.warning, fontSize: 12),
                   ),
-                ),
+                ), 
               ],
             ),
           ),

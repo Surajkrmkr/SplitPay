@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
@@ -58,22 +59,45 @@ class NotificationService {
     // Background message tap (app was in background, user tapped notification)
     FirebaseMessaging.onMessageOpenedApp.listen(_onNotificationTap);
 
-    // Terminated app tap (app was closed, user tapped notification)
-    final initial = await _messaging.getInitialMessage();
+    // Terminated app tap (app was closed, user tapped notification). On iOS,
+    // this relies on the plugin's scene:willConnectToSession: callback firing
+    // to mark itself ready; with Flutter's newer implicit-engine/scene
+    // delegate template that callback can go unfired, leaving this call
+    // pending forever. A timeout treats that as "no launch notification"
+    // instead of blocking app startup indefinitely.
+    RemoteMessage? initial;
+    try {
+      initial = await _messaging.getInitialMessage().timeout(
+            const Duration(seconds: 3),
+          );
+    } on TimeoutException {
+      debugPrint('FirebaseMessaging.getInitialMessage timed out; continuing.');
+    }
     if (initial != null) _onNotificationTap(initial);
   }
 
+  // Simulators/devices can occasionally leave the native permission dialog's
+  // completion handler unresolved (e.g. iOS Simulator notification prompt
+  // bugs), which would otherwise hang app startup forever since this runs
+  // before the first frame. A timeout guarantees startup always proceeds.
   Future<void> _requestPermissions() async {
-    await _messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
+    try {
+      await _messaging
+          .requestPermission(alert: true, badge: true, sound: true)
+          .timeout(const Duration(seconds: 8));
+    } on TimeoutException {
+      debugPrint('FirebaseMessaging.requestPermission timed out; continuing.');
+    }
     if (Platform.isAndroid) {
-      await _localNotifications
-          .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
-          ?.requestNotificationsPermission();
+      try {
+        await _localNotifications
+            .resolvePlatformSpecificImplementation<
+                AndroidFlutterLocalNotificationsPlugin>()
+            ?.requestNotificationsPermission()
+            .timeout(const Duration(seconds: 8));
+      } on TimeoutException {
+        debugPrint('Android notification permission request timed out.');
+      }
     }
   }
 

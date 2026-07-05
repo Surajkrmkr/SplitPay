@@ -5,6 +5,11 @@ import 'package:google_sign_in/google_sign_in.dart';
 class FirebaseAuthService {
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: ['email', 'profile'],
+    // Forces the returned idToken's `aud` to be this web client ID (client_type 3
+    // in google-services.json) instead of the platform-specific client ID, since
+    // the backend verifies GOOGLE_CLIENT_ID against the web client.
+    serverClientId:
+        '127223843872-sou5unj9eitknesrlidsqg5tjclnio1o.apps.googleusercontent.com',
   );
 
   Stream<User?> get authStateChanges =>

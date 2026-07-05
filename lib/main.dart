@@ -61,7 +61,9 @@ Future<void> _init() async {
   await PreferencesService.init();
 
   try {
-    await NotificationService.instance.initialize();
+    await NotificationService.instance.initialize().timeout(
+          const Duration(seconds: 10),
+        );
     await ReminderService.instance.init();
     AppLogger.instance.i('NotificationService ready', tag: 'Init');
   } catch (e) {
