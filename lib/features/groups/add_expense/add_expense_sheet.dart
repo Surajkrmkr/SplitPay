@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/errors/app_exception.dart';
 import '../../../data/models/group_model.dart';
 import '../../../data/models/member_model.dart';
 import '../../../data/services/group_api_service.dart';
@@ -50,7 +51,8 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
     _splitTabController = TabController(length: 3, vsync: this);
     _splitTabController.addListener(() {
       setState(() {
-        _splitType = ['EQUAL', 'PERCENTAGE', 'EXACT'][_splitTabController.index];
+        _splitType =
+            ['EQUAL', 'PERCENTAGE', 'EXACT'][_splitTabController.index];
       });
     });
 
@@ -183,8 +185,8 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
             content: const Text('Expense added!'),
             backgroundColor: AppColors.income,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
       }
@@ -192,8 +194,11 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed: $e'),
+            content: Text(friendlyErrorMessage(e)),
             backgroundColor: AppColors.expense,
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
       }
@@ -215,8 +220,7 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
         return Container(
           decoration: BoxDecoration(
             color: isDark ? AppColors.darkSurface : Colors.white,
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
             children: [
@@ -290,8 +294,7 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
                           child: _DatePickerTile(
                             selectedDate: _selectedDate,
                             isDark: isDark,
-                            onChanged: (d) =>
-                                setState(() => _selectedDate = d),
+                            onChanged: (d) => setState(() => _selectedDate = d),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -299,8 +302,7 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
                           child: _TimePickerTile(
                             selectedDate: _selectedDate,
                             isDark: isDark,
-                            onChanged: (d) =>
-                                setState(() => _selectedDate = d),
+                            onChanged: (d) => setState(() => _selectedDate = d),
                           ),
                         ),
                       ],
@@ -379,7 +381,8 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
                     ),
 
                     // Validation hints
-                    if (_splitType == 'PERCENTAGE' && _selectedParticipantIds.isNotEmpty)
+                    if (_splitType == 'PERCENTAGE' &&
+                        _selectedParticipantIds.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
                         child: Text(
@@ -392,7 +395,8 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
                           ),
                         ),
                       ),
-                    if (_splitType == 'EXACT' && _selectedParticipantIds.isNotEmpty)
+                    if (_splitType == 'EXACT' &&
+                        _selectedParticipantIds.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
                         child: Text(
@@ -436,9 +440,8 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
                   color: isDark ? AppColors.darkSurface : Colors.white,
                   border: Border(
                     top: BorderSide(
-                      color: isDark
-                          ? AppColors.darkBorder
-                          : AppColors.lightBorder,
+                      color:
+                          isDark ? AppColors.darkBorder : AppColors.lightBorder,
                     ),
                   ),
                 ),
@@ -462,8 +465,7 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
       style: TextStyle(
         fontSize: 13,
         fontWeight: FontWeight.w600,
-        color:
-            isDark ? AppColors.textSecondary : AppColors.textLightSecondary,
+        color: isDark ? AppColors.textSecondary : AppColors.textLightSecondary,
         letterSpacing: 0.3,
       ),
     );
@@ -533,7 +535,9 @@ class AmountDisplay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: focusNode != null ? () => FocusScope.of(context).requestFocus(focusNode) : null,
+      onTap: focusNode != null
+          ? () => FocusScope.of(context).requestFocus(focusNode)
+          : null,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
@@ -718,8 +722,8 @@ class _TimePickerTile extends StatelessWidget {
                 states.contains(WidgetState.selected)
                     ? Colors.white
                     : AppColors.primary),
-            dayPeriodBorderSide: const BorderSide(
-                color: AppColors.primary, width: 1),
+            dayPeriodBorderSide:
+                const BorderSide(color: AppColors.primary, width: 1),
           ),
         ),
         child: child!,
@@ -750,8 +754,7 @@ class _TimePickerTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(Icons.access_time_rounded,
-                size: 16, color: AppColors.primary),
+            Icon(Icons.access_time_rounded, size: 16, color: AppColors.primary),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -906,7 +909,8 @@ class ParticipantRow extends StatelessWidget {
                 height: 36,
                 child: TextField(
                   controller: percentController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
                   onChanged: (_) => onChanged(),
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -917,12 +921,14 @@ class ParticipantRow extends StatelessWidget {
                     suffixText: '%',
                     suffixStyle: TextStyle(color: AppColors.textSecondary),
                     filled: true,
-                    fillColor: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                    fillColor:
+                        isDark ? AppColors.darkBorder : AppColors.lightBorder,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide.none,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
                     isDense: true,
                   ),
                 ),
@@ -933,7 +939,8 @@ class ParticipantRow extends StatelessWidget {
                 height: 36,
                 child: TextField(
                   controller: exactController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
                   onChanged: (_) => onChanged(),
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -944,12 +951,14 @@ class ParticipantRow extends StatelessWidget {
                     prefixText: currency,
                     prefixStyle: TextStyle(color: AppColors.textSecondary),
                     filled: true,
-                    fillColor: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                    fillColor:
+                        isDark ? AppColors.darkBorder : AppColors.lightBorder,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide.none,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
                     isDense: true,
                   ),
                 ),
@@ -960,4 +969,3 @@ class ParticipantRow extends StatelessWidget {
     );
   }
 }
-

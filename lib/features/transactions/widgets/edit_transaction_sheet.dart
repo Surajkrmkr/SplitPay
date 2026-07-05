@@ -123,8 +123,8 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
                 states.contains(WidgetState.selected)
                     ? Colors.white
                     : AppColors.primary),
-            dayPeriodBorderSide: const BorderSide(
-                color: AppColors.primary, width: 1),
+            dayPeriodBorderSide:
+                const BorderSide(color: AppColors.primary, width: 1),
           ),
         ),
         child: child!,
@@ -147,7 +147,12 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
     final hidden = ref.watch(hiddenCategoriesProvider);
     final customCats = ref.watch(customCategoriesProvider);
     final visibleCategories = Category.values
-        .where((c) => !hidden.contains(c.name) || (c == _category && _customCategoryId == null))
+        .where((c) =>
+            !hidden.contains(c.name) ||
+            (c == _category && _customCategoryId == null))
+        .where((c) => _type == TransactionType.income
+            ? c == Category.salary || c == Category.other
+            : c != Category.salary)
         .toList();
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final safeAreaBottom = MediaQuery.of(context).viewPadding.bottom;
@@ -179,7 +184,8 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
               ),
               // Header
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 child: Row(
                   children: [
                     Text(
@@ -210,10 +216,13 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
                     Container(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
-                        color: isDark ? AppColors.darkCard : AppColors.lightCard,
+                        color:
+                            isDark ? AppColors.darkCard : AppColors.lightCard,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                          color: isDark
+                              ? AppColors.darkBorder
+                              : AppColors.lightBorder,
                         ),
                       ),
                       child: Row(
@@ -231,16 +240,20 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
                           IntrinsicWidth(
                             child: TextField(
                               controller: _amountController,
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                      decimal: true),
                               inputFormatters: [
-                                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                                FilteringTextInputFormatter.allow(
+                                    RegExp(r'^\d+\.?\d{0,2}')),
                               ],
                               onChanged: (_) => setState(() {}),
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 40,
                                 fontWeight: FontWeight.w800,
-                                color: isDark ? Colors.white : AppColors.textLight,
+                                color:
+                                    isDark ? Colors.white : AppColors.textLight,
                               ),
                               decoration: const InputDecoration(
                                 hintText: '0',
@@ -258,7 +271,8 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
                     // Type toggle
                     Container(
                       decoration: BoxDecoration(
-                        color: isDark ? AppColors.darkCard : AppColors.lightCard,
+                        color:
+                            isDark ? AppColors.darkCard : AppColors.lightCard,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -269,27 +283,41 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
                               : AppColors.expense;
                           return Expanded(
                             child: GestureDetector(
-                              onTap: () => setState(() => _type = t),
+                              onTap: () => setState(() {
+                                if (_type == t) return;
+                                _type = t;
+                                _customCategoryId = null;
+                                _appIcon = null;
+                                _category = t == TransactionType.income
+                                    ? Category.salary
+                                    : Category.food;
+                              }),
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 200),
                                 margin: const EdgeInsets.all(4),
-                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 10),
                                 decoration: BoxDecoration(
                                   color: selected
                                       ? color.withValues(alpha: 0.15)
                                       : Colors.transparent,
                                   borderRadius: BorderRadius.circular(10),
                                   border: selected
-                                      ? Border.all(color: color.withValues(alpha: 0.4))
+                                      ? Border.all(
+                                          color: color.withValues(alpha: 0.4))
                                       : null,
                                 ),
                                 child: Text(
-                                  t == TransactionType.income ? 'Income' : 'Expense',
+                                  t == TransactionType.income
+                                      ? 'Income'
+                                      : 'Expense',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
-                                    color: selected ? color : AppColors.textSecondary,
+                                    color: selected
+                                        ? color
+                                        : AppColors.textSecondary,
                                   ),
                                 ),
                               ),
@@ -308,7 +336,8 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
                       runSpacing: 8,
                       children: [
                         ...visibleCategories.map((cat) {
-                          final selected = _customCategoryId == null && _category == cat;
+                          final selected =
+                              _customCategoryId == null && _category == cat;
                           return _CategoryChip(
                             label: cat.label,
                             icon: cat.icon,
@@ -326,21 +355,22 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
                             }),
                           );
                         }),
-                        ...customCats.map((cat) {
-                          final selected = _customCategoryId == cat.id;
-                          return _CategoryChip(
-                            label: cat.label,
-                            icon: cat.icon,
-                            color: cat.color,
-                            selected: selected,
-                            isDark: isDark,
-                            onTap: () => setState(() {
-                              _category = Category.other;
-                              _customCategoryId = cat.id;
-                              _appIcon = null;
-                            }),
-                          );
-                        }),
+                        if (_type != TransactionType.income)
+                          ...customCats.map((cat) {
+                            final selected = _customCategoryId == cat.id;
+                            return _CategoryChip(
+                              label: cat.label,
+                              icon: cat.icon,
+                              color: cat.color,
+                              selected: selected,
+                              isDark: isDark,
+                              onTap: () => setState(() {
+                                _category = Category.other;
+                                _customCategoryId = cat.id;
+                                _appIcon = null;
+                              }),
+                            );
+                          }),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -366,26 +396,34 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
                       ),
                       decoration: InputDecoration(
                         hintText: 'Add a note…',
-                        hintStyle: TextStyle(color: AppColors.textTertiary, fontSize: 14),
+                        hintStyle: TextStyle(
+                            color: AppColors.textTertiary, fontSize: 14),
                         filled: true,
-                        fillColor: isDark ? AppColors.darkCard : AppColors.lightCard,
+                        fillColor:
+                            isDark ? AppColors.darkCard : AppColors.lightCard,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(
-                            color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                            color: isDark
+                                ? AppColors.darkBorder
+                                : AppColors.lightBorder,
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(
-                            color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                            color: isDark
+                                ? AppColors.darkBorder
+                                : AppColors.lightBorder,
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                          borderSide: const BorderSide(
+                              color: AppColors.primary, width: 1.5),
                         ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 12),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -407,7 +445,8 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
                         Expanded(
                           child: _DateTimeTile(
                             icon: Icons.access_time_rounded,
-                            label: TimeOfDay.fromDateTime(_date).format(context),
+                            label:
+                                TimeOfDay.fromDateTime(_date).format(context),
                             isDark: isDark,
                             onTap: _pickTime,
                           ),
@@ -432,14 +471,17 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeOut,
                 padding: EdgeInsets.fromLTRB(
-                  20, 12, 20,
+                  20,
+                  12,
+                  20,
                   (keyboardHeight > 0 ? keyboardHeight : safeAreaBottom) + 16,
                 ),
                 decoration: BoxDecoration(
                   color: isDark ? AppColors.darkSurface : Colors.white,
                   border: Border(
                     top: BorderSide(
-                      color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                      color:
+                          isDark ? AppColors.darkBorder : AppColors.lightBorder,
                       width: 0.5,
                     ),
                   ),
@@ -463,7 +505,8 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
         style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w600,
-          color: isDark ? AppColors.textSecondary : AppColors.textLightSecondary,
+          color:
+              isDark ? AppColors.textSecondary : AppColors.textLightSecondary,
           letterSpacing: 0.3,
         ),
       );
@@ -545,8 +588,7 @@ class _EditRecurrencePicker extends StatelessWidget {
             onTap: () => onChanged(type),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: isSelected
                     ? AppColors.primary.withValues(alpha: 0.15)
@@ -555,9 +597,7 @@ class _EditRecurrencePicker extends StatelessWidget {
                 border: Border.all(
                   color: isSelected
                       ? AppColors.primary
-                      : (isDark
-                          ? AppColors.darkBorder
-                          : AppColors.lightBorder),
+                      : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
                   width: isSelected ? 1.2 : 0.5,
                 ),
               ),
@@ -630,7 +670,8 @@ class _CategoryChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: selected ? color : AppColors.textSecondary),
+            Icon(icon,
+                size: 14, color: selected ? color : AppColors.textSecondary),
             const SizedBox(width: 6),
             Text(
               label,

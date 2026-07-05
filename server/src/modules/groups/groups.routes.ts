@@ -14,5 +14,6 @@ router.post('/:id/members', validate(addMemberSchema), groupsController.addMembe
 router.delete('/:id/members/:memberId', groupsController.removeMemberHandler);
 router.patch('/:id/members/:memberId', validate(updateMemberRoleSchema), groupsController.updateMemberRoleHandler);
 router.post('/:id/invites', groupsController.generateInviteHandler);
+router.get('/:id/invites/active', groupsController.getActiveInviteHandler);
 
 export default router;

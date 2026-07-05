@@ -122,6 +122,13 @@ class GroupApiService {
     return res.data['data'] as Map<String, dynamic>;
   }
 
+  /// Returns the group's currently active (unexpired) invite, or null if
+  /// none has been generated yet.
+  Future<Map<String, dynamic>?> getActiveInvite(String groupId) async {
+    final res = await _dio.get(ApiConstants.groupActiveInvite(groupId));
+    return res.data['data'] as Map<String, dynamic>?;
+  }
+
   Future<Map<String, dynamic>> getInviteInfo(String code) async {
     final res = await _dio.get(ApiConstants.inviteByCode(code));
     return res.data['data'] as Map<String, dynamic>;

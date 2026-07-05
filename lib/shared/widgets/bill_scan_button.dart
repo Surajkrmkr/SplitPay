@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/errors/app_exception.dart';
 import '../../data/services/bill_scanner_service.dart';
 
 /// Outcome returned from the scan flow. Callers apply whichever fields are
@@ -59,8 +60,7 @@ class _BillScanButtonState extends ConsumerState<BillScanButton> {
       }
 
       // Run OCR. Keep the busy state on so the button shows the spinner.
-      final result =
-          await ref.read(billScannerServiceProvider).scan(file.path);
+      final result = await ref.read(billScannerServiceProvider).scan(file.path);
       if (!mounted) return;
       setState(() => _busy = false);
 
@@ -78,7 +78,7 @@ class _BillScanButtonState extends ConsumerState<BillScanButton> {
     } catch (e) {
       if (mounted) {
         setState(() => _busy = false);
-        _toast('Scan failed: $e', isError: true);
+        _toast(friendlyErrorMessage(e), isError: true);
       }
     }
   }
@@ -411,9 +411,8 @@ class _DetectedRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDisabled = onChanged == null;
     // Only show alternatives — drop the one we're already displaying.
-    final alternatives = pills
-        .where((p) => p != selectedPill)
-        .toList(growable: false);
+    final alternatives =
+        pills.where((p) => p != selectedPill).toList(growable: false);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),

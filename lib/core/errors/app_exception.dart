@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+
 class AppException implements Exception {
   final String message;
   final int? statusCode;
@@ -43,6 +45,79 @@ class AppException implements Exception {
         statusCode: 403,
       );
 
+  /// Maps a raw [DioException] to a user-facing [AppException]. Shared by
+  /// [ErrorInterceptor] (so every network error already carries a friendly
+  /// message by the time it reaches app code) and [friendlyErrorMessage]
+  /// (as a fallback for DioExceptions the interceptor never saw).
+  factory AppException.fromDioException(DioException err) {
+    switch (err.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.sendTimeout:
+      case DioExceptionType.receiveTimeout:
+        return AppException.timeout();
+
+      case DioExceptionType.connectionError:
+        return AppException.network();
+
+      case DioExceptionType.badResponse:
+        return _fromStatusCode(err);
+
+      case DioExceptionType.cancel:
+        return const AppException('Request was cancelled.');
+
+      default:
+        if (err.error is AppException) return err.error as AppException;
+        return AppException.unknown();
+    }
+  }
+
+  static AppException _fromStatusCode(DioException err) {
+    final statusCode = err.response?.statusCode;
+    final serverMessage = _extractServerMessage(err.response);
+
+    switch (statusCode) {
+      case 400:
+        return AppException.badRequest(serverMessage);
+      case 401:
+        return AppException.unauthorized();
+      case 403:
+        return AppException.forbidden(serverMessage);
+      case 404:
+        return AppException.notFound(serverMessage);
+      case int s when s >= 500:
+        return AppException.serverError(serverMessage);
+      default:
+        return AppException(
+          serverMessage ?? 'Unexpected error (HTTP $statusCode).',
+          statusCode: statusCode,
+        );
+    }
+  }
+
+  static String? _extractServerMessage(Response? response) {
+    try {
+      final data = response?.data;
+      if (data is Map<String, dynamic>) {
+        return data['message'] as String?;
+      }
+    } catch (_) {}
+    return null;
+  }
+
   @override
   String toString() => message;
+}
+
+/// Converts any caught error into a short, user-facing message — never the
+/// raw exception/stack-trace text (e.g. "DioException [badResponse]: ...").
+/// Use this everywhere an error reaches the UI (snackbars, inline error
+/// states, dialogs); leave raw `error`/`stackTrace` values for logging only.
+String friendlyErrorMessage(Object error) {
+  if (error is AppException) return error.message;
+  if (error is DioException) {
+    final wrapped = error.error;
+    if (wrapped is AppException) return wrapped.message;
+    return AppException.fromDioException(error).message;
+  }
+  return 'Something went wrong. Please try again.';
 }

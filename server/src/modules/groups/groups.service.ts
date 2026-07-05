@@ -180,6 +180,23 @@ export async function generateInvite(
   return { code, expiresAt };
 }
 
+export async function getActiveInvite(
+  groupId: string,
+  requesterId: string
+): Promise<{ code: string; expiresAt: Date } | null> {
+  const group = await groupsRepository.findGroupById(groupId);
+  if (!group) throw new NotFoundError('Group not found');
+
+  const requester = await groupsRepository.findMember(groupId, requesterId);
+  if (!requester) {
+    throw new ForbiddenError('You are not a member of this group');
+  }
+
+  const invite = await groupsRepository.findActiveInviteByGroupId(groupId);
+  if (!invite) return null;
+  return { code: invite.code, expiresAt: invite.expiresAt };
+}
+
 export async function joinViaInvite(code: string, userId: string): Promise<GroupWithMembers> {
   const invite = await groupsRepository.findInviteByCode(code);
   if (!invite) throw new NotFoundError('Invite code not found');

@@ -35,7 +35,10 @@ class TransactionTile extends ConsumerWidget {
     CustomCategory? customCat;
     if (transaction.customCategoryId != null) {
       for (final c in customCats) {
-        if (c.id == transaction.customCategoryId) { customCat = c; break; }
+        if (c.id == transaction.customCategoryId) {
+          customCat = c;
+          break;
+        }
       }
     }
     final color = customCat?.color ?? transaction.category.color;
@@ -47,30 +50,13 @@ class TransactionTile extends ConsumerWidget {
       direction: DismissDirection.endToStart,
       onDismissed: (_) => onDelete(),
       background: Container(
+        margin: const EdgeInsets.only(bottom: 10),
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        decoration: BoxDecoration(
-          color: AppColors.expense.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: AppColors.expense.withValues(alpha: 0.3),
-            width: 0.5,
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.delete_rounded, color: AppColors.expense, size: 22),
-            const SizedBox(height: 4),
-            Text(
-              'Delete',
-              style: TextStyle(
-                color: AppColors.expense,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
+        padding: const EdgeInsets.only(right: 18),
+        child: const Icon(
+          Icons.delete_rounded,
+          color: AppColors.expense,
+          size: 24,
         ),
       ),
       child: Container(
@@ -108,9 +94,10 @@ class TransactionTile extends ConsumerWidget {
                       children: [
                         Text(
                           label,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                         ),
                         const SizedBox(height: 3),
                         if (transaction.note?.isNotEmpty == true)

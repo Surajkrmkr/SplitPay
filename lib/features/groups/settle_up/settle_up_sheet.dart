@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/errors/app_exception.dart';
 import '../../../data/models/balance_model.dart';
 import '../../../data/repositories/payment_repository.dart';
 import '../../../data/services/upi_service.dart';
@@ -120,7 +121,8 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
   // ── Payment ───────────────────────────────────────────────────────────────
 
   Future<void> _payWithApp(UpiApp app) async {
-    final amount = double.tryParse(_amountCtrl.text.trim()) ?? widget.balance.amount;
+    final amount =
+        double.tryParse(_amountCtrl.text.trim()) ?? widget.balance.amount;
     setState(() => _view = _SheetView.processing);
 
     final result = await ref.read(paymentRepositoryProvider).payViaUpi(
@@ -177,7 +179,7 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _manualSettling = false);
-      _showSnack('Settlement failed: $e');
+      _showSnack(friendlyErrorMessage(e));
     }
   }
 
@@ -194,7 +196,8 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
             backgroundColor: Theme.of(context).brightness == Brightness.dark
                 ? AppColors.darkSurface
                 : Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             title: const Text(
               'Mark as Settled?',
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17),
@@ -202,7 +205,8 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
             content: Text(
               'Are you sure you want to mark this as settled without payment?\n\n'
               'This will record the debt as cleared manually.',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 14, height: 1.5),
+              style: TextStyle(
+                  color: AppColors.textSecondary, fontSize: 14, height: 1.5),
             ),
             actions: [
               TextButton(
@@ -212,7 +216,8 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
               FilledButton(
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
                 onPressed: () => Navigator.of(ctx).pop(true),
                 child: const Text('Yes, Settle'),
@@ -300,21 +305,25 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeOut,
                 padding: EdgeInsets.fromLTRB(
-                  24, 12, 24,
+                  24,
+                  12,
+                  24,
                   (keyboardHeight > 0 ? keyboardHeight : safeBottom) + 16,
                 ),
                 decoration: BoxDecoration(
                   color: isDark ? AppColors.darkSurface : Colors.white,
                   border: Border(
                     top: BorderSide(
-                      color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                      color:
+                          isDark ? AppColors.darkBorder : AppColors.lightBorder,
                       width: 0.5,
                     ),
                   ),
                 ),
                 child: SpButton(
                   label: 'Continue to Pay',
-                  onTap: _loadingApps || _upiApps.isEmpty ? null : _goToAppPicker,
+                  onTap:
+                      _loadingApps || _upiApps.isEmpty ? null : _goToAppPicker,
                   icon: Icons.arrow_forward_rounded,
                 ),
               ),
@@ -359,7 +368,8 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
           onBack: _backToUpiForm,
           onSelectApp: _payWithApp,
         ),
-      _SheetView.processing => const _ProcessingView(key: ValueKey('processing')),
+      _SheetView.processing =>
+        const _ProcessingView(key: ValueKey('processing')),
       _SheetView.result => _ResultView(
           key: const ValueKey('result'),
           txnResult: _txnResult,
@@ -428,7 +438,9 @@ class _MethodPickerView extends ConsumerWidget {
         TextField(
           controller: amountCtrl,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))
+          ],
           style: TextStyle(
             fontSize: 26,
             fontWeight: FontWeight.w700,
@@ -436,25 +448,35 @@ class _MethodPickerView extends ConsumerWidget {
           ),
           decoration: InputDecoration(
             prefixText: '$currency ',
-            prefixStyle: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: AppColors.primary),
+            prefixStyle: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primary),
             filled: true,
             fillColor: isDark ? AppColors.darkCard : AppColors.lightCard,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide.none),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 10),
         TextField(
           controller: noteCtrl,
-          style: TextStyle(color: isDark ? Colors.white : AppColors.textLight, fontSize: 14),
+          style: TextStyle(
+              color: isDark ? Colors.white : AppColors.textLight, fontSize: 14),
           decoration: InputDecoration(
             hintText: 'Add a note (optional)',
             hintStyle: TextStyle(color: AppColors.textTertiary, fontSize: 14),
             filled: true,
             fillColor: isDark ? AppColors.darkCard : AppColors.lightCard,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           ),
         ),
         const SizedBox(height: 20),
@@ -485,10 +507,14 @@ class _MethodPickerView extends ConsumerWidget {
               ? const SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: AppColors.primary),
                 )
               : null,
-        ).animate(delay: showUpi ? 80.ms : 0.ms).fadeIn(duration: 250.ms).slideY(begin: 0.06),
+        )
+            .animate(delay: showUpi ? 80.ms : 0.ms)
+            .fadeIn(duration: 250.ms)
+            .slideY(begin: 0.06),
       ],
     );
   }
@@ -570,7 +596,9 @@ class _UpiFormView extends ConsumerWidget {
         TextField(
           controller: amountCtrl,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))
+          ],
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.w700,
@@ -578,11 +606,17 @@ class _UpiFormView extends ConsumerWidget {
           ),
           decoration: InputDecoration(
             prefixText: '$currency ',
-            prefixStyle: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: AppColors.primary),
+            prefixStyle: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primary),
             filled: true,
             fillColor: isDark ? AppColors.darkCard : AppColors.lightCard,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide.none),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           ),
           textAlign: TextAlign.center,
         ),
@@ -597,21 +631,28 @@ class _UpiFormView extends ConsumerWidget {
             Expanded(
               child: TextField(
                 controller: upiIdCtrl,
-                style: TextStyle(color: isDark ? Colors.white : AppColors.textLight, fontSize: 15),
+                style: TextStyle(
+                    color: isDark ? Colors.white : AppColors.textLight,
+                    fontSize: 15),
                 decoration: InputDecoration(
                   hintText: 'e.g. rahul@gpay',
                   hintStyle: TextStyle(color: AppColors.textTertiary),
                   errorText: upiIdError,
                   filled: true,
                   fillColor: isDark ? AppColors.darkCard : AppColors.lightCard,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(
-                      color: upiIdError != null ? AppColors.expense : Colors.transparent,
+                      color: upiIdError != null
+                          ? AppColors.expense
+                          : Colors.transparent,
                     ),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                 ),
               ),
             ),
@@ -625,7 +666,8 @@ class _UpiFormView extends ConsumerWidget {
                   gradient: AppColors.primaryGradient,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.qr_code_scanner_rounded, color: Colors.white, size: 22),
+                child: const Icon(Icons.qr_code_scanner_rounded,
+                    color: Colors.white, size: 22),
               ),
             ),
           ],
@@ -637,14 +679,18 @@ class _UpiFormView extends ConsumerWidget {
         const SizedBox(height: 8),
         TextField(
           controller: noteCtrl,
-          style: TextStyle(color: isDark ? Colors.white : AppColors.textLight, fontSize: 14),
+          style: TextStyle(
+              color: isDark ? Colors.white : AppColors.textLight, fontSize: 14),
           decoration: InputDecoration(
             hintText: 'Optional note for recipient',
             hintStyle: TextStyle(color: AppColors.textTertiary, fontSize: 14),
             filled: true,
             fillColor: isDark ? AppColors.darkCard : AppColors.lightCard,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           ),
         ),
         const SizedBox(height: 20),
@@ -669,24 +715,25 @@ class _UpiFormView extends ConsumerWidget {
             decoration: BoxDecoration(
               color: AppColors.warning.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+              border:
+                  Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
-                Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 16),
+                Icon(Icons.warning_amber_rounded,
+                    color: AppColors.warning, size: 16),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'No UPI apps found. Install Google Pay, PhonePe or Paytm to continue.',
                     style: TextStyle(color: AppColors.warning, fontSize: 12),
                   ),
-                ), 
+                ),
               ],
             ),
           ),
           const SizedBox(height: 16),
         ],
-
       ],
     );
   }
@@ -725,7 +772,8 @@ class _AppPickerView extends StatelessWidget {
                   color: isDark ? AppColors.darkCard : AppColors.lightCard,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.arrow_back_rounded, size: 18,
+                child: Icon(Icons.arrow_back_rounded,
+                    size: 18,
                     color: isDark ? Colors.white : AppColors.textLight),
               ),
             ),
@@ -777,7 +825,8 @@ class _ProcessingView extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const CircularProgressIndicator(color: AppColors.primary, strokeWidth: 3),
+          const CircularProgressIndicator(
+              color: AppColors.primary, strokeWidth: 3),
           const SizedBox(height: 24),
           Text(
             'Opening payment app…',
@@ -849,7 +898,8 @@ class _SuccessView extends StatelessWidget {
   final bool isManual;
   final VoidCallback onDone;
 
-  const _SuccessView({required this.txnResult, required this.isManual, required this.onDone});
+  const _SuccessView(
+      {required this.txnResult, required this.isManual, required this.onDone});
 
   @override
   Widget build(BuildContext context) {
@@ -864,22 +914,31 @@ class _SuccessView extends StatelessWidget {
             gradient: AppColors.primaryGradient,
             shape: BoxShape.circle,
             boxShadow: [
-              BoxShadow(color: AppColors.primary.withValues(alpha: 0.35), blurRadius: 20, spreadRadius: 2),
+              BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.35),
+                  blurRadius: 20,
+                  spreadRadius: 2),
             ],
           ),
           child: const Icon(Icons.check_rounded, color: Colors.white, size: 36),
         )
             .animate()
-            .scale(begin: const Offset(0.4, 0.4), duration: 450.ms, curve: Curves.elasticOut)
+            .scale(
+                begin: const Offset(0.4, 0.4),
+                duration: 450.ms,
+                curve: Curves.elasticOut)
             .fadeIn(duration: 300.ms),
         const SizedBox(height: 20),
         const Text(
           'Settled Up!',
-          style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700),
+          style: TextStyle(
+              color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700),
         ).animate(delay: 150.ms).fadeIn(duration: 300.ms),
         const SizedBox(height: 8),
         Text(
-          isManual ? 'Recorded as manually settled.' : 'UPI payment successful.',
+          isManual
+              ? 'Recorded as manually settled.'
+              : 'UPI payment successful.',
           style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
         ).animate(delay: 220.ms).fadeIn(duration: 300.ms),
         if (txnResult?.transactionId != null && !isManual) ...[
@@ -892,7 +951,10 @@ class _SuccessView extends StatelessWidget {
             ),
             child: Text(
               'Txn: ${txnResult!.transactionId}',
-              style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600),
             ),
           ).animate(delay: 300.ms).fadeIn(duration: 300.ms),
         ],
@@ -931,10 +993,15 @@ class _SubmittedView extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.warning.withValues(alpha: 0.15),
             shape: BoxShape.circle,
-            border: Border.all(color: AppColors.warning.withValues(alpha: 0.5), width: 2),
+            border: Border.all(
+                color: AppColors.warning.withValues(alpha: 0.5), width: 2),
           ),
-          child: const Icon(Icons.hourglass_top_rounded, color: AppColors.warning, size: 32),
-        ).animate().scale(begin: const Offset(0.6, 0.6), duration: 350.ms, curve: Curves.easeOut),
+          child: const Icon(Icons.hourglass_top_rounded,
+              color: AppColors.warning, size: 32),
+        ).animate().scale(
+            begin: const Offset(0.6, 0.6),
+            duration: 350.ms,
+            curve: Curves.easeOut),
         const SizedBox(height: 20),
         Text(
           'Payment Pending',
@@ -948,7 +1015,8 @@ class _SubmittedView extends StatelessWidget {
         Text(
           'Your payment is processing. We\'ll update the balance once confirmed.',
           textAlign: TextAlign.center,
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.5),
+          style: TextStyle(
+              color: AppColors.textSecondary, fontSize: 13, height: 1.5),
         ),
         if (txnResult?.transactionId != null) ...[
           const SizedBox(height: 12),
@@ -964,7 +1032,10 @@ class _SubmittedView extends StatelessWidget {
           onTap: onManualFallback,
           child: Text(
             'Mark manually if payment was received',
-            style: TextStyle(color: AppColors.primary, fontSize: 13, fontWeight: FontWeight.w500),
+            style: TextStyle(
+                color: AppColors.primary,
+                fontSize: 13,
+                fontWeight: FontWeight.w500),
           ),
         ),
         const SizedBox(height: 4),
@@ -978,7 +1049,10 @@ class _FailureView extends StatelessWidget {
   final VoidCallback onManualFallback;
   final bool isDark;
 
-  const _FailureView({required this.onRetry, required this.onManualFallback, required this.isDark});
+  const _FailureView(
+      {required this.onRetry,
+      required this.onManualFallback,
+      required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -992,10 +1066,15 @@ class _FailureView extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.expense.withValues(alpha: 0.12),
             shape: BoxShape.circle,
-            border: Border.all(color: AppColors.expense.withValues(alpha: 0.4), width: 2),
+            border: Border.all(
+                color: AppColors.expense.withValues(alpha: 0.4), width: 2),
           ),
-          child: const Icon(Icons.close_rounded, color: AppColors.expense, size: 32),
-        ).animate().scale(begin: const Offset(0.6, 0.6), duration: 350.ms, curve: Curves.easeOut),
+          child: const Icon(Icons.close_rounded,
+              color: AppColors.expense, size: 32),
+        ).animate().scale(
+            begin: const Offset(0.6, 0.6),
+            duration: 350.ms,
+            curve: Curves.easeOut),
         const SizedBox(height: 20),
         Text(
           'Payment Failed',
@@ -1009,16 +1088,21 @@ class _FailureView extends StatelessWidget {
         Text(
           'The transaction did not go through. Your balance has not been changed.',
           textAlign: TextAlign.center,
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.5),
+          style: TextStyle(
+              color: AppColors.textSecondary, fontSize: 13, height: 1.5),
         ),
         const SizedBox(height: 28),
-        SpButton(label: 'Try Again', onTap: onRetry, icon: Icons.refresh_rounded),
+        SpButton(
+            label: 'Try Again', onTap: onRetry, icon: Icons.refresh_rounded),
         const SizedBox(height: 12),
         GestureDetector(
           onTap: onManualFallback,
           child: Text(
             'Mark as settled manually instead',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w500),
+            style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+                fontWeight: FontWeight.w500),
           ),
         ),
         const SizedBox(height: 4),
@@ -1032,7 +1116,8 @@ class _CancelledView extends StatelessWidget {
   final VoidCallback onDone;
   final bool isDark;
 
-  const _CancelledView({required this.onRetry, required this.onDone, required this.isDark});
+  const _CancelledView(
+      {required this.onRetry, required this.onDone, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -1047,7 +1132,8 @@ class _CancelledView extends StatelessWidget {
             color: AppColors.textTertiary.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
-          child: Icon(Icons.cancel_outlined, color: AppColors.textSecondary, size: 32),
+          child: Icon(Icons.cancel_outlined,
+              color: AppColors.textSecondary, size: 32),
         ).animate().scale(begin: const Offset(0.6, 0.6), duration: 350.ms),
         const SizedBox(height: 20),
         Text(
@@ -1065,7 +1151,8 @@ class _CancelledView extends StatelessWidget {
           style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
         ),
         const SizedBox(height: 28),
-        SpButton(label: 'Try Again', onTap: onRetry, icon: Icons.refresh_rounded),
+        SpButton(
+            label: 'Try Again', onTap: onRetry, icon: Icons.refresh_rounded),
         const SizedBox(height: 12),
         GestureDetector(
           onTap: onDone,
@@ -1113,22 +1200,32 @@ class _AvatarRow extends ConsumerWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _UserPill(name: balance.fromUserName, avatar: balance.fromUserAvatar, label: 'You'),
+          _UserPill(
+              name: balance.fromUserName,
+              avatar: balance.fromUserAvatar,
+              label: 'You'),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.arrow_forward_rounded, color: AppColors.primary, size: 22),
+                const Icon(Icons.arrow_forward_rounded,
+                    color: AppColors.primary, size: 22),
                 const SizedBox(height: 2),
                 Text(
                   '$currency${balance.amount.toStringAsFixed(0)}',
-                  style: const TextStyle(color: AppColors.expense, fontSize: 13, fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                      color: AppColors.expense,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700),
                 ),
               ],
             ),
           ),
-          _UserPill(name: balance.toUserName, avatar: balance.toUserAvatar, label: balance.toUserName.split(' ').first),
+          _UserPill(
+              name: balance.toUserName,
+              avatar: balance.toUserAvatar,
+              label: balance.toUserName.split(' ').first),
         ],
       ),
     );
@@ -1139,7 +1236,8 @@ class _UserPill extends StatelessWidget {
   final String name;
   final String? avatar;
   final String label;
-  const _UserPill({required this.name, required this.avatar, required this.label});
+  const _UserPill(
+      {required this.name, required this.avatar, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -1150,7 +1248,10 @@ class _UserPill extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+          style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary),
         ),
       ],
     );
@@ -1206,7 +1307,8 @@ class _OptionCardState extends State<_OptionCard> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: widget.onTap == null ? null : (_) => setState(() => _pressed = true),
+      onTapDown:
+          widget.onTap == null ? null : (_) => setState(() => _pressed = true),
       onTapUp: widget.onTap == null
           ? null
           : (_) {
@@ -1228,12 +1330,15 @@ class _OptionCardState extends State<_OptionCard> {
             border: Border.all(
               color: _pressed
                   ? AppColors.primary.withValues(alpha: 0.4)
-                  : (widget.isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                  : (widget.isDark
+                      ? AppColors.darkBorder
+                      : AppColors.lightBorder),
               width: 1.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: widget.isDark ? 0.2 : 0.05),
+                color:
+                    Colors.black.withValues(alpha: widget.isDark ? 0.2 : 0.05),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -1246,7 +1351,10 @@ class _OptionCardState extends State<_OptionCard> {
                 height: 44,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [widget.iconBg, widget.iconBg.withValues(alpha: 0.7)],
+                    colors: [
+                      widget.iconBg,
+                      widget.iconBg.withValues(alpha: 0.7)
+                    ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -1264,13 +1372,15 @@ class _OptionCardState extends State<_OptionCard> {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: widget.isDark ? Colors.white : AppColors.textLight,
+                        color:
+                            widget.isDark ? Colors.white : AppColors.textLight,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       widget.subtitle,
-                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      style: TextStyle(
+                          fontSize: 12, color: AppColors.textSecondary),
                     ),
                   ],
                 ),
@@ -1279,7 +1389,8 @@ class _OptionCardState extends State<_OptionCard> {
                 const SizedBox(width: 8),
                 widget.trailing!,
               ] else
-                Icon(Icons.chevron_right_rounded, color: AppColors.textTertiary, size: 20),
+                Icon(Icons.chevron_right_rounded,
+                    color: AppColors.textTertiary, size: 20),
             ],
           ),
         ),
@@ -1372,7 +1483,8 @@ class _AppPickerTile extends StatelessWidget {
   final UpiApp app;
   final bool isDark;
   final VoidCallback onTap;
-  const _AppPickerTile({required this.app, required this.isDark, required this.onTap});
+  const _AppPickerTile(
+      {required this.app, required this.isDark, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -1384,7 +1496,8 @@ class _AppPickerTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: isDark ? AppColors.darkCard : Colors.white,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
+          border: Border.all(
+              color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
         ),
         child: Row(
           children: [
@@ -1398,9 +1511,11 @@ class _AppPickerTile extends StatelessWidget {
               child: app.icon != null && app.icon!.isNotEmpty
                   ? ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: Image.memory(app.icon!, width: 44, height: 44, fit: BoxFit.cover),
+                      child: Image.memory(app.icon!,
+                          width: 44, height: 44, fit: BoxFit.cover),
                     )
-                  : const Icon(Icons.account_balance_wallet_rounded, color: AppColors.primary, size: 22),
+                  : const Icon(Icons.account_balance_wallet_rounded,
+                      color: AppColors.primary, size: 22),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -1413,7 +1528,8 @@ class _AppPickerTile extends StatelessWidget {
                 ),
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, color: AppColors.textTertiary, size: 20),
+            const Icon(Icons.chevron_right_rounded,
+                color: AppColors.textTertiary, size: 20),
           ],
         ),
       ),

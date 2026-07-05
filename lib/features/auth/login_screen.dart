@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/errors/app_exception.dart';
 import '../../providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -25,7 +26,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         _showError(state?.error ?? 'Sign in failed');
       }
     } catch (e) {
-      if (mounted) _showError(e.toString());
+      if (mounted) _showError(friendlyErrorMessage(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -88,10 +89,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             width: 100,
                             height: 100,
                           ),
-                        )
-                            .animate()
-                            .fadeIn(duration: 600.ms)
-                            .slideY(begin: -0.2, duration: 600.ms, curve: Curves.easeOut),
+                        ).animate().fadeIn(duration: 600.ms).slideY(
+                            begin: -0.2,
+                            duration: 600.ms,
+                            curve: Curves.easeOut),
 
                         const SizedBox(height: 24),
 
@@ -116,17 +117,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             color: AppColors.textSecondary,
                             fontSize: 16,
                           ),
-                        )
-                            .animate(delay: 250.ms)
-                            .fadeIn(duration: 500.ms),
+                        ).animate(delay: 250.ms).fadeIn(duration: 500.ms),
 
                         const SizedBox(height: 40),
 
                         // Feature rows
-                        ..._features
-                            .asMap()
-                            .entries
-                            .map(
+                        ..._features.asMap().entries.map(
                               (e) => _FeatureRow(
                                 icon: e.value.$1,
                                 label: e.value.$2,
@@ -200,10 +196,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       ],
                     ),
-                  )
-                      .animate(delay: 200.ms)
-                      .fadeIn(duration: 500.ms)
-                      .slideY(begin: 0.1, duration: 500.ms, curve: Curves.easeOut),
+                  ).animate(delay: 200.ms).fadeIn(duration: 500.ms).slideY(
+                      begin: 0.1, duration: 500.ms, curve: Curves.easeOut),
                 ),
               ],
             ),
@@ -293,7 +287,8 @@ class _GoogleSignInButton extends StatelessWidget {
               : Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Image.asset('assets/icon/google_logo.png', width: 22, height: 22),
+                    Image.asset('assets/icon/google_logo.png',
+                        width: 22, height: 22),
                     const SizedBox(width: 12),
                     const Text(
                       'Continue with Google',
@@ -310,4 +305,3 @@ class _GoogleSignInButton extends StatelessWidget {
     );
   }
 }
-

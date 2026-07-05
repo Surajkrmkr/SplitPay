@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/errors/app_exception.dart';
 import '../../../shared/widgets/app_back_button.dart';
 import '../../../data/models/group_model.dart';
 import '../../../data/models/member_model.dart';
@@ -16,7 +17,8 @@ class GroupSettingsScreen extends ConsumerStatefulWidget {
   const GroupSettingsScreen({super.key, required this.groupId});
 
   @override
-  ConsumerState<GroupSettingsScreen> createState() => _GroupSettingsScreenState();
+  ConsumerState<GroupSettingsScreen> createState() =>
+      _GroupSettingsScreenState();
 }
 
 class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
@@ -35,20 +37,19 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
           padding: EdgeInsets.only(left: 16),
           child: Center(child: AppBackButton()),
         ),
-        title: const Text('Group Settings', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+        title: const Text('Group Settings',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
       ),
       body: groupAsync.when(
         loading: () => ListView(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           children: [
-            const SkeletonBox(
-                width: 140, height: 16, borderRadius: 6),
+            const SkeletonBox(width: 140, height: 16, borderRadius: 6),
             const SizedBox(height: 12),
             const SkeletonBox(
                 width: double.infinity, height: 56, borderRadius: 12),
             const SizedBox(height: 24),
-            const SkeletonBox(
-                width: 100, height: 14, borderRadius: 6),
+            const SkeletonBox(width: 100, height: 14, borderRadius: 6),
             const SizedBox(height: 10),
             ...List.generate(
               4,
@@ -60,10 +61,10 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
             ),
           ],
         ),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => Center(child: Text(friendlyErrorMessage(e))),
         data: (group) {
-          final isAdmin = group.members
-              .any((m) => m.userId == currentUserId && m.isAdmin);
+          final isAdmin =
+              group.members.any((m) => m.userId == currentUserId && m.isAdmin);
           return ListView(
             padding: const EdgeInsets.symmetric(vertical: 8),
             children: [
@@ -83,7 +84,8 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                   )),
               if (isAdmin) ...[
                 _SectionHeader('Danger Zone', isDark),
-                _DeleteGroupTile(groupId: widget.groupId, isDark: isDark, ref: ref),
+                _DeleteGroupTile(
+                    groupId: widget.groupId, isDark: isDark, ref: ref),
               ],
               SizedBox(height: MediaQuery.of(context).viewPadding.bottom + 24),
             ],
@@ -122,7 +124,8 @@ class _RenameGroupTile extends StatelessWidget {
   final GroupModel group;
   final bool isDark;
   final WidgetRef ref;
-  const _RenameGroupTile({required this.group, required this.isDark, required this.ref});
+  const _RenameGroupTile(
+      {required this.group, required this.isDark, required this.ref});
 
   @override
   Widget build(BuildContext context) {
@@ -134,11 +137,18 @@ class _RenameGroupTile extends StatelessWidget {
           color: AppColors.primary.withValues(alpha: 0.12),
           shape: BoxShape.circle,
         ),
-        child: const Icon(Icons.edit_rounded, color: AppColors.primary, size: 20),
+        child:
+            const Icon(Icons.edit_rounded, color: AppColors.primary, size: 20),
       ),
-      title: Text('Rename Group', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: isDark ? Colors.white : AppColors.textLight)),
-      subtitle: Text(group.name, style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
-      trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+      title: Text('Rename Group',
+          style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: isDark ? Colors.white : AppColors.textLight)),
+      subtitle: Text(group.name,
+          style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+      trailing: const Icon(Icons.chevron_right_rounded,
+          color: AppColors.textSecondary),
       onTap: () => _showRenameDialog(context),
     );
   }
@@ -177,17 +187,23 @@ class _RenameGroupTile extends StatelessWidget {
                         color: Colors.white.withValues(alpha: 0.2),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.edit_rounded, color: Colors.white, size: 24),
+                      child: const Icon(Icons.edit_rounded,
+                          color: Colors.white, size: 24),
                     ),
                     const SizedBox(height: 12),
                     const Text(
                       'Edit Group Info',
-                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Update your group name and description',
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13),
+                      style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontSize: 13),
                     ),
                   ],
                 ),
@@ -204,9 +220,15 @@ class _RenameGroupTile extends StatelessWidget {
                         labelText: 'Group Name',
                         prefixIcon: const Icon(Icons.group_rounded, size: 20),
                         filled: true,
-                        fillColor: isDark ? AppColors.darkCard : AppColors.lightBg,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
+                        fillColor:
+                            isDark ? AppColors.darkCard : AppColors.lightBg,
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide.none),
+                        focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: const BorderSide(
+                                color: AppColors.primary, width: 1.5)),
                       ),
                     ),
                     const SizedBox(height: 14),
@@ -220,9 +242,15 @@ class _RenameGroupTile extends StatelessWidget {
                           child: Icon(Icons.notes_rounded, size: 20),
                         ),
                         filled: true,
-                        fillColor: isDark ? AppColors.darkCard : AppColors.lightBg,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
+                        fillColor:
+                            isDark ? AppColors.darkCard : AppColors.lightBg,
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide.none),
+                        focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: const BorderSide(
+                                color: AppColors.primary, width: 1.5)),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -233,13 +261,19 @@ class _RenameGroupTile extends StatelessWidget {
                             onPressed: () => ctx.pop(),
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                              side: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14)),
+                              side: BorderSide(
+                                  color: isDark
+                                      ? AppColors.darkBorder
+                                      : AppColors.lightBorder),
                             ),
                             child: Text(
                               'Cancel',
                               style: TextStyle(
-                                color: isDark ? AppColors.textSecondary : AppColors.textLightSecondary,
+                                color: isDark
+                                    ? AppColors.textSecondary
+                                    : AppColors.textLightSecondary,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -258,31 +292,55 @@ class _RenameGroupTile extends StatelessWidget {
                                 if (name.isEmpty) return;
                                 ctx.pop();
                                 try {
-                                  await ref.read(groupApiServiceProvider).updateGroup(
-                                    group.id,
-                                    name: name,
-                                    description: descController.text.trim().isEmpty ? null : descController.text.trim(),
-                                  );
+                                  await ref
+                                      .read(groupApiServiceProvider)
+                                      .updateGroup(
+                                        group.id,
+                                        name: name,
+                                        description:
+                                            descController.text.trim().isEmpty
+                                                ? null
+                                                : descController.text.trim(),
+                                      );
                                   ref.invalidate(groupDetailProvider(group.id));
                                   ref.invalidate(groupsProvider);
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: const Text('Group updated'), backgroundColor: AppColors.income, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                                      SnackBar(
+                                          content: const Text('Group updated'),
+                                          backgroundColor: AppColors.income,
+                                          behavior: SnackBarBehavior.floating,
+                                          shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12))),
                                     );
                                   }
                                 } catch (e) {
                                   if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.expense));
+                                    ScaffoldMessenger.of(context)
+                                        .showSnackBar(SnackBar(
+                                      content: Text(friendlyErrorMessage(e)),
+                                      backgroundColor: AppColors.expense,
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12)),
+                                    ));
                                   }
                                 }
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.transparent,
                                 shadowColor: Colors.transparent,
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14)),
                               ),
-                              child: const Text('Save Changes', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                              child: const Text('Save Changes',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700)),
                             ),
                           ),
                         ),
@@ -322,30 +380,43 @@ class _MemberTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isMe = member.userId == currentUserId;
     return ListTile(
-      leading: AvatarWidget(name: member.name, imageUrl: member.avatar, size: 40),
+      leading:
+          AvatarWidget(name: member.name, imageUrl: member.avatar, size: 40),
       title: Text(
         '${member.name}${isMe ? ' (You)' : ''}',
-        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: isDark ? Colors.white : AppColors.textLight),
+        style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: isDark ? Colors.white : AppColors.textLight),
       ),
-      subtitle: Text(member.email, style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+      subtitle: Text(member.email,
+          style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: member.isAdmin ? AppColors.primary.withValues(alpha: 0.12) : AppColors.textSecondary.withValues(alpha: 0.12),
+              color: member.isAdmin
+                  ? AppColors.primary.withValues(alpha: 0.12)
+                  : AppColors.textSecondary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
               member.isAdmin ? 'Admin' : 'Member',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: member.isAdmin ? AppColors.primary : AppColors.textSecondary),
+              style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: member.isAdmin
+                      ? AppColors.primary
+                      : AppColors.textSecondary),
             ),
           ),
           if (isCurrentUserAdmin && !isMe) ...[
             const SizedBox(width: 4),
             PopupMenuButton<String>(
-              icon: Icon(Icons.more_vert_rounded, color: AppColors.textSecondary, size: 20),
+              icon: Icon(Icons.more_vert_rounded,
+                  color: AppColors.textSecondary, size: 20),
               color: isDark ? AppColors.darkCard : Colors.white,
               onSelected: (val) => _handleAction(context, val),
               itemBuilder: (_) => [
@@ -360,7 +431,8 @@ class _MemberTile extends StatelessWidget {
                 const PopupMenuItem(
                   value: 'remove',
                   child: Row(children: [
-                    Icon(Icons.person_remove_alt_1_rounded, size: 18, color: Colors.red),
+                    Icon(Icons.person_remove_alt_1_rounded,
+                        size: 18, color: Colors.red),
                     SizedBox(width: 8),
                     Text('Remove', style: TextStyle(color: Colors.red)),
                   ]),
@@ -377,19 +449,29 @@ class _MemberTile extends StatelessWidget {
     if (action == 'role') {
       final newRole = member.isAdmin ? 'MEMBER' : 'ADMIN';
       try {
-        await ref.read(groupApiServiceProvider).updateMemberRole(groupId, member.userId, newRole);
+        await ref
+            .read(groupApiServiceProvider)
+            .updateMemberRole(groupId, member.userId, newRole);
         ref.invalidate(groupDetailProvider(groupId));
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('${member.name} is now ${newRole == 'ADMIN' ? 'an Admin' : 'a Member'}'),
+            content: Text(
+                '${member.name} is now ${newRole == 'ADMIN' ? 'an Admin' : 'a Member'}'),
             backgroundColor: AppColors.income,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ));
         }
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.expense));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(friendlyErrorMessage(e)),
+            backgroundColor: AppColors.expense,
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ));
         }
       }
     } else if (action == 'remove') {
@@ -413,17 +495,25 @@ class _MemberTile extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
                     decoration: const BoxDecoration(
                       color: Color(0xFFFF6B6B),
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                      borderRadius:
+                          BorderRadius.vertical(top: Radius.circular(24)),
                     ),
                     child: Column(children: [
                       Container(
                         width: 52,
                         height: 52,
-                        decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
-                        child: const Icon(Icons.person_remove_alt_1_rounded, color: Colors.white, size: 24),
+                        decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            shape: BoxShape.circle),
+                        child: const Icon(Icons.person_remove_alt_1_rounded,
+                            color: Colors.white, size: 24),
                       ),
                       const SizedBox(height: 12),
-                      const Text('Remove Member', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+                      const Text('Remove Member',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700)),
                     ]),
                   ),
                   Padding(
@@ -436,18 +526,30 @@ class _MemberTile extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: AppColors.expense.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: AppColors.expense.withValues(alpha: 0.2)),
+                            border: Border.all(
+                                color:
+                                    AppColors.expense.withValues(alpha: 0.2)),
                           ),
                           child: Row(children: [
-                            const Icon(Icons.warning_amber_rounded, color: AppColors.expense, size: 20),
+                            const Icon(Icons.warning_amber_rounded,
+                                color: AppColors.expense, size: 20),
                             const SizedBox(width: 12),
                             Expanded(
                               child: RichText(
                                 text: TextSpan(
-                                  style: TextStyle(fontSize: 14, color: isDark ? Colors.white70 : AppColors.textLight),
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      color: isDark
+                                          ? Colors.white70
+                                          : AppColors.textLight),
                                   children: [
-                                    TextSpan(text: member.name, style: const TextStyle(fontWeight: FontWeight.w700)),
-                                    const TextSpan(text: ' will be removed from this group.'),
+                                    TextSpan(
+                                        text: member.name,
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.w700)),
+                                    const TextSpan(
+                                        text:
+                                            ' will be removed from this group.'),
                                   ],
                                 ),
                               ),
@@ -460,11 +562,21 @@ class _MemberTile extends StatelessWidget {
                             child: OutlinedButton(
                               onPressed: () => ctx.pop(false),
                               style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                side: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14)),
+                                side: BorderSide(
+                                    color: isDark
+                                        ? AppColors.darkBorder
+                                        : AppColors.lightBorder),
                               ),
-                              child: Text('Cancel', style: TextStyle(color: isDark ? AppColors.textSecondary : AppColors.textLightSecondary, fontWeight: FontWeight.w600)),
+                              child: Text('Cancel',
+                                  style: TextStyle(
+                                      color: isDark
+                                          ? AppColors.textSecondary
+                                          : AppColors.textLightSecondary,
+                                      fontWeight: FontWeight.w600)),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -473,10 +585,15 @@ class _MemberTile extends StatelessWidget {
                               onPressed: () => ctx.pop(true),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.expense,
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14)),
                               ),
-                              child: const Text('Remove', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                              child: const Text('Remove',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700)),
                             ),
                           ),
                         ]),
@@ -491,19 +608,28 @@ class _MemberTile extends StatelessWidget {
       );
       if (confirmed == true) {
         try {
-          await ref.read(groupApiServiceProvider).removeMember(groupId, member.userId);
+          await ref
+              .read(groupApiServiceProvider)
+              .removeMember(groupId, member.userId);
           ref.invalidate(groupDetailProvider(groupId));
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
               content: Text('${member.name} removed'),
               backgroundColor: AppColors.income,
               behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ));
           }
         } catch (e) {
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.expense));
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(friendlyErrorMessage(e)),
+              backgroundColor: AppColors.expense,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ));
           }
         }
       }
@@ -517,7 +643,8 @@ class _DeleteGroupTile extends StatelessWidget {
   final String groupId;
   final bool isDark;
   final WidgetRef ref;
-  const _DeleteGroupTile({required this.groupId, required this.isDark, required this.ref});
+  const _DeleteGroupTile(
+      {required this.groupId, required this.isDark, required this.ref});
 
   @override
   Widget build(BuildContext context) {
@@ -525,11 +652,19 @@ class _DeleteGroupTile extends StatelessWidget {
       leading: Container(
         width: 40,
         height: 40,
-        decoration: BoxDecoration(color: AppColors.expense.withValues(alpha: 0.12), shape: BoxShape.circle),
-        child: const Icon(Icons.delete_outline_rounded, color: AppColors.expense, size: 20),
+        decoration: BoxDecoration(
+            color: AppColors.expense.withValues(alpha: 0.12),
+            shape: BoxShape.circle),
+        child: const Icon(Icons.delete_outline_rounded,
+            color: AppColors.expense, size: 20),
       ),
-      title: const Text('Delete Group', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: AppColors.expense)),
-      subtitle: const Text('This action cannot be undone', style: TextStyle(fontSize: 12)),
+      title: const Text('Delete Group',
+          style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: AppColors.expense)),
+      subtitle: const Text('This action cannot be undone',
+          style: TextStyle(fontSize: 12)),
       onTap: () => _confirmDelete(context),
     );
   }
@@ -555,19 +690,30 @@ class _DeleteGroupTile extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
                   decoration: const BoxDecoration(
                     color: Color(0xFFFF6B6B),
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                    borderRadius:
+                        BorderRadius.vertical(top: Radius.circular(24)),
                   ),
                   child: Column(children: [
                     Container(
                       width: 52,
                       height: 52,
-                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
-                      child: const Icon(Icons.delete_forever_rounded, color: Colors.white, size: 26),
+                      decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          shape: BoxShape.circle),
+                      child: const Icon(Icons.delete_forever_rounded,
+                          color: Colors.white, size: 26),
                     ),
                     const SizedBox(height: 12),
-                    const Text('Delete Group', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+                    const Text('Delete Group',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700)),
                     const SizedBox(height: 4),
-                    Text('This action is irreversible', style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13)),
+                    Text('This action is irreversible',
+                        style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.8),
+                            fontSize: 13)),
                   ]),
                 ),
                 Padding(
@@ -580,25 +726,45 @@ class _DeleteGroupTile extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: AppColors.expense.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: AppColors.expense.withValues(alpha: 0.2)),
+                          border: Border.all(
+                              color: AppColors.expense.withValues(alpha: 0.2)),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(children: [
-                              const Icon(Icons.warning_amber_rounded, color: AppColors.expense, size: 18),
+                              const Icon(Icons.warning_amber_rounded,
+                                  color: AppColors.expense, size: 18),
                               const SizedBox(width: 8),
-                              Text('This will permanently delete:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.expense)),
+                              Text('This will permanently delete:',
+                                  style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.expense)),
                             ]),
                             const SizedBox(height: 10),
-                            ...['All group expenses', 'All balances and settlements', 'All group members and history'].map(
+                            ...[
+                              'All group expenses',
+                              'All balances and settlements',
+                              'All group members and history'
+                            ].map(
                               (item) => Padding(
                                 padding: const EdgeInsets.only(bottom: 6),
                                 child: Row(children: [
                                   const SizedBox(width: 4),
-                                  Container(width: 5, height: 5, decoration: const BoxDecoration(color: AppColors.expense, shape: BoxShape.circle)),
+                                  Container(
+                                      width: 5,
+                                      height: 5,
+                                      decoration: const BoxDecoration(
+                                          color: AppColors.expense,
+                                          shape: BoxShape.circle)),
                                   const SizedBox(width: 10),
-                                  Text(item, style: TextStyle(fontSize: 13, color: isDark ? Colors.white70 : AppColors.textLight)),
+                                  Text(item,
+                                      style: TextStyle(
+                                          fontSize: 13,
+                                          color: isDark
+                                              ? Colors.white70
+                                              : AppColors.textLight)),
                                 ]),
                               ),
                             ),
@@ -612,10 +778,19 @@ class _DeleteGroupTile extends StatelessWidget {
                             onPressed: () => ctx.pop(false),
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                              side: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14)),
+                              side: BorderSide(
+                                  color: isDark
+                                      ? AppColors.darkBorder
+                                      : AppColors.lightBorder),
                             ),
-                            child: Text('Cancel', style: TextStyle(color: isDark ? AppColors.textSecondary : AppColors.textLightSecondary, fontWeight: FontWeight.w600)),
+                            child: Text('Cancel',
+                                style: TextStyle(
+                                    color: isDark
+                                        ? AppColors.textSecondary
+                                        : AppColors.textLightSecondary,
+                                    fontWeight: FontWeight.w600)),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -625,9 +800,13 @@ class _DeleteGroupTile extends StatelessWidget {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.expense,
                               padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14)),
                             ),
-                            child: const Text('Delete Group', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                            child: const Text('Delete Group',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700)),
                           ),
                         ),
                       ]),
@@ -648,7 +827,13 @@ class _DeleteGroupTile extends StatelessWidget {
         if (context.mounted) context.go('/groups');
       } catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: AppColors.expense));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(friendlyErrorMessage(e)),
+            backgroundColor: AppColors.expense,
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ));
         }
       }
     }

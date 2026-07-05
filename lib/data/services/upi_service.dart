@@ -32,6 +32,18 @@ class UpiQrData {
   });
 }
 
+// Known upi_pro_sdk (0.1.3, latest on pub.dev) limitations on iOS:
+//  - Google Pay is never detected: the plugin's native Swift app-detection list
+//    uses scheme "gpay", but its own Dart trusted-apps allowlist expects "tez"
+//    for Google Pay, so the mismatch silently filters it out of
+//    getInstalledApps() even when installed. BHIM's scheme matches on both
+//    sides, so its absence just means the app isn't installed on-device.
+//  - Paytm/PhonePe may show their own "unsafe/suspicious payment" warning:
+//    the plugin launches a generic upi://pay URI with only the scheme swapped
+//    to the target app, with no transaction reference or signed metadata, so
+//    the receiving app can't verify the deep link's origin. This is inherent
+//    to the plugin's scheme-swap approach on iOS (no equivalent of Android's
+//    system-level UPI Intent) — fixing it would require forking the plugin.
 class UpiService {
   final UpiProSdk _sdk = UpiProSdk();
 

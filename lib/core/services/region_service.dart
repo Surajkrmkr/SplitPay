@@ -2,19 +2,12 @@ import 'dart:io';
 
 /// Determines if UPI payment features should be surfaced.
 ///
-/// UPI is India-specific and Android-only. We enable it when:
-///   • the device is Android, AND
+/// UPI is India-specific but not Android-only — the `upi_pro_sdk` plugin
+/// backing it has a native iOS implementation that launches UPI apps via
+/// their own custom URL schemes (gpay://, phonepe://, etc). We enable it when:
 ///   • the device locale is Indian (en_IN, hi_IN, etc.) OR
-///     the app currency is set to ₹ (INR).
+///   • the app currency is set to ₹ (INR).
 class RegionService {
-  static bool get _isAndroid {
-    try {
-      return Platform.isAndroid;
-    } catch (_) {
-      return false;
-    }
-  }
-
   static bool get isIndianLocale {
     try {
       final locale = Platform.localeName; // e.g. 'en_IN', 'hi_IN'
@@ -30,7 +23,6 @@ class RegionService {
 
   /// Returns true when UPI payment options should be shown.
   static bool shouldShowUpi({required String currency}) {
-    if (!_isAndroid) return false;
     return isIndianLocale || isIndianCurrency(currency);
   }
 }

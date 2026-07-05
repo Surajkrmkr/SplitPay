@@ -128,8 +128,6 @@ class _DebugLogScreenState extends State<DebugLogScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('${_filtered.length} logs copied'),
-        backgroundColor: const Color(0xFF1E2530),
-        behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 2),
       ),
     );
@@ -191,9 +189,8 @@ class _DebugLogScreenState extends State<DebugLogScreen> {
           icon: Icon(
             Icons.search_rounded,
             size: 20,
-            color: _showSearch
-                ? const Color(0xFF98C379)
-                : const Color(0xFF636E7B),
+            color:
+                _showSearch ? const Color(0xFF98C379) : const Color(0xFF636E7B),
           ),
           tooltip: 'Search',
           onPressed: () => setState(() {
@@ -209,9 +206,8 @@ class _DebugLogScreenState extends State<DebugLogScreen> {
           icon: Icon(
             Icons.vertical_align_bottom_rounded,
             size: 20,
-            color: _autoScroll
-                ? const Color(0xFF98C379)
-                : const Color(0xFF636E7B),
+            color:
+                _autoScroll ? const Color(0xFF98C379) : const Color(0xFF636E7B),
           ),
           tooltip: 'Auto-scroll',
           onPressed: () => setState(() => _autoScroll = !_autoScroll),
@@ -431,10 +427,14 @@ class _LevelChip extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
         decoration: BoxDecoration(
-          color: selected ? color.withValues(alpha: 0.18) : const Color(0xFF161B22),
+          color: selected
+              ? color.withValues(alpha: 0.18)
+              : const Color(0xFF161B22),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected ? color.withValues(alpha: 0.6) : const Color(0xFF2A2D35),
+            color: selected
+                ? color.withValues(alpha: 0.6)
+                : const Color(0xFF2A2D35),
             width: 1,
           ),
         ),
@@ -453,8 +453,7 @@ class _LevelChip extends StatelessWidget {
             if (count > 0) ...[
               const SizedBox(width: 5),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                 decoration: BoxDecoration(
                   color: selected
                       ? color.withValues(alpha: 0.25)
@@ -503,14 +502,13 @@ class _LogTileState extends State<_LogTile> {
       onLongPress: () {
         HapticFeedback.selectionClick();
         Clipboard.setData(ClipboardData(
-          text: '[${_formatTime(e.timestamp)}] [${level.label}] [${e.tag}] ${e.message}'
+          text:
+              '[${_formatTime(e.timestamp)}] [${level.label}] [${e.tag}] ${e.message}'
               '${e.extra != null ? '\n${e.extra}' : ''}',
         ));
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Copied to clipboard'),
-            backgroundColor: Color(0xFF1E2530),
-            behavior: SnackBarBehavior.floating,
             duration: Duration(seconds: 1),
           ),
         );
@@ -581,8 +579,8 @@ class _LogTileState extends State<_LogTile> {
                   decoration: BoxDecoration(
                     color: const Color(0xFF0D1117),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                        color: const Color(0xFF1E2530), width: 1),
+                    border:
+                        Border.all(color: const Color(0xFF1E2530), width: 1),
                   ),
                   child: Text(
                     e.extra!,
@@ -593,7 +591,10 @@ class _LogTileState extends State<_LogTile> {
                       height: 1.5,
                     ),
                   ),
-                ).animate().fadeIn(duration: 150.ms).slideY(begin: -0.2, end: 0),
+                )
+                    .animate()
+                    .fadeIn(duration: 150.ms)
+                    .slideY(begin: -0.2, end: 0),
               ],
             ],
           ),

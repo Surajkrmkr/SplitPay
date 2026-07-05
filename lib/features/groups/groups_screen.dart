@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/errors/app_exception.dart';
 import '../../providers/group_provider.dart';
 import '../../shared/widgets/app_search_bar.dart';
 import '../../shared/widgets/empty_state.dart';
@@ -144,7 +145,7 @@ class GroupsScreen extends ConsumerWidget {
                   child: EmptyState(
                     icon: Icons.wifi_off_rounded,
                     title: 'Could not load groups',
-                    subtitle: e.toString(),
+                    subtitle: friendlyErrorMessage(e),
                     actionLabel: 'Retry',
                     onAction: () => ref.read(groupsProvider.notifier).refresh(),
                   ),

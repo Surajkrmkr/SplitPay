@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/errors/app_exception.dart';
 import '../../../data/models/group_expense_model.dart';
 import '../../../data/models/group_model.dart';
 import '../../../data/services/group_api_service.dart';
@@ -14,7 +15,8 @@ class EditExpenseSheet extends ConsumerStatefulWidget {
   final GroupExpenseModel expense;
   final GroupModel group;
 
-  const EditExpenseSheet({super.key, required this.expense, required this.group});
+  const EditExpenseSheet(
+      {super.key, required this.expense, required this.group});
 
   @override
   ConsumerState<EditExpenseSheet> createState() => _EditExpenseSheetState();
@@ -42,12 +44,14 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
   void initState() {
     super.initState();
 
-    _amountController = TextEditingController(text: widget.expense.amount.toStringAsFixed(2));
+    _amountController =
+        TextEditingController(text: widget.expense.amount.toStringAsFixed(2));
     _titleController = TextEditingController(text: widget.expense.title);
     _noteController = TextEditingController(text: widget.expense.notes ?? '');
     _splitType = widget.expense.splitType;
     _paidById = widget.expense.paidById;
-    _selectedParticipantIds = widget.expense.participants.map((p) => p.userId).toList();
+    _selectedParticipantIds =
+        widget.expense.participants.map((p) => p.userId).toList();
     _selectedDate = widget.expense.date;
 
     final initialIndex = ['EQUAL', 'PERCENTAGE', 'EXACT'].indexOf(_splitType);
@@ -58,7 +62,8 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
     );
     _splitTabController.addListener(() {
       setState(() {
-        _splitType = ['EQUAL', 'PERCENTAGE', 'EXACT'][_splitTabController.index];
+        _splitType =
+            ['EQUAL', 'PERCENTAGE', 'EXACT'][_splitTabController.index];
       });
     });
 
@@ -85,12 +90,17 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
     _titleController.dispose();
     _noteController.dispose();
     _splitTabController.dispose();
-    for (final c in _percentControllers.values) { c.dispose(); }
-    for (final c in _exactControllers.values) { c.dispose(); }
+    for (final c in _percentControllers.values) {
+      c.dispose();
+    }
+    for (final c in _exactControllers.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
-  double get _totalAmount => double.tryParse(_amountController.text.trim()) ?? 0;
+  double get _totalAmount =>
+      double.tryParse(_amountController.text.trim()) ?? 0;
 
   double get _equalShare {
     final count = _selectedParticipantIds.length;
@@ -99,7 +109,8 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
   }
 
   double get _percentSum => _selectedParticipantIds.fold(0.0, (sum, id) {
-        return sum + (double.tryParse(_percentControllers[id]?.text ?? '') ?? 0);
+        return sum +
+            (double.tryParse(_percentControllers[id]?.text ?? '') ?? 0);
       });
 
   double get _exactSum => _selectedParticipantIds.fold(0.0, (sum, id) {
@@ -149,7 +160,9 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
             paidById: _paidById,
             splitType: _splitType,
             participants: _buildParticipants(),
-            notes: _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
+            notes: _noteController.text.trim().isEmpty
+                ? null
+                : _noteController.text.trim(),
             date: _selectedDate.toUtc().toIso8601String(),
           );
       ref.invalidate(groupExpensesProvider(widget.expense.groupId));
@@ -162,14 +175,18 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
           content: const Text('Expense updated!'),
           backgroundColor: AppColors.income,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ));
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Failed: $e'),
+          content: Text(friendlyErrorMessage(e)),
           backgroundColor: AppColors.expense,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ));
       }
     } finally {
@@ -204,7 +221,8 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 child: Row(
                   children: [
                     Text(
@@ -253,8 +271,7 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
                           child: _EditDateTile(
                             selectedDate: _selectedDate,
                             isDark: isDark,
-                            onChanged: (d) =>
-                                setState(() => _selectedDate = d),
+                            onChanged: (d) => setState(() => _selectedDate = d),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -262,8 +279,7 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
                           child: _EditTimeTile(
                             selectedDate: _selectedDate,
                             isDark: isDark,
-                            onChanged: (d) =>
-                                setState(() => _selectedDate = d),
+                            onChanged: (d) => setState(() => _selectedDate = d),
                           ),
                         ),
                       ],
@@ -282,7 +298,8 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
                     const SizedBox(height: 8),
                     Container(
                       decoration: BoxDecoration(
-                        color: isDark ? AppColors.darkCard : AppColors.lightCard,
+                        color:
+                            isDark ? AppColors.darkCard : AppColors.lightCard,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: TabBar(
@@ -299,7 +316,8 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
                         indicatorSize: TabBarIndicatorSize.tab,
                         labelColor: Colors.white,
                         unselectedLabelColor: AppColors.textSecondary,
-                        labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                        labelStyle: const TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w600),
                         dividerColor: Colors.transparent,
                         padding: const EdgeInsets.all(4),
                       ),
@@ -329,25 +347,31 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
                         onChanged: () => setState(() {}),
                       ),
                     ),
-                    if (_splitType == 'PERCENTAGE' && _selectedParticipantIds.isNotEmpty)
+                    if (_splitType == 'PERCENTAGE' &&
+                        _selectedParticipantIds.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
                         child: Text(
                           'Total: ${_percentSum.toStringAsFixed(1)}% ${(_percentSum - 100).abs() < 0.01 ? '✓' : '(must equal 100%)'}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: (_percentSum - 100).abs() < 0.01 ? AppColors.income : AppColors.expense,
+                            color: (_percentSum - 100).abs() < 0.01
+                                ? AppColors.income
+                                : AppColors.expense,
                           ),
                         ),
                       ),
-                    if (_splitType == 'EXACT' && _selectedParticipantIds.isNotEmpty)
+                    if (_splitType == 'EXACT' &&
+                        _selectedParticipantIds.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
                         child: Text(
                           'Total: $currency${_exactSum.toStringAsFixed(0)} of $currency${_totalAmount.toStringAsFixed(0)} ${(_exactSum - _totalAmount).abs() < 0.01 ? '✓' : ''}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: (_exactSum - _totalAmount).abs() < 0.01 ? AppColors.income : AppColors.expense,
+                            color: (_exactSum - _totalAmount).abs() < 0.01
+                                ? AppColors.income
+                                : AppColors.expense,
                           ),
                         ),
                       ),
@@ -376,7 +400,10 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
                 decoration: BoxDecoration(
                   color: isDark ? AppColors.darkSurface : Colors.white,
                   border: Border(
-                    top: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
+                    top: BorderSide(
+                        color: isDark
+                            ? AppColors.darkBorder
+                            : AppColors.lightBorder),
                   ),
                 ),
                 child: SpButton(
@@ -416,7 +443,8 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
       controller: controller,
       maxLines: maxLines,
       onChanged: onChanged,
-      style: TextStyle(color: isDark ? Colors.white : AppColors.textLight, fontSize: 15),
+      style: TextStyle(
+          color: isDark ? Colors.white : AppColors.textLight, fontSize: 15),
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: TextStyle(color: AppColors.textTertiary, fontSize: 14),
@@ -424,17 +452,20 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
         fillColor: isDark ? AppColors.darkCard : AppColors.lightCard,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
+          borderSide: BorderSide(
+              color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
+          borderSide: BorderSide(
+              color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       ),
     );
   }
@@ -550,8 +581,8 @@ class _EditTimeTile extends StatelessWidget {
                 states.contains(WidgetState.selected)
                     ? Colors.white
                     : AppColors.primary),
-            dayPeriodBorderSide: const BorderSide(
-                color: AppColors.primary, width: 1),
+            dayPeriodBorderSide:
+                const BorderSide(color: AppColors.primary, width: 1),
           ),
         ),
         child: child!,

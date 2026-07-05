@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -308,8 +310,8 @@ class _ActiveFiltersRow extends ConsumerWidget {
               : '≤ $maxStr';
       chips.add((
         label,
-        () => ref.read(amountRangeProvider.notifier).state =
-            const AmountRange(),
+        () =>
+            ref.read(amountRangeProvider.notifier).state = const AmountRange(),
       ));
     }
 
@@ -335,7 +337,9 @@ class _ActiveFiltersRow extends ConsumerWidget {
       return Category.values.byName(key).label;
     } catch (_) {
       final custom = ref.read(customCategoriesProvider);
-      return custom.firstWhere((c) => c.id == key, orElse: () => throw '').label;
+      return custom
+          .firstWhere((c) => c.id == key, orElse: () => throw '')
+          .label;
     }
   }
 }
@@ -444,8 +448,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
         return Container(
           decoration: BoxDecoration(
             color: isDark ? AppColors.darkSurface : Colors.white,
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
             children: [
@@ -503,8 +506,14 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                           for (final (s, label) in [
                             (TransactionSortOrder.newestFirst, 'Newest first'),
                             (TransactionSortOrder.oldestFirst, 'Oldest first'),
-                            (TransactionSortOrder.highestAmount, 'Highest amount'),
-                            (TransactionSortOrder.lowestAmount, 'Lowest amount'),
+                            (
+                              TransactionSortOrder.highestAmount,
+                              'Highest amount'
+                            ),
+                            (
+                              TransactionSortOrder.lowestAmount,
+                              'Lowest amount'
+                            ),
                           ])
                             _ChoiceChip(
                               label: label,
@@ -523,9 +532,21 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                       child: Row(
                         children: [
                           for (final (t, label, color) in [
-                            (TransactionTypeFilter.all, 'All', AppColors.primary),
-                            (TransactionTypeFilter.income, 'Income', AppColors.income),
-                            (TransactionTypeFilter.expense, 'Expense', AppColors.expense),
+                            (
+                              TransactionTypeFilter.all,
+                              'All',
+                              AppColors.primary
+                            ),
+                            (
+                              TransactionTypeFilter.income,
+                              'Income',
+                              AppColors.income
+                            ),
+                            (
+                              TransactionTypeFilter.expense,
+                              'Expense',
+                              AppColors.expense
+                            ),
                           ])
                             Padding(
                               padding: const EdgeInsets.only(right: 8),
@@ -613,16 +634,12 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                             children: [
                               _AmountLabel(
                                   label: 'Min',
-                                  value: _sliderMin > 0
-                                      ? CurrencyFormatter.format(_sliderMin,
-                                          symbol: currency)
-                                      : 'Any'),
+                                  value: CurrencyFormatter.format(_sliderMin,
+                                      symbol: currency)),
                               _AmountLabel(
                                   label: 'Max',
-                                  value: _sliderMax < sliderCeil
-                                      ? CurrencyFormatter.format(_sliderMax,
-                                          symbol: currency)
-                                      : 'Any'),
+                                  value: CurrencyFormatter.format(_sliderMax,
+                                      symbol: currency)),
                             ],
                           ),
                         ],
@@ -648,8 +665,8 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                     onPressed: _apply,
                     child: const Text(
                       'Apply Filters',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w700, fontSize: 15),
+                      style:
+                          TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
                     ),
                   ),
                 ),
@@ -784,7 +801,8 @@ class _CategoryChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: selected ? color : AppColors.textSecondary),
+            Icon(icon,
+                size: 14, color: selected ? color : AppColors.textSecondary),
             const SizedBox(width: 5),
             Text(
               label,
@@ -836,18 +854,73 @@ class _AmountLabel extends StatelessWidget {
 
 // ── Transaction list ──────────────────────────────────────────────────────────
 
-class _TransactionList extends ConsumerWidget {
+class _TransactionList extends ConsumerStatefulWidget {
   const _TransactionList();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final transactions = ref.watch(searchedTransactionsProvider);
+  ConsumerState<_TransactionList> createState() => _TransactionListState();
+}
+
+class _TransactionListState extends ConsumerState<_TransactionList> {
+  static const _undoWindow = Duration(seconds: 4);
+
+  // Items the user just swiped away — hidden from view immediately (so the
+  // Dismissible contract is satisfied) but not actually deleted until the
+  // undo window passes.
+  final Map<String, Transaction> _pendingDeletes = {};
+  final Map<String, Timer> _timers = {};
+
+  @override
+  void dispose() {
+    for (final timer in _timers.values) {
+      timer.cancel();
+    }
+    super.dispose();
+  }
+
+  void _handleSwipeDelete(Transaction tx) {
+    setState(() => _pendingDeletes[tx.id] = tx);
+
+    _timers[tx.id] = Timer(_undoWindow, () {
+      _timers.remove(tx.id);
+      if (_pendingDeletes.remove(tx.id) != null) {
+        ref.read(transactionProvider.notifier).delete(tx);
+      }
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.delete_outline_rounded,
+                color: AppColors.expense, size: 18),
+            const SizedBox(width: 10),
+            const Expanded(child: Text('Transaction deleted')),
+          ],
+        ),
+        duration: _undoWindow,
+        action: SnackBarAction(
+          label: 'UNDO',
+          onPressed: () {
+            _timers.remove(tx.id)?.cancel();
+            if (mounted) setState(() => _pendingDeletes.remove(tx.id));
+          },
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final transactions = ref
+        .watch(searchedTransactionsProvider)
+        .where((t) => !_pendingDeletes.containsKey(t.id))
+        .toList();
 
     if (transactions.isEmpty) {
       return RefreshIndicator(
         color: AppColors.primary,
-        onRefresh: () =>
-            ref.read(transactionProvider.notifier).syncAndReload(),
+        onRefresh: () => ref.read(transactionProvider.notifier).syncAndReload(),
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
@@ -871,8 +944,7 @@ class _TransactionList extends ConsumerWidget {
     if (!isDateSort) {
       return RefreshIndicator(
         color: AppColors.primary,
-        onRefresh: () =>
-            ref.read(transactionProvider.notifier).syncAndReload(),
+        onRefresh: () => ref.read(transactionProvider.notifier).syncAndReload(),
         child: ListView.builder(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
           itemCount: transactions.length,
@@ -881,8 +953,7 @@ class _TransactionList extends ConsumerWidget {
             return TransactionTile(
               transaction: tx,
               index: i,
-              onDelete: () =>
-                  ref.read(transactionProvider.notifier).delete(tx),
+              onDelete: () => _handleSwipeDelete(tx),
               onEdit: () => showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
@@ -909,8 +980,7 @@ class _TransactionList extends ConsumerWidget {
 
     return RefreshIndicator(
       color: AppColors.primary,
-      onRefresh: () =>
-          ref.read(transactionProvider.notifier).syncAndReload(),
+      onRefresh: () => ref.read(transactionProvider.notifier).syncAndReload(),
       child: ListView.builder(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
         itemCount: keys.length,
@@ -926,16 +996,13 @@ class _TransactionList extends ConsumerWidget {
                 (item) => TransactionTile(
                   transaction: item.tx,
                   index: item.index,
-                  onDelete: () => ref
-                      .read(transactionProvider.notifier)
-                      .delete(item.tx),
+                  onDelete: () => _handleSwipeDelete(item.tx),
                   onEdit: () => showModalBottomSheet(
                     context: context,
                     isScrollControlled: true,
                     useRootNavigator: true,
                     backgroundColor: Colors.transparent,
-                    builder: (_) =>
-                        EditTransactionSheet(transaction: item.tx),
+                    builder: (_) => EditTransactionSheet(transaction: item.tx),
                   ),
                 ),
               ),
@@ -957,8 +1024,19 @@ class _TransactionList extends ConsumerWidget {
   }
 
   String _monthAbbr(int m) => const [
-        '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        '',
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec'
       ][m];
 }
 
@@ -982,7 +1060,8 @@ class _DateHeader extends StatelessWidget {
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w700,
-          color: isDark ? AppColors.textSecondary : AppColors.textLightSecondary,
+          color:
+              isDark ? AppColors.textSecondary : AppColors.textLightSecondary,
           letterSpacing: 0.3,
         ),
       ),

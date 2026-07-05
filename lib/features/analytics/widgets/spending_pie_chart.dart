@@ -17,10 +17,15 @@ class SpendingPieChart extends ConsumerStatefulWidget {
 
 class _SpendingPieChartState extends ConsumerState<SpendingPieChart> {
   int _touchedIndex = -1;
+  TransactionType _selectedType = TransactionType.expense;
 
   @override
   Widget build(BuildContext context) {
-    final breakdown = ref.watch(categoryBreakdownProvider);
+    final isExpense = _selectedType == TransactionType.expense;
+    final breakdown = isExpense
+        ? ref.watch(categoryBreakdownProvider)
+        : ref.watch(categoryBreakdownIncomeProvider);
+    final typeColor = isExpense ? AppColors.expense : AppColors.income;
     final currency = ref.watch(currencyProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final total = breakdown.values.fold(0.0, (a, b) => a + b);
@@ -31,7 +36,7 @@ class _SpendingPieChartState extends ConsumerState<SpendingPieChart> {
     if (breakdown.isEmpty) {
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 20),
-        padding: const EdgeInsets.symmetric(vertical: 32),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: bgColor,
           borderRadius: BorderRadius.circular(20),
@@ -39,6 +44,27 @@ class _SpendingPieChartState extends ConsumerState<SpendingPieChart> {
         ),
         child: Column(
           children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'By Category',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _TypeToggle(
+              selected: _selectedType,
+              onChanged: (type) => setState(() {
+                _selectedType = type;
+                _touchedIndex = -1;
+              }),
+              isDark: isDark,
+            ),
+            const SizedBox(height: 20),
             Icon(
               Icons.pie_chart_outline_rounded,
               size: 32,
@@ -46,7 +72,7 @@ class _SpendingPieChartState extends ConsumerState<SpendingPieChart> {
             ),
             const SizedBox(height: 10),
             Text(
-              'No expenses this month',
+              'No ${isExpense ? 'expenses' : 'income'} this month',
               style: TextStyle(
                 color: AppColors.textSecondary,
                 fontSize: 13,
@@ -114,14 +140,23 @@ class _SpendingPieChartState extends ConsumerState<SpendingPieChart> {
               Text(
                 CurrencyFormatter.format(total, symbol: currency),
                 style: TextStyle(
-                  color: AppColors.primary,
+                  color: typeColor,
                   fontWeight: FontWeight.w700,
                   fontSize: 15,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
+          _TypeToggle(
+            selected: _selectedType,
+            onChanged: (type) => setState(() {
+              _selectedType = type;
+              _touchedIndex = -1;
+            }),
+            isDark: isDark,
+          ),
+          const SizedBox(height: 20),
 
           // Chart
           SizedBox(
@@ -224,6 +259,73 @@ class _SpendingPieChartState extends ConsumerState<SpendingPieChart> {
             }).toList(),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _TypeToggle extends StatelessWidget {
+  final TransactionType selected;
+  final ValueChanged<TransactionType> onChanged;
+  final bool isDark;
+
+  const _TypeToggle({
+    required this.selected,
+    required this.onChanged,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkElevated : AppColors.lightCard,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildOption(TransactionType.expense, 'Expense', AppColors.expense),
+          ),
+          Expanded(
+            child: _buildOption(TransactionType.income, 'Income', AppColors.income),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOption(TransactionType type, String label, Color color) {
+    final isSelected = selected == type;
+    return GestureDetector(
+      onTap: () => onChanged(type),
+      child: AnimatedContainer(
+        duration: 200.ms,
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withValues(alpha: 0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(9),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? color : AppColors.textTertiary,
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

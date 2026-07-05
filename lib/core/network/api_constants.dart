@@ -30,6 +30,7 @@ class ApiConstants {
 
   // Invites
   static String groupInvites(String id) => '/groups/$id/invites';
+  static String groupActiveInvite(String id) => '/groups/$id/invites/active';
   static String inviteByCode(String code) => '/invites/$code';
   static String inviteJoin(String code) => '/invites/$code/join';
 
@@ -47,6 +48,10 @@ class ApiConstants {
   // Custom Categories
   static const String categories = '/categories';
   static String categoryById(String id) => '/categories/$id';
+
+  // Budgets
+  static const String budgets = '/budgets';
+  static String budgetById(String id) => '/budgets/$id';
 
   // Sync
   static const String syncPush = '/sync/transactions';

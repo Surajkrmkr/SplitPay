@@ -54,7 +54,8 @@ class ServerTransaction {
   }
 
   Transaction toApiTransaction() {
-    final txType = type == 'INCOME' ? TransactionType.income : TransactionType.expense;
+    final txType =
+        type == 'INCOME' ? TransactionType.income : TransactionType.expense;
     final cat = _categoryFromKey(categoryKey);
     final rec = _recurrenceFromServer(recurrence);
     return Transaction(
@@ -85,11 +86,16 @@ class ServerTransaction {
 
   static RecurrenceType _recurrenceFromServer(String value) {
     switch (value.toUpperCase()) {
-      case 'DAILY': return RecurrenceType.daily;
-      case 'WEEKLY': return RecurrenceType.weekly;
-      case 'MONTHLY': return RecurrenceType.monthly;
-      case 'YEARLY': return RecurrenceType.yearly;
-      default: return RecurrenceType.none;
+      case 'DAILY':
+        return RecurrenceType.daily;
+      case 'WEEKLY':
+        return RecurrenceType.weekly;
+      case 'MONTHLY':
+        return RecurrenceType.monthly;
+      case 'YEARLY':
+        return RecurrenceType.yearly;
+      default:
+        return RecurrenceType.none;
     }
   }
 }
@@ -188,7 +194,8 @@ class TransactionApiService {
       if (startDate != null) 'startDate': startDate.toUtc().toIso8601String(),
       if (endDate != null) 'endDate': endDate.toUtc().toIso8601String(),
     };
-    final res = await _dio.get(ApiConstants.transactions, queryParameters: params);
+    final res =
+        await _dio.get(ApiConstants.transactions, queryParameters: params);
     final list = res.data['data'] as List<dynamic>;
     return list
         .map((e) => ServerTransaction.fromJson(e as Map<String, dynamic>))
@@ -200,23 +207,29 @@ class TransactionApiService {
   }
 
   Future<void> updateTransaction(String serverId, Transaction tx) async {
-    await _dio.patch(ApiConstants.transactionById(serverId), data: _toPayload(tx));
+    await _dio.patch(ApiConstants.transactionById(serverId),
+        data: _toPayload(tx));
   }
 
   Future<void> deleteTransaction(String serverId) async {
     await _dio.delete(ApiConstants.transactionById(serverId));
   }
 
+  // Always send customCategoryId/appIcon/note explicitly — even when null —
+  // so clearing one on an update actually clears it server-side. The server
+  // treats an omitted key as "leave unchanged" vs an explicit null as
+  // "clear", and Dio/dart:convert drop keys whose value is `if != null`, so
+  // omitting them here silently stopped clears from ever reaching the API.
   static Map<String, dynamic> _toPayload(Transaction tx) => {
-    'amount': tx.amount,
-    'type': tx.type == TransactionType.income ? 'INCOME' : 'EXPENSE',
-    'categoryKey': tx.category.name,
-    if (tx.customCategoryId != null) 'customCategoryId': tx.customCategoryId,
-    if (tx.appIcon != null) 'appIcon': tx.appIcon,
-    if (tx.note != null) 'note': tx.note,
-    'date': tx.date.toUtc().toIso8601String(),
-    'recurrence': tx.recurrence.serverValue,
-  };
+        'amount': tx.amount,
+        'type': tx.type == TransactionType.income ? 'INCOME' : 'EXPENSE',
+        'categoryKey': tx.category.name,
+        'customCategoryId': tx.customCategoryId,
+        'appIcon': tx.appIcon,
+        'note': tx.note,
+        'date': tx.date.toUtc().toIso8601String(),
+        'recurrence': tx.recurrence.serverValue,
+      };
 }
 
 final transactionApiServiceProvider = Provider<TransactionApiService>((ref) {

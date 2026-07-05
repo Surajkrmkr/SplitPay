@@ -14,7 +14,12 @@ import '../../shared/widgets/app_icon_picker.dart';
 import '../../shared/widgets/bill_scan_button.dart';
 
 class AddTransactionSheet extends ConsumerStatefulWidget {
-  const AddTransactionSheet({super.key});
+  final TransactionType initialType;
+
+  const AddTransactionSheet({
+    super.key,
+    this.initialType = TransactionType.expense,
+  });
 
   @override
   ConsumerState<AddTransactionSheet> createState() =>
@@ -25,8 +30,9 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
 
-  TransactionType _type = TransactionType.expense;
-  Category _category = Category.food;
+  late TransactionType _type = widget.initialType;
+  late Category _category =
+      _type == TransactionType.income ? Category.salary : Category.food;
   String? _customCategoryId;
   String? _appIcon;
   DateTime _date = DateTime.now();
@@ -551,17 +557,18 @@ class _CategoryPicker extends StatelessWidget {
             onTap: () => onChanged(cat, null),
           );
         }),
-        ...customCats.map((cat) {
-          final isSelected = customCategoryId == cat.id;
-          return _Chip(
-            label: cat.label,
-            icon: cat.icon,
-            color: cat.color,
-            isSelected: isSelected,
-            isDark: isDark,
-            onTap: () => onChanged(Category.other, cat.id),
-          );
-        }),
+        if (type != TransactionType.income)
+          ...customCats.map((cat) {
+            final isSelected = customCategoryId == cat.id;
+            return _Chip(
+              label: cat.label,
+              icon: cat.icon,
+              color: cat.color,
+              isSelected: isSelected,
+              isDark: isDark,
+              onTap: () => onChanged(Category.other, cat.id),
+            );
+          }),
       ],
     );
   }

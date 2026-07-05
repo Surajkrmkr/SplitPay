@@ -137,19 +137,55 @@ final categoryBreakdownProvider = Provider<Map<Category, double>>((ref) {
   return map;
 });
 
+final categoryBreakdownIncomeProvider = Provider<Map<Category, double>>((ref) {
+  final txs = ref.watch(transactionProvider);
+  final month = ref.watch(selectedMonthProvider);
+  final incomes = txs.where((t) =>
+      t.type == TransactionType.income &&
+      t.date.year == month.year &&
+      t.date.month == month.month);
+
+  final map = <Category, double>{};
+  for (final tx in incomes) {
+    map[tx.category] = (map[tx.category] ?? 0) + tx.amount;
+  }
+  return map;
+});
+
 final weeklySpendingProvider = Provider<List<double>>((ref) {
   final txs = ref.watch(transactionProvider);
   final now = DateTime.now();
-  final weekStart = now.subtract(Duration(days: now.weekday - 1));
+  final today = DateTime(now.year, now.month, now.day);
+  final weekStart = today.subtract(Duration(days: today.weekday - 1));
 
   final days = List.filled(7, 0.0);
   for (final tx in txs) {
-    if (tx.type == TransactionType.expense &&
-        tx.date.isAfter(weekStart.subtract(const Duration(days: 1)))) {
-      final dayIndex = tx.date.weekday - 1;
-      if (dayIndex >= 0 && dayIndex < 7) {
-        days[dayIndex] += tx.amount;
-      }
+    if (tx.type != TransactionType.expense) continue;
+    final txDate = DateTime(tx.date.year, tx.date.month, tx.date.day);
+    // From Monday of this week through today — a future-dated transaction
+    // (even later this same week) hasn't been spent yet, so it shouldn't
+    // count toward "this week"'s total.
+    if (!txDate.isBefore(weekStart) && !txDate.isAfter(today)) {
+      final dayIndex = txDate.weekday - 1;
+      days[dayIndex] += tx.amount;
+    }
+  }
+  return days;
+});
+
+final weeklyIncomeProvider = Provider<List<double>>((ref) {
+  final txs = ref.watch(transactionProvider);
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final weekStart = today.subtract(Duration(days: today.weekday - 1));
+
+  final days = List.filled(7, 0.0);
+  for (final tx in txs) {
+    if (tx.type != TransactionType.income) continue;
+    final txDate = DateTime(tx.date.year, tx.date.month, tx.date.day);
+    if (!txDate.isBefore(weekStart) && !txDate.isAfter(today)) {
+      final dayIndex = txDate.weekday - 1;
+      days[dayIndex] += tx.amount;
     }
   }
   return days;
@@ -197,7 +233,12 @@ enum TransactionFilter { all, today, week, month }
 
 enum TransactionTypeFilter { all, income, expense }
 
-enum TransactionSortOrder { newestFirst, oldestFirst, highestAmount, lowestAmount }
+enum TransactionSortOrder {
+  newestFirst,
+  oldestFirst,
+  highestAmount,
+  lowestAmount
+}
 
 // Amount range — null bounds mean no limit on that side.
 class AmountRange {
@@ -214,13 +255,14 @@ final filterProvider = StateProvider<TransactionFilter>(
 final transactionTypeFilterProvider =
     StateProvider<TransactionTypeFilter>((_) => TransactionTypeFilter.all);
 
-final transactionSortProvider =
-    StateProvider<TransactionSortOrder>((_) => TransactionSortOrder.newestFirst);
+final transactionSortProvider = StateProvider<TransactionSortOrder>(
+    (_) => TransactionSortOrder.newestFirst);
 
 // Set of category keys (Category.name or customCategoryId). Empty = all.
 final categoryFilterProvider = StateProvider<Set<String>>((_) => const {});
 
-final amountRangeProvider = StateProvider<AmountRange>((_) => const AmountRange());
+final amountRangeProvider =
+    StateProvider<AmountRange>((_) => const AmountRange());
 
 final filteredTransactionsProvider = Provider<List<Transaction>>((ref) {
   final txs = ref.watch(transactionProvider);
@@ -230,6 +272,8 @@ final filteredTransactionsProvider = Provider<List<Transaction>>((ref) {
   final categories = ref.watch(categoryFilterProvider);
   final amountRange = ref.watch(amountRangeProvider);
   final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final weekStart = today.subtract(Duration(days: today.weekday - 1));
 
   var result = switch (filter) {
     TransactionFilter.all => txs,
@@ -238,10 +282,15 @@ final filteredTransactionsProvider = Provider<List<Transaction>>((ref) {
             t.date.month == now.month &&
             t.date.day == now.day;
       }).toList(),
+    // From Monday of this week through today — future-dated transactions
+    // (even later this same week) are excluded, since "this week" means
+    // what's happened so far, not what's scheduled.
     TransactionFilter.week => txs.where((t) {
-        final weekAgo = now.subtract(const Duration(days: 7));
-        return t.date.isAfter(weekAgo);
+        final txDate = DateTime(t.date.year, t.date.month, t.date.day);
+        return !txDate.isBefore(weekStart) && !txDate.isAfter(today);
       }).toList(),
+    // Unlike Week, Month shows the whole calendar month — including
+    // future-dated entries later this month (e.g. an end-of-month salary).
     TransactionFilter.month => txs.where((t) {
         return t.date.year == now.year && t.date.month == now.month;
       }).toList(),
@@ -286,8 +335,10 @@ final filteredTransactionsProvider = Provider<List<Transaction>>((ref) {
 // Count of active non-default filters (used for the badge on the filter button).
 final activeFilterCountProvider = Provider<int>((ref) {
   int count = 0;
-  if (ref.watch(transactionTypeFilterProvider) != TransactionTypeFilter.all) count++;
-  if (ref.watch(transactionSortProvider) != TransactionSortOrder.newestFirst) count++;
+  if (ref.watch(transactionTypeFilterProvider) != TransactionTypeFilter.all)
+    count++;
+  if (ref.watch(transactionSortProvider) != TransactionSortOrder.newestFirst)
+    count++;
   if (ref.watch(categoryFilterProvider).isNotEmpty) count++;
   if (ref.watch(amountRangeProvider).isActive) count++;
   return count;

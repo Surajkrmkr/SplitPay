@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/errors/app_exception.dart';
 import '../../../shared/widgets/app_back_button.dart';
 import '../../../data/models/activity_model.dart';
 import '../../../data/models/group_expense_model.dart';
@@ -29,8 +30,7 @@ class GroupDetailScreen extends ConsumerStatefulWidget {
   const GroupDetailScreen({super.key, required this.groupId});
 
   @override
-  ConsumerState<GroupDetailScreen> createState() =>
-      _GroupDetailScreenState();
+  ConsumerState<GroupDetailScreen> createState() => _GroupDetailScreenState();
 }
 
 class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
@@ -120,16 +120,14 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
         body: EmptyState(
           icon: Icons.error_outline_rounded,
           title: 'Could not load group',
-          subtitle: e.toString(),
+          subtitle: friendlyErrorMessage(e),
           actionLabel: 'Retry',
-          onAction: () =>
-              ref.invalidate(groupDetailProvider(widget.groupId)),
+          onAction: () => ref.invalidate(groupDetailProvider(widget.groupId)),
         ),
       ),
       data: (group) => Scaffold(
         backgroundColor: isDark ? AppColors.darkBg : AppColors.lightBg,
-        floatingActionButtonLocation:
-            FloatingActionButtonLocation.centerFloat,
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () => showModalBottomSheet(
             context: context,
@@ -150,8 +148,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
           headerSliverBuilder: (context, _) => [
             SliverAppBar(
               pinned: true,
-              backgroundColor:
-                  isDark ? AppColors.darkBg : AppColors.lightBg,
+              backgroundColor: isDark ? AppColors.darkBg : AppColors.lightBg,
               leadingWidth: 56,
               leading: const Padding(
                 padding: EdgeInsets.only(left: 16),
@@ -197,8 +194,8 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
                               _AppBarIconBtn(
                                 icon: Icons.people_alt_rounded,
                                 tooltip: 'Invite',
-                                onTap: () => context.push(
-                                    '/groups/${widget.groupId}/invite'),
+                                onTap: () => context
+                                    .push('/groups/${widget.groupId}/invite'),
                                 isDark: isDark,
                               ),
                               Container(
@@ -207,14 +204,14 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
                                 color: isDark
                                     ? AppColors.darkBorder
                                     : AppColors.lightBorder,
-                                margin: const EdgeInsets.symmetric(
-                                    horizontal: 2),
+                                margin:
+                                    const EdgeInsets.symmetric(horizontal: 2),
                               ),
                               _AppBarIconBtn(
                                 icon: Icons.tune_rounded,
                                 tooltip: 'Settings',
-                                onTap: () => context.push(
-                                    '/groups/${widget.groupId}/settings'),
+                                onTap: () => context
+                                    .push('/groups/${widget.groupId}/settings'),
                                 isDark: isDark,
                               ),
                             ],
@@ -389,8 +386,8 @@ class _InfoRow extends StatelessWidget {
               group.description!,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                  fontSize: 13, color: AppColors.textSecondary),
+              style:
+                  const TextStyle(fontSize: 13, color: AppColors.textSecondary),
             ),
           )
         else
@@ -406,8 +403,7 @@ class _InfoRow extends StatelessWidget {
                 color: isDark ? AppColors.darkCard : AppColors.lightCard,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color:
-                      isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
                   width: 0.5,
                 ),
               ),
@@ -513,7 +509,6 @@ class _SearchField extends StatelessWidget {
   }
 }
 
-
 // ─────────────────────────────────────────────────────
 // Balances Tab
 // ─────────────────────────────────────────────────────
@@ -551,7 +546,7 @@ class _BalancesTab extends ConsumerWidget {
             EmptyState(
               icon: Icons.error_outline_rounded,
               title: 'Error loading balances',
-              subtitle: e.toString(),
+              subtitle: friendlyErrorMessage(e),
             ),
           ],
         ),
@@ -580,9 +575,9 @@ class _BalancesTab extends ConsumerWidget {
         return RefreshIndicator(
           color: AppColors.primary,
           onRefresh: () async {
-          ref.invalidate(groupDetailProvider(groupId));
-          ref.invalidate(groupBalancesProvider(groupId));
-        },
+            ref.invalidate(groupDetailProvider(groupId));
+            ref.invalidate(groupBalancesProvider(groupId));
+          },
           child: ListView(
             padding: const EdgeInsets.only(top: 12, bottom: 100),
             children: [
@@ -629,8 +624,9 @@ class _BalanceSummaryCard extends ConsumerWidget {
     final net = summary.net as double;
     final isSettled = net == 0;
     final isPositive = net >= 0;
-    final accentColor =
-        isSettled ? AppColors.primary : (isPositive ? AppColors.income : AppColors.expense);
+    final accentColor = isSettled
+        ? AppColors.primary
+        : (isPositive ? AppColors.income : AppColors.expense);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -687,7 +683,9 @@ class _BalanceSummaryCard extends ConsumerWidget {
                     Text(
                       isSettled
                           ? "You're all settled up"
-                          : (isPositive ? "You're owed overall" : "You owe overall"),
+                          : (isPositive
+                              ? "You're owed overall"
+                              : "You owe overall"),
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
@@ -803,7 +801,6 @@ class _StatChip extends StatelessWidget {
   }
 }
 
-
 Future<void> _confirmDeleteExpense(
     BuildContext context, WidgetRef ref, String expenseId) async {
   final confirmed = await showDialog<bool>(
@@ -843,7 +840,12 @@ Future<void> _confirmDeleteExpense(
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Error: $e'), backgroundColor: AppColors.expense),
+            content: Text(friendlyErrorMessage(e)),
+            backgroundColor: AppColors.expense,
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
         );
       }
     }
@@ -916,7 +918,8 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
 
     // Payer
     if (_payerFilter.isNotEmpty) {
-      result = result.where((e) => _payerFilter.contains(e.paidByName)).toList();
+      result =
+          result.where((e) => _payerFilter.contains(e.paidByName)).toList();
     }
 
     // Amount range
@@ -1014,7 +1017,7 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
             EmptyState(
               icon: Icons.error_outline_rounded,
               title: 'Could not load expenses',
-              subtitle: e.toString(),
+              subtitle: friendlyErrorMessage(e),
             ),
           ],
         ),
@@ -1064,11 +1067,9 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
                             Padding(
                               padding: const EdgeInsets.only(right: 8),
                               child: GestureDetector(
-                                onTap: () =>
-                                    setState(() => _dateFilter = f),
+                                onTap: () => setState(() => _dateFilter = f),
                                 child: AnimatedContainer(
-                                  duration:
-                                      const Duration(milliseconds: 200),
+                                  duration: const Duration(milliseconds: 200),
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 14, vertical: 6),
                                   decoration: BoxDecoration(
@@ -1077,16 +1078,14 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
                                         : isDark
                                             ? AppColors.darkCard
                                             : AppColors.lightCard,
-                                    borderRadius:
-                                        BorderRadius.circular(20),
+                                    borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
                                       color: _dateFilter == f
                                           ? AppColors.primary
                                           : isDark
                                               ? AppColors.darkBorder
                                               : AppColors.lightBorder,
-                                      width:
-                                          _dateFilter == f ? 1.0 : 0.5,
+                                      width: _dateFilter == f ? 1.0 : 0.5,
                                     ),
                                   ),
                                   child: Text(
@@ -1197,8 +1196,7 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
                       _ActiveChip(
                         label: switch (_sort) {
                           _ExpenseSortOrder.oldestFirst => 'Oldest first',
-                          _ExpenseSortOrder.highestAmount =>
-                            'Highest amount',
+                          _ExpenseSortOrder.highestAmount => 'Highest amount',
                           _ExpenseSortOrder.lowestAmount => 'Lowest amount',
                           _ExpenseSortOrder.newestFirst => '',
                         },
@@ -1209,8 +1207,7 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
                       _ActiveChip(
                         label: payer,
                         onRemove: () => setState(() {
-                          _payerFilter =
-                              Set.from(_payerFilter)..remove(payer);
+                          _payerFilter = Set.from(_payerFilter)..remove(payer);
                         }),
                       ),
                     if (_amountMin != null || _amountMax != null)
@@ -1241,18 +1238,19 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
                         children: [
                           EmptyState(
                             icon: Icons.search_off_rounded,
-                            title: activeCount > 0 || widget.searchNotifier.value.isNotEmpty
+                            title: activeCount > 0 ||
+                                    widget.searchNotifier.value.isNotEmpty
                                 ? 'No expenses match'
                                 : 'No expenses yet',
-                            subtitle: activeCount > 0 || widget.searchNotifier.value.isNotEmpty
+                            subtitle: activeCount > 0 ||
+                                    widget.searchNotifier.value.isNotEmpty
                                 ? 'Try adjusting your filters.'
                                 : 'Add an expense to start tracking.',
                           ),
                         ],
                       )
                     : ListView.builder(
-                        padding:
-                            const EdgeInsets.only(top: 4, bottom: 100),
+                        padding: const EdgeInsets.only(top: 4, bottom: 100),
                         itemCount: filtered.length,
                         itemBuilder: (context, i) => ExpenseTile(
                           expense: filtered[i],
@@ -1363,8 +1361,7 @@ class _ExpenseFilterSheetState extends State<_ExpenseFilterSheet> {
         return Container(
           decoration: BoxDecoration(
             color: isDark ? AppColors.darkSurface : Colors.white,
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
             children: [
@@ -1374,8 +1371,7 @@ class _ExpenseFilterSheetState extends State<_ExpenseFilterSheet> {
                 height: 4,
                 margin: const EdgeInsets.only(top: 12),
                 decoration: BoxDecoration(
-                  color:
-                      isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -1423,10 +1419,8 @@ class _ExpenseFilterSheetState extends State<_ExpenseFilterSheet> {
                           for (final (s, label) in [
                             (_ExpenseSortOrder.newestFirst, 'Newest first'),
                             (_ExpenseSortOrder.oldestFirst, 'Oldest first'),
-                            (_ExpenseSortOrder.highestAmount,
-                                'Highest amount'),
-                            (_ExpenseSortOrder.lowestAmount,
-                                'Lowest amount'),
+                            (_ExpenseSortOrder.highestAmount, 'Highest amount'),
+                            (_ExpenseSortOrder.lowestAmount, 'Lowest amount'),
                           ])
                             _FilterChip(
                               label: label,
@@ -1486,21 +1480,14 @@ class _ExpenseFilterSheetState extends State<_ExpenseFilterSheet> {
                             }),
                           ),
                           Row(
-                            mainAxisAlignment:
-                                MainAxisAlignment.spaceBetween,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               _AmountBound(
                                   label: 'Min',
-                                  value: _sliderMin > 0
-                                      ? _sliderMin
-                                          .toStringAsFixed(0)
-                                      : 'Any'),
+                                  value: _sliderMin.toStringAsFixed(0)),
                               _AmountBound(
                                   label: 'Max',
-                                  value: _sliderMax < widget.sliderMax
-                                      ? _sliderMax
-                                          .toStringAsFixed(0)
-                                      : 'Any'),
+                                  value: _sliderMax.toStringAsFixed(0)),
                             ],
                           ),
                         ],
@@ -1526,8 +1513,8 @@ class _ExpenseFilterSheetState extends State<_ExpenseFilterSheet> {
                     onPressed: _apply,
                     child: const Text(
                       'Apply Filters',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w700, fontSize: 15),
+                      style:
+                          TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
                     ),
                   ),
                 ),
@@ -1591,8 +1578,7 @@ class _FilterChip extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: selected
               ? color.withValues(alpha: 0.12)
@@ -1632,13 +1618,11 @@ class _ActiveChip extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
           color: AppColors.primary.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-              color: AppColors.primary.withValues(alpha: 0.4)),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -1725,7 +1709,7 @@ class _ActivityTab extends ConsumerWidget {
             EmptyState(
               icon: Icons.error_outline_rounded,
               title: 'Could not load activity',
-              subtitle: e.toString(),
+              subtitle: friendlyErrorMessage(e),
             ),
           ],
         ),
@@ -1754,9 +1738,9 @@ class _ActivityTab extends ConsumerWidget {
         return RefreshIndicator(
           color: AppColors.primary,
           onRefresh: () async {
-          ref.invalidate(groupDetailProvider(groupId));
-          ref.invalidate(groupActivityProvider(groupId));
-        },
+            ref.invalidate(groupDetailProvider(groupId));
+            ref.invalidate(groupActivityProvider(groupId));
+          },
           child: ListView.builder(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
             itemCount: activities.length,
@@ -1828,10 +1812,12 @@ class _ActivityTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: (isUpi ? AppColors.secondary : AppColors.primary).withValues(alpha: 0.12),
+        color: (isUpi ? AppColors.secondary : AppColors.primary)
+            .withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
-          color: (isUpi ? AppColors.secondary : AppColors.primary).withValues(alpha: 0.3),
+          color: (isUpi ? AppColors.secondary : AppColors.primary)
+              .withValues(alpha: 0.3),
           width: 0.8,
         ),
       ),
@@ -1871,7 +1857,8 @@ class _ActivityTile extends StatelessWidget {
                       width: 1.5,
                     ),
                   ),
-                  child: Icon(_iconForType(activity.type), size: 18, color: color),
+                  child:
+                      Icon(_iconForType(activity.type), size: 18, color: color),
                 ),
                 if (!isLast)
                   Expanded(
@@ -2002,12 +1989,12 @@ class _TotalTab extends ConsumerWidget {
     final expensesAsync = ref.watch(groupExpensesProvider(groupId));
 
     return expensesAsync.when(
-      loading: () =>
-          const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      loading: () => const Center(
+          child: CircularProgressIndicator(color: AppColors.primary)),
       error: (e, _) => EmptyState(
         icon: Icons.error_outline_rounded,
         title: 'Could not load totals',
-        subtitle: e.toString(),
+        subtitle: friendlyErrorMessage(e),
       ),
       data: (expenses) {
         if (expenses.isEmpty) {
@@ -2037,7 +2024,8 @@ class _TotalTab extends ConsumerWidget {
         final chartMax = maxVal == 0 ? 100.0 : maxVal * 1.25;
 
         final bgColor = isDark ? AppColors.darkCard : AppColors.lightSurface;
-        final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+        final borderColor =
+            isDark ? AppColors.darkBorder : AppColors.lightBorder;
         final gridColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
 
         return ListView(
@@ -2104,7 +2092,8 @@ class _TotalTab extends ConsumerWidget {
                                 toY: val == 0 ? 0.5 : val,
                                 color: isLatest
                                     ? AppColors.primary
-                                    : AppColors.secondary.withValues(alpha: 0.6),
+                                    : AppColors.secondary
+                                        .withValues(alpha: 0.6),
                                 width: 24,
                                 borderRadius: BorderRadius.circular(6),
                                 backDrawRodData: BackgroundBarChartRodData(
@@ -2171,8 +2160,9 @@ class _TotalTab extends ConsumerWidget {
                             getTooltipColor: (_) =>
                                 isDark ? AppColors.darkElevated : Colors.white,
                             tooltipRoundedRadius: 8,
-                            getTooltipItem: (group, groupIndex, rod, rodIndex) =>
-                                BarTooltipItem(
+                            getTooltipItem:
+                                (group, groupIndex, rod, rodIndex) =>
+                                    BarTooltipItem(
                               '$currency${rod.toY.toStringAsFixed(0)}',
                               const TextStyle(
                                 color: AppColors.primary,
@@ -2224,7 +2214,9 @@ class _AppBarIconBtn extends StatelessWidget {
             child: Icon(
               icon,
               size: 18,
-              color: isDark ? AppColors.textSecondary : AppColors.textLightSecondary,
+              color: isDark
+                  ? AppColors.textSecondary
+                  : AppColors.textLightSecondary,
             ),
           ),
         ),
@@ -2270,7 +2262,8 @@ class _SettlementsSection extends ConsumerWidget {
                   ),
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
@@ -2278,7 +2271,9 @@ class _SettlementsSection extends ConsumerWidget {
                     child: Text(
                       '${settlements.length}',
                       style: const TextStyle(
-                          fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.w700),
+                          fontSize: 11,
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w700),
                     ),
                   ),
                 ],
@@ -2335,7 +2330,9 @@ class _SettlementTile extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             child: Icon(
-              isUpi ? Icons.account_balance_wallet_rounded : Icons.check_circle_rounded,
+              isUpi
+                  ? Icons.account_balance_wallet_rounded
+                  : Icons.check_circle_rounded,
               color: badgeColor,
               size: 18,
             ),
@@ -2359,13 +2356,15 @@ class _SettlementTile extends StatelessWidget {
                   children: [
                     Text(
                       DateFormat('d MMM, h:mm a').format(settlement.settledAt),
-                      style: const TextStyle(fontSize: 10, color: AppColors.textTertiary),
+                      style: const TextStyle(
+                          fontSize: 10, color: AppColors.textTertiary),
                     ),
                     if (settlement.transactionId != null) ...[
                       const SizedBox(width: 6),
                       Text(
                         '· ${settlement.transactionId!.length > 12 ? settlement.transactionId!.substring(0, 12) : settlement.transactionId!}…',
-                        style: const TextStyle(fontSize: 10, color: AppColors.textTertiary),
+                        style: const TextStyle(
+                            fontSize: 10, color: AppColors.textTertiary),
                       ),
                     ],
                   ],
@@ -2392,7 +2391,8 @@ class _SettlementTile extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: badgeColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(5),
-                  border: Border.all(color: badgeColor.withValues(alpha: 0.3), width: 0.8),
+                  border: Border.all(
+                      color: badgeColor.withValues(alpha: 0.3), width: 0.8),
                 ),
                 child: Text(
                   isUpi ? 'UPI' : 'Manual',

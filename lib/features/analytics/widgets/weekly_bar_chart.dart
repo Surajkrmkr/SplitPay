@@ -6,6 +6,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../providers/transaction_provider.dart';
 import '../../../providers/settings_provider.dart';
+import '../../../shared/widgets/legend_dot.dart';
 
 class WeeklyBarChart extends ConsumerWidget {
   const WeeklyBarChart({super.key});
@@ -15,9 +16,10 @@ class WeeklyBarChart extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final weekly = ref.watch(weeklySpendingProvider);
+    final weeklyIncome = ref.watch(weeklyIncomeProvider);
     final currency = ref.watch(currencyProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final maxVal = weekly.reduce((a, b) => a > b ? a : b);
+    final maxVal = [...weekly, ...weeklyIncome].reduce((a, b) => a > b ? a : b);
     final chartMax = maxVal == 0 ? 100.0 : maxVal * 1.25;
 
     final bgColor = isDark ? AppColors.darkCard : AppColors.lightSurface;
@@ -46,16 +48,12 @@ class WeeklyBarChart extends ConsumerWidget {
                       fontWeight: FontWeight.w700,
                     ),
               ),
-              Text(
-                CurrencyFormatter.format(
-                  weekly.fold(0.0, (a, b) => a + b),
-                  symbol: currency,
-                ),
-                style: TextStyle(
-                  color: AppColors.secondary,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14,
-                ),
+              Row(
+                children: [
+                  LegendDot(color: AppColors.income, label: 'Income'),
+                  const SizedBox(width: 10),
+                  LegendDot(color: AppColors.expense, label: 'Expense'),
+                ],
               ),
             ],
           ),
@@ -68,18 +66,19 @@ class WeeklyBarChart extends ConsumerWidget {
                 minY: 0,
                 barGroups: weekly.asMap().entries.map((entry) {
                   final i = entry.key;
-                  final val = entry.value;
+                  final expenseVal = entry.value;
+                  final incomeVal = weeklyIncome[i];
                   final isToday = i == todayIndex;
+                  final alpha = isToday ? 1.0 : 0.6;
                   return BarChartGroupData(
                     x: i,
+                    barsSpace: 4,
                     barRods: [
                       BarChartRodData(
-                        toY: val == 0 ? 0.5 : val,
-                        color: isToday
-                            ? AppColors.primary
-                            : AppColors.secondary.withValues(alpha: 0.6),
-                        width: 24,
-                        borderRadius: BorderRadius.circular(6),
+                        toY: incomeVal == 0 ? 0.5 : incomeVal,
+                        color: AppColors.income.withValues(alpha: alpha),
+                        width: 10,
+                        borderRadius: BorderRadius.circular(4),
                         backDrawRodData: BackgroundBarChartRodData(
                           show: true,
                           toY: chartMax,
@@ -87,6 +86,12 @@ class WeeklyBarChart extends ConsumerWidget {
                               ? AppColors.darkElevated
                               : AppColors.lightCard,
                         ),
+                      ),
+                      BarChartRodData(
+                        toY: expenseVal == 0 ? 0.5 : expenseVal,
+                        color: AppColors.expense.withValues(alpha: alpha),
+                        width: 10,
+                        borderRadius: BorderRadius.circular(4),
                       ),
                     ],
                   );
@@ -144,15 +149,17 @@ class WeeklyBarChart extends ConsumerWidget {
                     getTooltipColor: (_) =>
                         isDark ? AppColors.darkElevated : Colors.white,
                     tooltipRoundedRadius: 8,
-                    getTooltipItem: (group, groupIndex, rod, rodIndex) =>
-                        BarTooltipItem(
-                      CurrencyFormatter.format(rod.toY, symbol: currency),
-                      const TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                      ),
-                    ),
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      final isIncome = rodIndex == 0;
+                      return BarTooltipItem(
+                        '${isIncome ? 'Income' : 'Expense'}: ${CurrencyFormatter.format(rod.toY, symbol: currency)}',
+                        TextStyle(
+                          color: isIncome ? AppColors.income : AppColors.expense,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),

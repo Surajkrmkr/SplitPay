@@ -7,6 +7,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../providers/transaction_provider.dart';
 import '../../../providers/settings_provider.dart';
+import '../../../shared/widgets/legend_dot.dart';
 
 class MonthlyTrendChart extends ConsumerWidget {
   const MonthlyTrendChart({super.key});
@@ -25,10 +26,14 @@ class MonthlyTrendChart extends ConsumerWidget {
     final bgColor = isDark ? AppColors.darkCard : AppColors.lightSurface;
     final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
 
-    final expenseSpots = expenses.asMap().entries
+    final expenseSpots = expenses
+        .asMap()
+        .entries
         .map((e) => FlSpot(e.key.toDouble(), e.value))
         .toList();
-    final incomeSpots = incomes.asMap().entries
+    final incomeSpots = incomes
+        .asMap()
+        .entries
         .map((e) => FlSpot(e.key.toDouble(), e.value))
         .toList();
 
@@ -60,9 +65,9 @@ class MonthlyTrendChart extends ConsumerWidget {
               ),
               Row(
                 children: [
-                  _LegendDot(color: AppColors.income, label: 'Income'),
+                  LegendDot(color: AppColors.income, label: 'Income'),
                   const SizedBox(width: 10),
-                  _LegendDot(color: AppColors.expense, label: 'Expense'),
+                  LegendDot(color: AppColors.expense, label: 'Expense'),
                 ],
               ),
             ],
@@ -72,6 +77,8 @@ class MonthlyTrendChart extends ConsumerWidget {
             height: 160,
             child: LineChart(
               LineChartData(
+                minX: 0,
+                maxX: 5,
                 minY: 0,
                 maxY: chartMax,
                 lineBarsData: [
@@ -80,6 +87,7 @@ class MonthlyTrendChart extends ConsumerWidget {
                     spots: incomeSpots,
                     isCurved: true,
                     curveSmoothness: 0.35,
+                    preventCurveOverShooting: true,
                     color: AppColors.income,
                     barWidth: 2.5,
                     dotData: FlDotData(
@@ -111,6 +119,7 @@ class MonthlyTrendChart extends ConsumerWidget {
                     spots: expenseSpots,
                     isCurved: true,
                     curveSmoothness: 0.35,
+                    preventCurveOverShooting: true,
                     color: AppColors.expense,
                     barWidth: 2.5,
                     dotData: FlDotData(
@@ -142,9 +151,10 @@ class MonthlyTrendChart extends ConsumerWidget {
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
+                      interval: 1,
                       getTitlesWidget: (value, meta) {
-                        final i = value.toInt();
-                        if (i < 0 || i >= monthLabels.length) {
+                        final i = value.round();
+                        if (i < 0 || i >= monthLabels.length || i != value) {
                           return const SizedBox.shrink();
                         }
                         return Padding(
@@ -175,7 +185,8 @@ class MonthlyTrendChart extends ConsumerWidget {
                   drawVerticalLine: false,
                   horizontalInterval: chartMax / 4,
                   getDrawingHorizontalLine: (_) => FlLine(
-                    color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                    color:
+                        isDark ? AppColors.darkBorder : AppColors.lightBorder,
                     strokeWidth: 0.5,
                   ),
                 ),
@@ -185,18 +196,18 @@ class MonthlyTrendChart extends ConsumerWidget {
                     getTooltipColor: (_) =>
                         isDark ? AppColors.darkElevated : Colors.white,
                     tooltipRoundedRadius: 8,
-                    getTooltipItems: (touchedSpots) =>
-                        touchedSpots.map((s) {
-                          final isIncome = s.barIndex == 0;
-                          return LineTooltipItem(
-                            '${isIncome ? 'Income' : 'Expense'}: ${CurrencyFormatter.format(s.y, symbol: currency)}',
-                            TextStyle(
-                              color: isIncome ? AppColors.income : AppColors.expense,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 12,
-                            ),
-                          );
-                        }).toList(),
+                    getTooltipItems: (touchedSpots) => touchedSpots.map((s) {
+                      final isIncome = s.barIndex == 0;
+                      return LineTooltipItem(
+                        '${isIncome ? 'Income' : 'Expense'}: ${CurrencyFormatter.format(s.y, symbol: currency)}',
+                        TextStyle(
+                          color:
+                              isIncome ? AppColors.income : AppColors.expense,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
+                      );
+                    }).toList(),
                   ),
                 ),
               ),
@@ -206,35 +217,6 @@ class MonthlyTrendChart extends ConsumerWidget {
           ).animate().fadeIn(duration: 500.ms, delay: 200.ms),
         ],
       ),
-    );
-  }
-}
-
-class _LegendDot extends StatelessWidget {
-  final Color color;
-  final String label;
-  const _LegendDot({required this.color, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: TextStyle(
-            color: color,
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
     );
   }
 }

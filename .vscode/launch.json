@@ -13,6 +13,15 @@
             // ]
         },
         {
+            "name": "dimeflow (integration tests)",
+            "request": "launch",
+            "type": "dart",
+            "program": "integration_test/integration_test.dart",
+            "args": [
+                "--dart-define=API_BASE_URL=http://localhost:19999"
+            ]
+        },
+        {
             "name": "dimeflow (build APK)",
             "request": "launch",
             "type": "dart",

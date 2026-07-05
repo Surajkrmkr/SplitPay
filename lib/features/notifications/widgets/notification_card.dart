@@ -35,7 +35,8 @@ class NotificationCard extends StatelessWidget {
     )
         .animate(delay: Duration(milliseconds: index * 50))
         .fadeIn(duration: 300.ms)
-        .slideX(begin: 0.06, end: 0, duration: 300.ms, curve: Curves.easeOutCubic);
+        .slideX(
+            begin: 0.06, end: 0, duration: 300.ms, curve: Curves.easeOutCubic);
   }
 }
 
@@ -57,12 +58,12 @@ class _CardBody extends StatelessWidget {
       decoration: BoxDecoration(
         color: isUnread
             ? (isDark
-                ? type.color.withValues(alpha:0.06)
-                : type.color.withValues(alpha:0.04))
+                ? type.color.withValues(alpha: 0.06)
+                : type.color.withValues(alpha: 0.04))
             : bgColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isUnread ? type.color.withValues(alpha:0.18) : borderColor,
+          color: isUnread ? type.color.withValues(alpha: 0.18) : borderColor,
           width: isUnread ? 1 : 0.5,
         ),
       ),
@@ -101,14 +102,15 @@ class _CardBody extends StatelessWidget {
                       Expanded(
                         child: Text(
                           notification.title,
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                fontWeight: isUnread
-                                    ? FontWeight.w700
-                                    : FontWeight.w500,
-                                color: isDark
-                                    ? AppColors.textPrimary
-                                    : AppColors.textLight,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    fontWeight: isUnread
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
+                                    color: isDark
+                                        ? AppColors.textPrimary
+                                        : AppColors.textLight,
+                                  ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -181,7 +183,7 @@ class _NotificationIcon extends StatelessWidget {
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: type.color.withValues(alpha:0.12),
+        color: type.color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Icon(type.icon, color: type.color, size: 20),
@@ -194,14 +196,13 @@ class _DismissBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.expense.withValues(alpha:0.12),
-        borderRadius: BorderRadius.circular(16),
-      ),
       alignment: Alignment.centerRight,
-      padding: const EdgeInsets.only(right: 20),
-      child: const Icon(Icons.delete_outline_rounded,
-          color: AppColors.expense, size: 22),
+      padding: const EdgeInsets.only(right: 18),
+      child: const Icon(
+        Icons.delete_rounded,
+        color: AppColors.expense,
+        size: 24,
+      ),
     );
   }
 }

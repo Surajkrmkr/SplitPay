@@ -377,7 +377,7 @@ class _TopCategoryCard extends ConsumerWidget {
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          '${(pct * 100).toStringAsFixed(0)}% of total',
+                          '${(pct * 100).toStringAsFixed(2)}% of total',
                           style: const TextStyle(
                             color: AppColors.textTertiary,
                             fontSize: 10,

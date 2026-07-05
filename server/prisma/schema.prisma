@@ -28,6 +28,7 @@ model User {
   notifications       Notification[]
   transactions        Transaction[]
   userCategories      UserCategory[]
+  budgets             Budget[]
 
   @@map("users")
 }
@@ -294,6 +295,36 @@ enum PersonalTxType {
 
 enum TxRecurrenceType {
   NONE
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+// ─── Budget Module ─────────────────────────────────────────────────────────────
+
+model Budget {
+  id             String       @id @default(uuid())
+  userId         String       @map("user_id")
+  title          String
+  amount         Decimal      @db.Decimal(12, 2)
+  categoryIds    String[]     @map("category_ids")
+  period         BudgetPeriod
+  startDate      DateTime     @map("start_date")
+  colorValue     Int          @map("color_value")
+  iconCodePoint  Int          @map("icon_code_point")
+  isArchived     Boolean      @default(false) @map("is_archived")
+  alertThreshold Decimal      @default(0.8) @db.Decimal(3, 2) @map("alert_threshold")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("budgets")
+}
+
+enum BudgetPeriod {
   DAILY
   WEEKLY
   MONTHLY

@@ -9,6 +9,7 @@ import invitesRoutes from '../modules/invites/invites.routes';
 import notificationsRoutes from '../modules/notifications/notifications.routes';
 import transactionsRoutes from '../modules/transactions/transactions.routes';
 import categoriesRoutes from '../modules/categories/categories.routes';
+import budgetsRoutes from '../modules/budgets/budgets.routes';
 import * as notificationsController from '../modules/notifications/notifications.controller';
 import * as expensesController from '../modules/expenses/expenses.controller';
 import * as settlementsController from '../modules/settlements/settlements.controller';
@@ -52,6 +53,7 @@ router.use('/invites', authenticate, invitesRoutes);
 router.use('/notifications', authenticate, notificationsRoutes);
 router.use('/transactions', authenticate, transactionsRoutes);
 router.use('/categories', authenticate, categoriesRoutes);
+router.use('/budgets', authenticate, budgetsRoutes);
 
 // Group-scoped sub-resources (mounted under /groups/:id/...)
 router.get('/groups/:id/expenses', authenticate, expensesController.getGroupExpenses);

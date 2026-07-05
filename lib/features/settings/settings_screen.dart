@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/constants/app_colors.dart';
 import '../debug/debug_log_screen.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/reminder_provider.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../data/services/biometric_service.dart';
 import '../../data/models/custom_category.dart';
@@ -145,18 +143,15 @@ class SettingsScreen extends ConsumerWidget {
       ),
     );
   }
+}
 
-  void _showComingSoon(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Coming soon!'),
-        backgroundColor: AppColors.catSalary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
+void _showComingSoon(BuildContext context) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text('Coming soon!'),
+      duration: Duration(seconds: 2),
+    ),
+  );
 }
 
 class _Header extends StatelessWidget {
@@ -186,23 +181,21 @@ class _ProfileCard extends ConsumerWidget {
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: isDark ? AppColors.balanceGradient : null,
-        color: isDark ? null : Colors.white,
+        color: isDark ? AppColors.darkCard : Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isDark
-              ? AppColors.primary.withValues(alpha: 0.2)
-              : AppColors.lightBorder,
+          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+          width: isDark ? 0.5 : 1,
         ),
-        boxShadow: isDark
-            ? null
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.2)
+                : Colors.black.withValues(alpha: 0.05),
+            blurRadius: isDark ? 24 : 16,
+            offset: Offset(0, isDark ? 12 : 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -1064,7 +1057,7 @@ class _BiometricTileState extends ConsumerState<_BiometricTile> {
   void _showSnackBar(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+      SnackBar(content: Text(message), backgroundColor: AppColors.expense),
     );
   }
 
@@ -1135,20 +1128,15 @@ class _LogoutTile extends StatelessWidget {
 
 // ── Notifications nav tile ────────────────────────────────────────────────────
 
-class _NotificationsTile extends ConsumerWidget {
+class _NotificationsTile extends StatelessWidget {
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final daily = ref.watch(dailyReminderProvider).valueOrNull;
-    final enabled = daily?.enabled ?? false;
-
+  Widget build(BuildContext context) {
     return _SettingsTile(
       icon: Icons.notifications_active_rounded,
       iconColor: AppColors.income,
       title: 'Reminders',
-      subtitle: enabled
-          ? 'Daily reminder on · ${daily!.time.format(context)}'
-          : 'Daily reminders and recurring alerts',
-      onTap: () => context.push('/settings/notifications'),
+      subtitle: 'Daily reminders and recurring alerts (coming soon)',
+      onTap: () => _showComingSoon(context),
     );
   }
 }

@@ -10,6 +10,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/errors/app_exception.dart';
 import '../../../shared/widgets/app_back_button.dart';
 import '../../../data/services/group_api_service.dart';
 import '../../../providers/group_provider.dart';
@@ -33,6 +34,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
   String? _generatedCode;
   DateTime? _expiresAt;
   bool _generating = false;
+  bool _loadingExisting = false;
 
   final _codeController = TextEditingController();
   bool _joining = false;
@@ -48,6 +50,27 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
       length: _joinOnly ? 1 : 2,
       vsync: this,
     );
+    if (!_joinOnly) _loadExistingCode();
+  }
+
+  Future<void> _loadExistingCode() async {
+    setState(() => _loadingExisting = true);
+    try {
+      final result =
+          await ref.read(groupApiServiceProvider).getActiveInvite(widget.groupId!);
+      if (result != null) {
+        setState(() {
+          _generatedCode = result['code'] as String?;
+          final expiresStr = result['expiresAt'] as String?;
+          _expiresAt = expiresStr != null ? DateTime.parse(expiresStr) : null;
+        });
+      }
+    } catch (_) {
+      // No existing code (or fetch failed) — fall back to the empty state
+      // where the user can generate a new one.
+    } finally {
+      if (mounted) setState(() => _loadingExisting = false);
+    }
   }
 
   @override
@@ -71,23 +94,23 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
   Future<void> _generateCode() async {
     setState(() => _generating = true);
     try {
-      final result =
-          await ref.read(groupApiServiceProvider).generateInvite(widget.groupId!);
+      final result = await ref
+          .read(groupApiServiceProvider)
+          .generateInvite(widget.groupId!);
       setState(() {
         _generatedCode = result['code'] as String?;
         final expiresStr = result['expiresAt'] as String?;
-        _expiresAt =
-            expiresStr != null ? DateTime.parse(expiresStr) : null;
+        _expiresAt = expiresStr != null ? DateTime.parse(expiresStr) : null;
       });
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('$e'),
+            content: Text(friendlyErrorMessage(e)),
             backgroundColor: AppColors.expense,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
       }
@@ -104,14 +127,22 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
         content: const Text('Code copied to clipboard'),
         backgroundColor: AppColors.income,
         behavior: SnackBarBehavior.floating,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
 
-  String? get _groupName =>
-      widget.groupId == null ? null : ref.read(groupDetailProvider(widget.groupId!)).valueOrNull?.name;
+  String? get _groupName => widget.groupId == null
+      ? null
+      : ref.read(groupDetailProvider(widget.groupId!)).valueOrNull?.name;
+
+  // iPad presents the share sheet as a popover anchored to this rect; without it
+  // share_plus throws a PlatformException on iPad (sharePositionOrigin required).
+  Rect? get _sharePositionOrigin {
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return null;
+    return box.localToGlobal(Offset.zero) & box.size;
+  }
 
   Future<void> _shareCode() async {
     if (_generatedCode == null) return;
@@ -120,22 +151,26 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
         '${groupName != null ? 'Join "$groupName" on SplitPay' : 'Join my SplitPay group'} '
         'with invite code: $_generatedCode\n\n'
         'Download the app: $_playStoreUrl';
-    await Share.share(message, subject: 'Join my SplitPay group');
+    await Share.share(
+      message,
+      subject: 'Join my SplitPay group',
+      sharePositionOrigin: _sharePositionOrigin,
+    );
   }
 
   Future<void> _shareQrCode() async {
     if (_generatedCode == null) return;
     final groupName = _groupName;
 
-    const qrSize      = 360.0;
+    const qrSize = 360.0;
     const sidePadding = 44.0;
-    const headerH     = 96.0;
-    const footerH     = 90.0;
-    const width       = qrSize + sidePadding * 2;
-    const height      = headerH + qrSize + footerH;
+    const headerH = 96.0;
+    const footerH = 90.0;
+    const width = qrSize + sidePadding * 2;
+    const height = headerH + qrSize + footerH;
 
     final recorder = ui.PictureRecorder();
-    final canvas   = Canvas(recorder);
+    final canvas = Canvas(recorder);
 
     // Card background
     const cardRect = Rect.fromLTWH(0, 0, width, height);
@@ -145,11 +180,12 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
     );
 
     // Header band with app icon + name
-    final headerPaint = Paint()..shader = const LinearGradient(
-      colors: [AppColors.primary, AppColors.secondary],
-      begin: Alignment.centerLeft,
-      end: Alignment.centerRight,
-    ).createShader(const Rect.fromLTWH(0, 0, width, headerH));
+    final headerPaint = Paint()
+      ..shader = const LinearGradient(
+        colors: [AppColors.primary, AppColors.secondary],
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
+      ).createShader(const Rect.fromLTWH(0, 0, width, headerH));
     canvas.save();
     canvas.clipRRect(RRect.fromRectAndCorners(
       cardRect,
@@ -169,12 +205,14 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
       final iconFrame = await iconCodec.getNextFrame();
       const iconSize = 48.0;
       final iconRect = Rect.fromLTWH(
-        sidePadding, (headerH - iconSize) / 2, iconSize, iconSize);
+          sidePadding, (headerH - iconSize) / 2, iconSize, iconSize);
       canvas.save();
-      canvas.clipRRect(RRect.fromRectAndRadius(iconRect, const Radius.circular(12)));
+      canvas.clipRRect(
+          RRect.fromRectAndRadius(iconRect, const Radius.circular(12)));
       canvas.drawImageRect(
         iconFrame.image,
-        Rect.fromLTWH(0, 0, iconFrame.image.width.toDouble(), iconFrame.image.height.toDouble()),
+        Rect.fromLTWH(0, 0, iconFrame.image.width.toDouble(),
+            iconFrame.image.height.toDouble()),
         iconRect,
         Paint(),
       );
@@ -186,7 +224,8 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
     final titlePainter = TextPainter(
       text: const TextSpan(
         text: 'SplitPay',
-        style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w800),
+        style: TextStyle(
+            color: Colors.white, fontSize: 28, fontWeight: FontWeight.w800),
       ),
       textDirection: TextDirection.ltr,
     )..layout();
@@ -232,16 +271,18 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
         ),
         textDirection: TextDirection.ltr,
       )..layout(maxWidth: width - sidePadding * 2);
-      linePainter.paint(canvas, Offset((width - linePainter.width) / 2, footerY));
+      linePainter.paint(
+          canvas, Offset((width - linePainter.width) / 2, footerY));
       footerY += linePainter.height + 6;
     }
 
-    final picture  = recorder.endRecording();
-    final image    = await picture.toImage(width.toInt(), height.toInt());
+    final picture = recorder.endRecording();
+    final image = await picture.toImage(width.toInt(), height.toInt());
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    final bytes    = byteData!.buffer.asUint8List();
+    final bytes = byteData!.buffer.asUint8List();
 
-    final file = File('${Directory.systemTemp.path}/splitpay_invite_$_generatedCode.png');
+    final file = File(
+        '${Directory.systemTemp.path}/splitpay_invite_$_generatedCode.png');
     await file.writeAsBytes(bytes, flush: true);
 
     await Share.shareXFiles(
@@ -249,6 +290,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
       text:
           '${groupName != null ? 'Join "$groupName" on SplitPay!' : 'Join my SplitPay group!'}\nCode: $_generatedCode',
       subject: 'SplitPay Group Invite',
+      sharePositionOrigin: _sharePositionOrigin,
     );
   }
 
@@ -280,8 +322,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
     if (code.isEmpty) return;
     setState(() => _joining = true);
     try {
-      final group =
-          await ref.read(groupApiServiceProvider).joinViaInvite(code);
+      final group = await ref.read(groupApiServiceProvider).joinViaInvite(code);
       ref.invalidate(groupsProvider);
       ref.invalidate(groupDetailProvider(group.id));
       if (mounted) {
@@ -298,11 +339,11 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('$e'),
+            content: Text(friendlyErrorMessage(e)),
             backgroundColor: AppColors.expense,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
       }
@@ -378,6 +419,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
                   generatedCode: _generatedCode,
                   expiresAt: _expiresAt,
                   generating: _generating,
+                  loadingExisting: _loadingExisting,
                   onGenerate: _generateCode,
                   onCopy: _copyCode,
                   onShare: _shareCode,
@@ -406,6 +448,7 @@ class _GenerateTab extends StatelessWidget {
   final String? generatedCode;
   final DateTime? expiresAt;
   final bool generating;
+  final bool loadingExisting;
   final VoidCallback onGenerate;
   final VoidCallback onCopy;
   final VoidCallback onShare;
@@ -416,6 +459,7 @@ class _GenerateTab extends StatelessWidget {
     required this.generatedCode,
     required this.expiresAt,
     required this.generating,
+    required this.loadingExisting,
     required this.onGenerate,
     required this.onCopy,
     required this.onShare,
@@ -433,12 +477,18 @@ class _GenerateTab extends StatelessWidget {
           Text(
             'Generate a unique invite code and share it with anyone you want to add to this group. The code is valid for 7 days.',
             style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-                height: 1.5),
+                fontSize: 14, color: AppColors.textSecondary, height: 1.5),
           ),
           const SizedBox(height: 28),
-          if (generatedCode != null) ...[
+          if (loadingExisting) ...[
+            const SizedBox(height: 60),
+            const Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppColors.primary,
+              ),
+            ),
+          ] else if (generatedCode != null) ...[
             // Code card
             Container(
               padding: const EdgeInsets.all(24),
@@ -452,8 +502,8 @@ class _GenerateTab extends StatelessWidget {
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.3)),
+                border:
+                    Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
               ),
               child: Column(
                 children: [
@@ -471,8 +521,7 @@ class _GenerateTab extends StatelessWidget {
                     Text(
                       'Expires ${_formatExpiry(expiresAt!)}',
                       style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary),
+                          fontSize: 12, color: AppColors.textSecondary),
                     ),
                   ],
                   const SizedBox(height: 20),
@@ -511,9 +560,8 @@ class _GenerateTab extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     'Scan to join',
-                    style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary),
+                    style:
+                        TextStyle(fontSize: 12, color: AppColors.textSecondary),
                   ),
                   const SizedBox(height: 20),
                   Row(
@@ -525,8 +573,7 @@ class _GenerateTab extends StatelessWidget {
                           label: const Text('Copy'),
                           style: OutlinedButton.styleFrom(
                               foregroundColor: AppColors.primary,
-                              side: const BorderSide(
-                                  color: AppColors.primary)),
+                              side: const BorderSide(color: AppColors.primary)),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -572,9 +619,8 @@ class _GenerateTab extends StatelessWidget {
                 color: isDark ? AppColors.darkCard : AppColors.lightCard,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                    color: isDark
-                        ? AppColors.darkBorder
-                        : AppColors.lightBorder),
+                    color:
+                        isDark ? AppColors.darkBorder : AppColors.lightBorder),
               ),
               child: Column(
                 children: [
@@ -662,9 +708,7 @@ class _JoinTab extends StatelessWidget {
           Text(
             'Enter an invite code or scan a QR code to join a group.',
             style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-                height: 1.5),
+                fontSize: 14, color: AppColors.textSecondary, height: 1.5),
           ),
           const SizedBox(height: 28),
           TextField(
@@ -727,8 +771,7 @@ class _JoinTab extends StatelessWidget {
                           color: AppColors.income.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                              color:
-                                  AppColors.income.withValues(alpha: 0.3)),
+                              color: AppColors.income.withValues(alpha: 0.3)),
                         ),
                         child: Row(
                           children: [
@@ -748,9 +791,8 @@ class _JoinTab extends StatelessWidget {
           const Spacer(),
           SpButton(
             label: 'Join Group',
-            onTap: (controller.text.trim().isNotEmpty && !joining)
-                ? onJoin
-                : null,
+            onTap:
+                (controller.text.trim().isNotEmpty && !joining) ? onJoin : null,
             isLoading: joining,
             icon: Icons.group_add_rounded,
           ),
@@ -813,7 +855,8 @@ class _QrScannerSheetState extends State<_QrScannerSheet> {
           content: const Text('No QR code found in the selected image'),
           backgroundColor: AppColors.expense,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
     }
@@ -950,7 +993,8 @@ class _OverlayPainter extends CustomPainter {
     // Semi-transparent overlay
     final overlayPath = Path()
       ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
-      ..addRRect(RRect.fromRectAndRadius(rect, const Radius.circular(_cornerRadius)))
+      ..addRRect(
+          RRect.fromRectAndRadius(rect, const Radius.circular(_cornerRadius)))
       ..fillType = PathFillType.evenOdd;
 
     canvas.drawPath(
@@ -972,8 +1016,8 @@ class _OverlayPainter extends CustomPainter {
     // Top-left
     canvas.drawLine(Offset(l + cr, t), Offset(l + cr + cl, t), cornerPaint);
     canvas.drawLine(Offset(l, t + cr), Offset(l, t + cr + cl), cornerPaint);
-    canvas.drawArc(Rect.fromLTWH(l, t, cr * 2, cr * 2), 3.14, 1.57, false,
-        cornerPaint);
+    canvas.drawArc(
+        Rect.fromLTWH(l, t, cr * 2, cr * 2), 3.14, 1.57, false, cornerPaint);
     // Top-right
     canvas.drawLine(Offset(r - cr - cl, t), Offset(r - cr, t), cornerPaint);
     canvas.drawLine(Offset(r, t + cr), Offset(r, t + cr + cl), cornerPaint);

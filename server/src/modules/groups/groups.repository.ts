@@ -131,6 +131,13 @@ export async function deactivateGroupInvites(groupId: string): Promise<void> {
   });
 }
 
+export async function findActiveInviteByGroupId(groupId: string) {
+  return prisma.groupInvite.findFirst({
+    where: { groupId, active: true, expiresAt: { gt: new Date() } },
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
 export async function findInviteByCode(code: string) {
   return prisma.groupInvite.findUnique({
     where: { code },

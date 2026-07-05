@@ -11,6 +11,7 @@ import '../../data/models/budget_model.dart';
 import '../../data/models/transaction_model.dart';
 import '../../providers/budget_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../transactions/widgets/edit_transaction_sheet.dart';
 import 'add_budget_sheet.dart';
 
 class BudgetDetailScreen extends ConsumerWidget {
@@ -39,10 +40,8 @@ class BudgetDetailScreen extends ConsumerWidget {
     final currency = ref.watch(currencyProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final remaining =
-        (budget.amount - spent).clamp(0.0, double.infinity);
-    final overspent =
-        spent > budget.amount ? spent - budget.amount : 0.0;
+    final remaining = (budget.amount - spent).clamp(0.0, double.infinity);
+    final overspent = spent > budget.amount ? spent - budget.amount : 0.0;
     final statusColor = switch (status) {
       BudgetStatus.safe => AppColors.income,
       BudgetStatus.warning => AppColors.warning,
@@ -50,8 +49,7 @@ class BudgetDetailScreen extends ConsumerWidget {
     };
 
     return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.darkBg : AppColors.lightBg,
+      backgroundColor: isDark ? AppColors.darkBg : AppColors.lightBg,
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
@@ -59,8 +57,7 @@ class BudgetDetailScreen extends ConsumerWidget {
           SliverAppBar(
             expandedHeight: 320,
             pinned: true,
-            backgroundColor:
-                isDark ? AppColors.darkBg : AppColors.lightBg,
+            backgroundColor: isDark ? AppColors.darkBg : AppColors.lightBg,
             leadingWidth: 56,
             leading: const Padding(
               padding: EdgeInsets.only(left: 16),
@@ -115,14 +112,13 @@ class BudgetDetailScreen extends ConsumerWidget {
                 children: [
                   Text(
                     'Transactions',
-                    style:
-                        Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: budget.color.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
@@ -189,8 +185,7 @@ class BudgetDetailScreen extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
-      backgroundColor:
-          isDark ? AppColors.darkSurface : AppColors.lightSurface,
+      backgroundColor: isDark ? AppColors.darkSurface : AppColors.lightSurface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -254,8 +249,7 @@ class _DetailHero extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: budget.color.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(8),
@@ -263,8 +257,7 @@ class _DetailHero extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(budget.period.periodIcon,
-                    color: budget.color, size: 12),
+                Icon(budget.period.periodIcon, color: budget.color, size: 12),
                 const SizedBox(width: 5),
                 Text(
                   budget.period.label,
@@ -344,9 +337,7 @@ class _ProgressRing extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                isOver
-                    ? Icons.warning_rounded
-                    : Icons.account_balance_wallet_rounded,
+                isOver ? Icons.warning_rounded : budget.icon,
                 color: color,
                 size: 22,
               ),
@@ -355,10 +346,8 @@ class _ProgressRing extends StatelessWidget {
                 fit: BoxFit.scaleDown,
                 child: Text(
                   isOver
-                      ? CurrencyFormatter.format(overspent,
-                          symbol: currency)
-                      : CurrencyFormatter.format(remaining,
-                          symbol: currency),
+                      ? CurrencyFormatter.format(overspent, symbol: currency)
+                      : CurrencyFormatter.format(remaining, symbol: currency),
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
@@ -468,8 +457,7 @@ class _StatsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bgColor = isDark ? AppColors.darkCard : AppColors.lightSurface;
-    final borderColor =
-        isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(20, 16, 20, 0),
@@ -484,24 +472,22 @@ class _StatsRow extends StatelessWidget {
           Expanded(
             child: _StatCell(
                 label: 'Budget',
-                value: CurrencyFormatter.format(budget.amount,
-                    symbol: currency),
+                value:
+                    CurrencyFormatter.format(budget.amount, symbol: currency),
                 color: budget.color),
           ),
           _Divider(),
           Expanded(
             child: _StatCell(
                 label: 'Spent',
-                value:
-                    CurrencyFormatter.format(spent, symbol: currency),
+                value: CurrencyFormatter.format(spent, symbol: currency),
                 color: AppColors.expense),
           ),
           _Divider(),
           Expanded(
             child: _StatCell(
                 label: 'Left',
-                value: CurrencyFormatter.format(remaining,
-                    symbol: currency),
+                value: CurrencyFormatter.format(remaining, symbol: currency),
                 color: AppColors.income),
           ),
         ],
@@ -571,8 +557,7 @@ class _PeriodInfo extends StatelessWidget {
     final range = budget.period.currentRange;
     final fmt = DateFormat('d MMM yyyy');
     final bgColor = isDark ? AppColors.darkCard : AppColors.lightSurface;
-    final borderColor =
-        isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(20, 12, 20, 0),
@@ -584,8 +569,7 @@ class _PeriodInfo extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(budget.period.periodIcon,
-              color: budget.color, size: 18),
+          Icon(budget.period.periodIcon, color: budget.color, size: 18),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -628,64 +612,78 @@ class _TransactionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = tx.category.color;
     final bgColor = isDark ? AppColors.darkCard : AppColors.lightSurface;
-    final borderColor =
-        isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(20, 0, 20, 10),
-      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: borderColor, width: 0.5),
       ),
-      child: Row(
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(tx.category.icon, color: color, size: 18),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            useRootNavigator: true,
+            backgroundColor: Colors.transparent,
+            builder: (_) => EditTransactionSheet(transaction: tx),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
               children: [
-                Text(
-                  tx.note ?? tx.category.label,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white : AppColors.textLight,
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  child: Icon(tx.category.icon, color: color, size: 18),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        tx.note ?? tx.category.label,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.white : AppColors.textLight,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        DateFormat('d MMM · h:mm a').format(tx.date),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 Text(
-                  DateFormat('d MMM · h:mm a').format(tx.date),
+                  CurrencyFormatter.format(tx.amount, symbol: currency),
                   style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.expense,
                   ),
                 ),
               ],
             ),
           ),
-          Text(
-            CurrencyFormatter.format(tx.amount, symbol: currency),
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: AppColors.expense,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -753,8 +751,7 @@ class _EditBar extends StatelessWidget {
         color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
         border: Border(
           top: BorderSide(
-            color:
-                isDark ? AppColors.darkBorder : AppColors.lightBorder,
+            color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
             width: 0.5,
           ),
         ),
@@ -766,8 +763,7 @@ class _EditBar extends StatelessWidget {
           onPressed: onEdit,
           icon: const Icon(Icons.edit_rounded, size: 18),
           label: const Text('Edit Budget',
-              style:
-                  TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
           style: FilledButton.styleFrom(
             backgroundColor: budget.color,
             foregroundColor: Colors.white,
@@ -836,9 +832,7 @@ class _BudgetMenu extends ConsumerWidget {
                 Navigator.of(context).pop();
                 final confirmed = await _confirmDelete(context);
                 if (confirmed == true) {
-                  await ref
-                      .read(budgetProvider.notifier)
-                      .delete(budget.id);
+                  await ref.read(budgetProvider.notifier).delete(budget.id);
                   if (context.mounted) Navigator.of(context).pop();
                 }
               },
@@ -850,8 +844,7 @@ class _BudgetMenu extends ConsumerWidget {
     );
   }
 
-  Future<bool?> _confirmDelete(BuildContext context) =>
-      showDialog<bool>(
+  Future<bool?> _confirmDelete(BuildContext context) => showDialog<bool>(
         context: context,
         builder: (_) => AlertDialog(
           title: const Text('Delete Budget'),
@@ -864,8 +857,7 @@ class _BudgetMenu extends ConsumerWidget {
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.expense),
+              style: FilledButton.styleFrom(backgroundColor: AppColors.expense),
               child: const Text('Delete'),
             ),
           ],
@@ -900,8 +892,7 @@ class _MenuTile extends StatelessWidget {
         },
         borderRadius: BorderRadius.circular(14),
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-              horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
               Icon(icon, color: color, size: 20),

@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/errors/app_exception.dart';
 import '../core/network/api_client.dart';
 import '../core/network/api_constants.dart';
 import '../core/network/auth_events.dart';
@@ -151,7 +152,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         state = AsyncValue.data(
           AuthState(
             status: AuthStatus.error,
-            error: e.message ?? 'Sign in failed.',
+            error: friendlyErrorMessage(e),
           ),
         );
       }
@@ -159,7 +160,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       state = AsyncValue.data(
         AuthState(
           status: AuthStatus.error,
-          error: e.toString(),
+          error: friendlyErrorMessage(e),
         ),
       );
     }
@@ -199,7 +200,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       );
     } catch (e) {
       state = AsyncValue.data(
-        AuthState(status: AuthStatus.error, error: e.toString()),
+        AuthState(status: AuthStatus.error, error: friendlyErrorMessage(e)),
       );
     }
   }

@@ -44,7 +44,7 @@ class HomeScreen extends ConsumerWidget {
                           const SizedBox(height: 28),
                           const AnalyticsMini(),
                           const SizedBox(height: 16),
-                          _AdBannerArea(),
+                          // _AdBannerArea(),
                           SizedBox(
                             height: 100 + MediaQuery.of(context).padding.bottom,
                           ),

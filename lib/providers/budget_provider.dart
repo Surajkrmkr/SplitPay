@@ -1,64 +1,57 @@
-import 'dart:convert';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../core/storage/preferences_service.dart';
 import '../data/models/budget_model.dart';
 import '../data/models/transaction_model.dart';
+import '../data/repositories/budget_repository.dart';
 import 'transaction_provider.dart';
-
-const _budgetsKey = 'budgets';
 
 // ─── Core budget list ────────────────────────────────────────────────────────
 
-final budgetProvider =
-    StateNotifierProvider<BudgetNotifier, List<Budget>>(
-  (ref) => BudgetNotifier(),
+final budgetProvider = StateNotifierProvider<BudgetNotifier, List<Budget>>(
+  (ref) {
+    final notifier = BudgetNotifier(ref.watch(budgetRepositoryProvider));
+    Future.microtask(notifier.load);
+    return notifier;
+  },
 );
 
 class BudgetNotifier extends StateNotifier<List<Budget>> {
-  BudgetNotifier() : super([]) {
-    _load();
-  }
+  final BudgetRepository _repo;
 
-  void _load() {
-    final json = PreferencesService.get<String>(_budgetsKey);
-    if (json == null) {
-      state = [];
-      return;
-    }
+  BudgetNotifier(this._repo) : super([]);
+
+  Future<void> load() async {
     try {
-      final list = jsonDecode(json) as List<dynamic>;
-      state = list
-          .map((e) => Budget.fromMap(e as Map<String, dynamic>))
-          .toList()
-        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    } catch (_) {
-      state = [];
-    }
-  }
-
-  Future<void> _persist() async {
-    await PreferencesService.set(
-      _budgetsKey,
-      jsonEncode(state.map((b) => b.toMap()).toList()),
-    );
+      state = await _repo.getAll();
+    } catch (_) {}
   }
 
   Future<void> add(Budget budget) async {
     state = [budget, ...state]
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    await _persist();
+    try {
+      await _repo.create(budget);
+    } finally {
+      await load();
+    }
   }
 
   Future<void> update(Budget budget) async {
     state = state.map((b) => b.id == budget.id ? budget : b).toList();
-    await _persist();
+    try {
+      await _repo.update(budget);
+    } finally {
+      await load();
+    }
   }
 
   Future<void> delete(String id) async {
     state = state.where((b) => b.id != id).toList();
-    await _persist();
+    try {
+      await _repo.delete(id);
+    } finally {
+      await load();
+    }
   }
 
   Future<void> archive(String id) async {

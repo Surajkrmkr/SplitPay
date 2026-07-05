@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/currency_formatter.dart';
+import '../../../data/models/transaction_model.dart';
 import '../../../providers/transaction_provider.dart';
 import '../../../providers/settings_provider.dart';
 import '../../add_transaction/add_transaction_sheet.dart';
@@ -12,13 +13,13 @@ import '../../add_transaction/add_transaction_sheet.dart';
 class BalanceCard extends ConsumerWidget {
   const BalanceCard({super.key});
 
-  void _openAddSheet(BuildContext context) {
+  void _openSheet(BuildContext context, TransactionType initialType) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       useRootNavigator: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const AddTransactionSheet(),
+      builder: (_) => AddTransactionSheet(initialType: initialType),
     );
   }
 
@@ -59,7 +60,7 @@ class BalanceCard extends ConsumerWidget {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: () => _openAddSheet(context),
+              onTap: () => _openSheet(context, TransactionType.expense),
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Column(
@@ -115,12 +116,20 @@ class BalanceCard extends ConsumerWidget {
                     Row(
                       children: [
                         Expanded(
-                          child: _MiniStat(
-                            label: 'Income',
-                            amount: income,
-                            currency: currency,
-                            icon: Icons.arrow_downward_rounded,
-                            color: AppColors.income,
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: () => _openSheet(
+                                  context, TransactionType.income),
+                              child: _MiniStat(
+                                label: 'Income',
+                                amount: income,
+                                currency: currency,
+                                icon: Icons.arrow_downward_rounded,
+                                color: AppColors.income,
+                              ),
+                            ),
                           ),
                         ),
                         Container(
@@ -131,13 +140,21 @@ class BalanceCard extends ConsumerWidget {
                               : AppColors.lightBorder,
                         ),
                         Expanded(
-                          child: _MiniStat(
-                            label: 'Expenses',
-                            amount: expense,
-                            currency: currency,
-                            icon: Icons.arrow_upward_rounded,
-                            color: AppColors.expense,
-                            alignRight: true,
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: () => _openSheet(
+                                  context, TransactionType.expense),
+                              child: _MiniStat(
+                                label: 'Expenses',
+                                amount: expense,
+                                currency: currency,
+                                icon: Icons.arrow_upward_rounded,
+                                color: AppColors.expense,
+                                alignRight: true,
+                              ),
+                            ),
                           ),
                         ),
                       ],

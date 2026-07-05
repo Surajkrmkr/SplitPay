@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../data/models/member_model.dart';
+import '../../../../providers/auth_provider.dart';
 import '../../../../shared/widgets/avatar_widget.dart';
 
-class MemberAvatarRow extends StatelessWidget {
+class MemberAvatarRow extends ConsumerWidget {
   final List<MemberModel> members;
   final int maxVisible;
   final double avatarSize;
@@ -16,14 +18,15 @@ class MemberAvatarRow extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currentUserId = ref.watch(currentUserProvider)?.id;
     final visible = members.take(maxVisible).toList();
     final overflow = members.length - maxVisible;
     final overlapOffset = avatarSize * 0.65;
 
     return GestureDetector(
-      onTap: () => _showMemberList(context),
+      onTap: () => _showMemberList(context, currentUserId),
       child: SizedBox(
         height: avatarSize + 4, // +4 for 2px border top+bottom
         child: Row(
@@ -95,7 +98,7 @@ class MemberAvatarRow extends StatelessWidget {
     );
   }
 
-  void _showMemberList(BuildContext context) {
+  void _showMemberList(BuildContext context, String? currentUserId) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
@@ -130,8 +133,9 @@ class MemberAvatarRow extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            ...members.map(
-              (m) => ListTile(
+            ...members.map((m) {
+              final isYou = m.userId == currentUserId;
+              return ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: AvatarWidget(
                   name: m.name,
@@ -139,7 +143,7 @@ class MemberAvatarRow extends StatelessWidget {
                   size: 40,
                 ),
                 title: Text(
-                  m.name,
+                  isYou ? '${m.name} (You)' : m.name,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -153,26 +157,53 @@ class MemberAvatarRow extends StatelessWidget {
                     color: AppColors.textSecondary,
                   ),
                 ),
-                trailing: m.isAdmin
-                    ? Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Text(
-                          'Admin',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                trailing: (isYou || m.isAdmin)
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (isYou) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color:
+                                    AppColors.secondary.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Text(
+                                'You',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.secondary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            if (m.isAdmin) const SizedBox(width: 6),
+                          ],
+                          if (m.isAdmin)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color:
+                                    AppColors.primary.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Text(
+                                'Admin',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                        ],
                       )
                     : null,
-              ),
-            ),
+              );
+            }),
           ],
         ),
       ),

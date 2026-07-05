@@ -100,6 +100,13 @@ export async function generateInvite(req: AuthenticatedRequest, res: Response, n
   } catch (err) { next(err); }
 }
 
+export async function getActiveInvite(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const result = await groupsService.getActiveInvite(req.params.id, req.user.userId);
+    sendSuccess(res, result, result ? 'Active invite retrieved' : 'No active invite');
+  } catch (err) { next(err); }
+}
+
 // Re-export with Request type cast for router compatibility
 export function createGroupHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
   return createGroup(req as AuthenticatedRequest, res, next);
@@ -131,4 +138,7 @@ export function updateMemberRoleHandler(req: Request, res: Response, next: NextF
 }
 export function generateInviteHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
   return generateInvite(req as AuthenticatedRequest, res, next);
+}
+export function getActiveInviteHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+  return getActiveInvite(req as AuthenticatedRequest, res, next);
 }

@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/errors/app_exception.dart';
 import '../../../core/utils/group_icons.dart';
 import '../../../providers/group_provider.dart';
 import '../../../shared/widgets/sp_button.dart';
@@ -48,8 +49,11 @@ class _CreateGroupSheetState extends ConsumerState<CreateGroupSheet> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to create group: $e'),
+            content: Text(friendlyErrorMessage(e)),
             backgroundColor: AppColors.expense,
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
       }
@@ -73,8 +77,7 @@ class _CreateGroupSheetState extends ConsumerState<CreateGroupSheet> {
         return Container(
           decoration: BoxDecoration(
             color: isDark ? AppColors.darkSurface : Colors.white,
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
             children: [
@@ -146,8 +149,7 @@ class _CreateGroupSheetState extends ConsumerState<CreateGroupSheet> {
                     _IconPicker(
                       selectedKey: _selectedIconKey,
                       isDark: isDark,
-                      onSelect: (key) =>
-                          setState(() => _selectedIconKey = key),
+                      onSelect: (key) => setState(() => _selectedIconKey = key),
                     ),
                     const SizedBox(height: 22),
 
@@ -189,8 +191,8 @@ class _CreateGroupSheetState extends ConsumerState<CreateGroupSheet> {
                           Container(
                             padding: const EdgeInsets.all(7),
                             decoration: BoxDecoration(
-                              color: AppColors.secondary
-                                  .withValues(alpha: 0.15),
+                              color:
+                                  AppColors.secondary.withValues(alpha: 0.15),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
@@ -238,7 +240,9 @@ class _CreateGroupSheetState extends ConsumerState<CreateGroupSheet> {
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeOut,
                 padding: EdgeInsets.fromLTRB(
-                  20, 12, 20,
+                  20,
+                  12,
+                  20,
                   (keyboardHeight > 0 ? keyboardHeight : safeAreaBottom) + 16,
                 ),
                 decoration: BoxDecoration(
@@ -324,9 +328,7 @@ class _IconPicker extends StatelessWidget {
                 border: Border.all(
                   color: selected
                       ? color
-                      : (isDark
-                          ? AppColors.darkBorder
-                          : AppColors.lightBorder),
+                      : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
                   width: selected ? 2 : 1,
                 ),
               ),
