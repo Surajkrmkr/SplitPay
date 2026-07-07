@@ -127,7 +127,16 @@
       "Bash(grep -n 'content: Text\\('\\\\''$e'\\\\''\\)' '/Users/surajkrmkr/Storage/Xiaomi Contract/Repos/dimeflow/lib/features/groups/invite/invite_screen.dart')",
       "Bash(plutil -lint \"/Users/surajkrmkr/Storage/Xiaomi Contract/Repos/dimeflow/ios/Runner/Info.plist\")",
       "Bash(timeout 15 curl -s https://pub.dev/api/packages/upi_pro_sdk)",
-      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(d['latest']['version']\\); print\\([v['version'] for v in d['versions']]\\)\")"
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(d['latest']['version']\\); print\\([v['version'] for v in d['versions']]\\)\")",
+      "Bash(curl -s https://pub.dev/api/packages/upi_intent)",
+      "Bash(curl -s \"https://pub.dev/api/packages/upi_intent/metrics\")",
+      "Bash(curl -s \"https://pub.dev/api/packages/upi_intent/score\")",
+      "Bash(curl -s \"https://raw.githubusercontent.com/YashKashyap/upi_intent/main/lib/upi_intent.dart\")",
+      "Bash(echo \"===EXIT $?===\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" \"https://github.com/YashKashyap/upi_intent\")",
+      "Bash(curl -sL \"https://pub.dev/api/archives/upi_intent-1.0.1.tar.gz\" -o upi_intent.tar.gz)",
+      "Bash(mkdir -p upi_intent_src)",
+      "Bash(tar -xzf upi_intent.tar.gz -C upi_intent_src)"
     ],
     "additionalDirectories": [
       "/private/tmp"

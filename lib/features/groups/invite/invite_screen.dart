@@ -287,8 +287,9 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
 
     await Share.shareXFiles(
       [XFile(file.path, mimeType: 'image/png')],
-      text:
-          '${groupName != null ? 'Join "$groupName" on SplitPay!' : 'Join my SplitPay group!'}\nCode: $_generatedCode',
+      text: '${groupName != null ? 'Join "$groupName" on SplitPay!' : 'Join my SplitPay group!'}\n'
+          'Code: $_generatedCode\n\n'
+          'Download the app: $_playStoreUrl',
       subject: 'SplitPay Group Invite',
       sharePositionOrigin: _sharePositionOrigin,
     );

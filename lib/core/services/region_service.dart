@@ -2,7 +2,7 @@ import 'dart:io';
 
 /// Determines if UPI payment features should be surfaced.
 ///
-/// UPI is India-specific but not Android-only — the `upi_pro_sdk` plugin
+/// UPI is India-specific but not Android-only — the `upi_intent` plugin
 /// backing it has a native iOS implementation that launches UPI apps via
 /// their own custom URL schemes (gpay://, phonepe://, etc). We enable it when:
 ///   • the device locale is Indian (en_IN, hi_IN, etc.) OR

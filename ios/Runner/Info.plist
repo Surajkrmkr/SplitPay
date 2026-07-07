@@ -43,6 +43,7 @@
 		<string>paytmmp</string>
 		<string>cred</string>
 		<string>bhim</string>
+		<string>amznmobile</string>
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>

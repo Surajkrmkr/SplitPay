@@ -119,7 +119,7 @@ class SettingsScreen extends ConsumerWidget {
                         title: 'Share SplitPay',
                         subtitle: 'Invite friends to track expenses together',
                         onTap: () => Share.share(
-                          'Check out SplitPay — the smart expense tracker for individuals and groups! 💸\nhttps://play.google.com/store/apps/details?id=com.SplitPay.app',
+                          'Check out SplitPay — the smart expense tracker for individuals and groups! 💸\nhttps://play.google.com/store/apps/details?id=com.splitpay.expensetracker',
                         ),
                       ),
                     ],

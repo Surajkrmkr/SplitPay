@@ -1,8 +1,23 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:upi_pro_sdk/upi_pro_sdk.dart';
+import 'dart:async';
+import 'dart:io';
 
-export 'package:upi_pro_sdk/upi_pro_sdk.dart'
-    show UpiApp, UpiStatus, UpiResponse, UpiPaymentRequest;
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:upi_intent/upi_intent.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+export 'package:upi_intent/upi_intent.dart' show UpiApp, UpiResponse;
+
+// iOS packageName -> URL scheme, matching upi_intent's own iOS detection list
+// (ios/Classes/UpiIntentPlugin.swift). Used to work around that plugin
+// ignoring the picked app on iOS — see the class doc below.
+const _iosSchemeByPackage = <String, String>{
+  'com.google.GooglePayIndia': 'gpay',
+  'com.phonepe.PhonePeApp': 'phonepe',
+  'net.one97.paytm': 'paytmmp',
+  'com.amazon.AmazonIN': 'amznmobile',
+  'in.gov.uidai.BHIMApp': 'bhim',
+};
 
 enum UpiTxnStatus { success, failure, submitted, cancelled }
 
@@ -32,24 +47,24 @@ class UpiQrData {
   });
 }
 
-// Known upi_pro_sdk (0.1.3, latest on pub.dev) limitations on iOS:
-//  - Google Pay is never detected: the plugin's native Swift app-detection list
-//    uses scheme "gpay", but its own Dart trusted-apps allowlist expects "tez"
-//    for Google Pay, so the mismatch silently filters it out of
-//    getInstalledApps() even when installed. BHIM's scheme matches on both
-//    sides, so its absence just means the app isn't installed on-device.
-//  - Paytm/PhonePe may show their own "unsafe/suspicious payment" warning:
-//    the plugin launches a generic upi://pay URI with only the scheme swapped
-//    to the target app, with no transaction reference or signed metadata, so
-//    the receiving app can't verify the deep link's origin. This is inherent
-//    to the plugin's scheme-swap approach on iOS (no equivalent of Android's
-//    system-level UPI Intent) — fixing it would require forking the plugin.
+// Known upi_intent (1.0.1, latest on pub.dev) limitations on iOS:
+//  - App detection relies on canOpenURL against a fixed scheme list
+//    (gpay://, phonepe://, paytmmp://, amznmobile://, bhim://), gated by
+//    LSApplicationQueriesSchemes in Info.plist — apps outside that list are
+//    never detected, and none of iOS's own OS-level installed-app info is
+//    available (no equivalent of Android's PackageManager query).
+//  - UpiIntent.payWithApp's native iOS side never reads which app was picked
+//    — it only opens the generic upi://pay URL, which iOS then resolves to
+//    whichever installed app claims that bare scheme (e.g. WhatsApp Pay),
+//    regardless of the app the user tapped. We work around this below by
+//    scheme-swapping to the picked app's own URI scheme and launching that
+//    directly, the same way the Android intent targets a specific package.
+//  - A successful iOS launch never returns real transaction data; the
+//    backend must reconcile the actual outcome later.
 class UpiService {
-  final UpiProSdk _sdk = UpiProSdk();
-
   Future<List<UpiApp>> getInstalledApps() async {
     try {
-      return await _sdk.getInstalledApps();
+      return await UpiIntent.getInstalledApps();
     } catch (_) {
       return [];
     }
@@ -62,39 +77,73 @@ class UpiService {
     required double amount,
     String? note,
   }) async {
-    final request = UpiPaymentRequest(
-      upiId: receiverUpiId.trim(),
-      name: receiverName,
+    final payment = UpiPayment(
+      payeeVpa: receiverUpiId.trim(),
+      payeeName: receiverName,
       amount: amount,
-      note: note,
+      transactionNote: note,
     );
 
     try {
-      final response = await _sdk.pay(request, app: app);
-      final txnId = response.txnId ?? response.approvalRefNo;
+      if (Platform.isIOS) {
+        return await _payOnIOS(app: app, payment: payment)
+            .timeout(const Duration(seconds: 90));
+      }
 
+      final response = await UpiIntent.payWithApp(payment: payment, app: app)
+          .timeout(const Duration(seconds: 90));
+
+      if (response == null) {
+        return const UpiTxnResult(status: UpiTxnStatus.cancelled);
+      }
+
+      final txnId = response.transactionId ?? response.approvalRefNo;
       return UpiTxnResult(
         status: switch (response.status) {
-          UpiStatus.success => UpiTxnStatus.success,
-          UpiStatus.pending => UpiTxnStatus.submitted,
-          _ => UpiTxnStatus.failure,
+          UpiTransactionStatus.success => UpiTxnStatus.success,
+          UpiTransactionStatus.submitted => UpiTxnStatus.submitted,
+          UpiTransactionStatus.unknown => UpiTxnStatus.submitted,
+          UpiTransactionStatus.failure => UpiTxnStatus.failure,
         },
         transactionId: txnId,
         approvalRefNo: response.approvalRefNo,
       );
-    } on PaymentCancelledException {
-      return const UpiTxnResult(status: UpiTxnStatus.cancelled);
     } on TimeoutException {
       return const UpiTxnResult(status: UpiTxnStatus.cancelled);
-    } on AppNotRespondingException {
-      return const UpiTxnResult(status: UpiTxnStatus.cancelled);
-    } on NoUpiAppFoundException {
+    } on UpiException {
       return const UpiTxnResult(status: UpiTxnStatus.failure);
-    } on UpiSdkException {
+    } on PlatformException {
       return const UpiTxnResult(status: UpiTxnStatus.failure);
     } catch (_) {
       return const UpiTxnResult(status: UpiTxnStatus.failure);
     }
+  }
+
+  /// Launches the picked app's own URI scheme directly, since upi_intent's
+  /// iOS native code ignores which app was selected (see class doc above).
+  Future<UpiTxnResult> _payOnIOS({
+    required UpiApp app,
+    required UpiPayment payment,
+  }) async {
+    final scheme = _iosSchemeByPackage[app.packageName];
+    if (scheme == null) {
+      return const UpiTxnResult(status: UpiTxnStatus.failure);
+    }
+
+    final genericUrl = Uri.parse(UpiIntent.buildUpiUrl(payment));
+    final appUrl = genericUrl.replace(scheme: scheme);
+
+    final launched = await launchUrl(
+      appUrl,
+      mode: LaunchMode.externalApplication,
+    );
+    if (!launched) {
+      return const UpiTxnResult(status: UpiTxnStatus.failure);
+    }
+
+    // iOS never hands back real transaction data — the backend must
+    // reconcile the actual outcome later.
+    return const UpiTxnResult(status: UpiTxnStatus.submitted);
   }
 
   /// Validates UPI ID against the same regex used by the SDK.
