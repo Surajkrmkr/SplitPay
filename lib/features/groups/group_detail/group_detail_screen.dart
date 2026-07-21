@@ -919,7 +919,7 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
     // Payer
     if (_payerFilter.isNotEmpty) {
       result =
-          result.where((e) => _payerFilter.contains(e.paidByName)).toList();
+          result.where((e) => _payerFilter.contains(e.paidById)).toList();
     }
 
     // Amount range
@@ -959,8 +959,12 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
 
   void _showFilterSheet(
       BuildContext context, List<GroupExpenseModel> expenses) {
-    final allPayers = expenses.map((e) => e.paidByName).toSet().toList()
-      ..sort();
+    final payerNames = <String, String>{};
+    for (final e in expenses) {
+      payerNames[e.paidById] = e.paidByName;
+    }
+    final allPayers = payerNames.entries.toList()
+      ..sort((a, b) => a.value.compareTo(b.value));
     final maxAmount = expenses.isEmpty
         ? 50000.0
         : expenses.map((e) => e.amount).reduce((a, b) => a > b ? a : b);
@@ -1045,6 +1049,9 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
 
         final filtered = _applyFilters(expenses);
         final activeCount = _activeFilterCount;
+        final payerNameById = <String, String>{
+          for (final e in expenses) e.paidById: e.paidByName,
+        };
 
         return Column(
           children: [
@@ -1203,11 +1210,12 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
                         onRemove: () => setState(
                             () => _sort = _ExpenseSortOrder.newestFirst),
                       ),
-                    for (final payer in _payerFilter)
+                    for (final payerId in _payerFilter)
                       _ActiveChip(
-                        label: payer,
+                        label: payerNameById[payerId] ?? payerId,
                         onRemove: () => setState(() {
-                          _payerFilter = Set.from(_payerFilter)..remove(payer);
+                          _payerFilter = Set.from(_payerFilter)
+                            ..remove(payerId);
                         }),
                       ),
                     if (_amountMin != null || _amountMax != null)
@@ -1286,7 +1294,7 @@ class _ExpenseFilterSheet extends StatefulWidget {
   final Set<String> currentPayers;
   final double? currentAmountMin;
   final double? currentAmountMax;
-  final List<String> allPayers;
+  final List<MapEntry<String, String>> allPayers;
   final double sliderMax;
   final void Function({
     required _ExpenseSortOrder sort,
@@ -1441,15 +1449,15 @@ class _ExpenseFilterSheetState extends State<_ExpenseFilterSheet> {
                           spacing: 8,
                           runSpacing: 8,
                           children: [
-                            for (final payer in widget.allPayers)
+                            for (final entry in widget.allPayers)
                               _FilterChip(
-                                label: payer,
-                                selected: _payers.contains(payer),
+                                label: entry.value,
+                                selected: _payers.contains(entry.key),
                                 onTap: () => setState(() {
-                                  if (_payers.contains(payer)) {
-                                    _payers.remove(payer);
+                                  if (_payers.contains(entry.key)) {
+                                    _payers.remove(entry.key);
                                   } else {
-                                    _payers.add(payer);
+                                    _payers.add(entry.key);
                                   }
                                 }),
                                 isDark: isDark,

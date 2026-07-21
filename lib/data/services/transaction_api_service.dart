@@ -150,6 +150,20 @@ class SyncItemResult {
   }
 }
 
+/// Result of a bulk CSV import — `replaced` is how many previous transactions
+/// were soft-deleted, `imported` is how many new rows were inserted.
+class ImportResult {
+  final int replaced;
+  final int imported;
+
+  const ImportResult({required this.replaced, required this.imported});
+
+  factory ImportResult.fromJson(Map<String, dynamic> json) => ImportResult(
+        replaced: json['replaced'] as int,
+        imported: json['imported'] as int,
+      );
+}
+
 class TransactionApiService {
   final Dio _dio;
 
@@ -213,6 +227,19 @@ class TransactionApiService {
 
   Future<void> deleteTransaction(String serverId) async {
     await _dio.delete(ApiConstants.transactionById(serverId));
+  }
+
+  /// Replaces all of the user's personal transactions with [transactions] —
+  /// the server soft-deletes the old rows and inserts the new ones in a
+  /// single DB transaction. Categories referenced by [transactions] must
+  /// already exist (built-in or created via the categories API) before
+  /// calling this.
+  Future<ImportResult> importTransactions(
+      List<Transaction> transactions) async {
+    final res = await _dio.post(ApiConstants.transactionsImport, data: {
+      'transactions': transactions.map(_toPayload).toList(),
+    });
+    return ImportResult.fromJson(res.data['data'] as Map<String, dynamic>);
   }
 
   // Always send customCategoryId/appIcon/note explicitly — even when null —

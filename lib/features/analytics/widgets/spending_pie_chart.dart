@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/transaction_model.dart';
@@ -25,6 +26,7 @@ class _SpendingPieChartState extends ConsumerState<SpendingPieChart> {
     final breakdown = isExpense
         ? ref.watch(categoryBreakdownProvider)
         : ref.watch(categoryBreakdownIncomeProvider);
+    final customCats = ref.watch(customCategoriesProvider);
     final typeColor = isExpense ? AppColors.expense : AppColors.income;
     final currency = ref.watch(currencyProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -90,12 +92,13 @@ class _SpendingPieChartState extends ConsumerState<SpendingPieChart> {
     final sections = sorted.asMap().entries.map((entry) {
       final i = entry.key;
       final e = entry.value;
+      final display = resolveCategoryDisplay(e.key, customCats);
       final isTouched = i == _touchedIndex;
       final pct = total > 0 ? e.value / total * 100 : 0.0;
 
       return PieChartSectionData(
         value: e.value,
-        color: e.key.color,
+        color: display.color,
         radius: isTouched ? 68 : 58,
         title: isTouched ? '${pct.toStringAsFixed(0)}%' : '',
         titleStyle: const TextStyle(
@@ -103,17 +106,20 @@ class _SpendingPieChartState extends ConsumerState<SpendingPieChart> {
           fontWeight: FontWeight.w700,
           color: Colors.white,
         ),
-        badgeWidget: isTouched
-            ? Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: e.key.color,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(e.key.icon, color: Colors.white, size: 14),
-              )
-            : null,
-        badgePositionPercentageOffset: 1.3,
+        // Always show the category icon on the slice itself, rather than
+        // only on touch — the legend pills below no longer have to carry
+        // all the identification on their own.
+        badgeWidget: Container(
+          padding: EdgeInsets.all(isTouched ? 6 : 5),
+          decoration: BoxDecoration(
+            color: display.color,
+            shape: BoxShape.circle,
+            border: Border.all(color: bgColor, width: 1.5),
+          ),
+          child: Icon(display.icon,
+              color: Colors.white, size: isTouched ? 14 : 12),
+        ),
+        badgePositionPercentageOffset: 1.05,
       );
     }).toList();
 
@@ -226,34 +232,38 @@ class _SpendingPieChartState extends ConsumerState<SpendingPieChart> {
             runSpacing: 8,
             children: sorted.map((entry) {
               final pct = total > 0 ? entry.value / total * 100 : 0.0;
-              return Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: entry.key.color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: entry.key.color,
-                        shape: BoxShape.circle,
+              final display = resolveCategoryDisplay(entry.key, customCats);
+              return GestureDetector(
+                onTap: () => _openCategoryTransactions(context, entry.key),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: display.color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: display.color,
+                          shape: BoxShape.circle,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '${entry.key.label} ${pct.toStringAsFixed(0)}%',
-                      style: TextStyle(
-                        color: entry.key.color,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
+                      const SizedBox(width: 6),
+                      Text(
+                        '${display.label} ${pct.toStringAsFixed(0)}%',
+                        style: TextStyle(
+                          color: display.color,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             }).toList(),
@@ -261,6 +271,15 @@ class _SpendingPieChartState extends ConsumerState<SpendingPieChart> {
         ],
       ),
     );
+  }
+
+  void _openCategoryTransactions(BuildContext context, String categoryKey) {
+    ref.read(categoryFilterProvider.notifier).state = {categoryKey};
+    ref.read(transactionTypeFilterProvider.notifier).state =
+        _selectedType == TransactionType.expense
+            ? TransactionTypeFilter.expense
+            : TransactionTypeFilter.income;
+    context.push('/transactions');
   }
 }
 
@@ -286,10 +305,12 @@ class _TypeToggle extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: _buildOption(TransactionType.expense, 'Expense', AppColors.expense),
+            child: _buildOption(
+                TransactionType.expense, 'Expense', AppColors.expense),
           ),
           Expanded(
-            child: _buildOption(TransactionType.income, 'Income', AppColors.income),
+            child: _buildOption(
+                TransactionType.income, 'Income', AppColors.income),
           ),
         ],
       ),
@@ -304,7 +325,8 @@ class _TypeToggle extends StatelessWidget {
         duration: 200.ms,
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? color.withValues(alpha: 0.15) : Colors.transparent,
+          color:
+              isSelected ? color.withValues(alpha: 0.15) : Colors.transparent,
           borderRadius: BorderRadius.circular(9),
         ),
         child: Row(

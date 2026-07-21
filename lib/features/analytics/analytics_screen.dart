@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../data/models/transaction_model.dart';
@@ -83,9 +84,8 @@ class _Header extends StatelessWidget {
                   color: isDark ? AppColors.darkCard : AppColors.lightCard,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isDark
-                        ? AppColors.darkBorder
-                        : AppColors.lightBorder,
+                    color:
+                        isDark ? AppColors.darkBorder : AppColors.lightBorder,
                     width: 0.5,
                   ),
                 ),
@@ -121,43 +121,53 @@ class _InsightsRow extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final total = ref.watch(transactionProvider).length;
 
-    final savingsRate =
-        income > 0 ? ((income - expense) / income * 100).clamp(0.0, 100.0) : 0.0;
+    final savingsRate = income > 0
+        ? ((income - expense) / income * 100).clamp(0.0, 100.0)
+        : 0.0;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         children: [
           Expanded(
-            child: _InsightCard(
-              label: 'Savings',
-              value: '${savingsRate.toStringAsFixed(0)}%',
-              icon: Icons.savings_rounded,
-              color: AppColors.income,
-              isDark: isDark,
+            child: GestureDetector(
+              onTap: () => context.go('/budget'),
+              child: _InsightCard(
+                label: 'Savings',
+                value: '${savingsRate.toStringAsFixed(0)}%',
+                icon: Icons.savings_rounded,
+                color: AppColors.income,
+                isDark: isDark,
+              ),
             ).animate(delay: 100.ms).fadeIn().slideY(begin: 0.15),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: _InsightCard(
-              label: 'Avg/Day',
-              value: CurrencyFormatter.format(
-                expense > 0 ? expense / 30 : 0,
-                symbol: currency,
+            child: GestureDetector(
+              onTap: () => context.go('/budget'),
+              child: _InsightCard(
+                label: 'Avg/Day',
+                value: CurrencyFormatter.format(
+                  expense > 0 ? expense / 30 : 0,
+                  symbol: currency,
+                ),
+                icon: Icons.today_rounded,
+                color: AppColors.secondary,
+                isDark: isDark,
               ),
-              icon: Icons.today_rounded,
-              color: AppColors.secondary,
-              isDark: isDark,
             ).animate(delay: 200.ms).fadeIn().slideY(begin: 0.15),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: _InsightCard(
-              label: 'Total Txns',
-              value: total.toString(),
-              icon: Icons.receipt_long_rounded,
-              color: AppColors.warning,
-              isDark: isDark,
+            child: GestureDetector(
+              onTap: () => context.go('/budget'),
+              child: _InsightCard(
+                label: 'Total Txns',
+                value: total.toString(),
+                icon: Icons.receipt_long_rounded,
+                color: AppColors.warning,
+                isDark: isDark,
+              ),
             ).animate(delay: 300.ms).fadeIn().slideY(begin: 0.15),
           ),
         ],
@@ -262,6 +272,7 @@ class _TopCategoryCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final breakdown = ref.watch(categoryBreakdownProvider);
+    final customCats = ref.watch(customCategoriesProvider);
     final currency = ref.watch(currencyProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -310,89 +321,109 @@ class _TopCategoryCard extends ConsumerWidget {
             final rank = entry.key + 1;
             final item = entry.value;
             final pct = total > 0 ? item.value / total : 0.0;
-            final color = item.key.color;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 14),
-              child: Row(
-                children: [
-                  // Rank badge
-                  SizedBox(
-                    width: 22,
-                    child: Text(
-                      '#$rank',
-                      style: const TextStyle(
-                        color: AppColors.textTertiary,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
+            final display = resolveCategoryDisplay(item.key, customCats);
+            final color = display.color;
+            return GestureDetector(
+              onTap: () => _openCategoryTransactions(context, ref, item.key),
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: Row(
+                  children: [
+                    // Rank badge
+                    SizedBox(
+                      width: 22,
+                      child: Text(
+                        '#$rank',
+                        style: const TextStyle(
+                          color: AppColors.textTertiary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  // Icon
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(10),
+                    const SizedBox(width: 4),
+                    // Icon
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(display.icon, color: color, size: 18),
                     ),
-                    child: Icon(item.key.icon, color: color, size: 18),
-                  ),
-                  const SizedBox(width: 12),
-                  // Label + progress bar
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              item.key.label,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: isDark ? Colors.white : AppColors.textLight,
+                    const SizedBox(width: 12),
+                    // Label + progress bar
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                display.label,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark
+                                      ? Colors.white
+                                      : AppColors.textLight,
+                                ),
                               ),
-                            ),
-                            Text(
-                              CurrencyFormatter.format(item.value, symbol: currency),
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: color,
+                              Text(
+                                CurrencyFormatter.format(item.value,
+                                    symbol: currency),
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: color,
+                                ),
                               ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(3),
+                            child: LinearProgressIndicator(
+                              value: pct,
+                              minHeight: 5,
+                              backgroundColor: color.withValues(alpha: 0.1),
+                              valueColor: AlwaysStoppedAnimation<Color>(color),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(3),
-                          child: LinearProgressIndicator(
-                            value: pct,
-                            minHeight: 5,
-                            backgroundColor: color.withValues(alpha: 0.1),
-                            valueColor: AlwaysStoppedAnimation<Color>(color),
                           ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          '${(pct * 100).toStringAsFixed(2)}% of total',
-                          style: const TextStyle(
-                            color: AppColors.textTertiary,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
+                          const SizedBox(height: 3),
+                          Text(
+                            '${(pct * 100).toStringAsFixed(2)}% of total',
+                            style: const TextStyle(
+                              color: AppColors.textTertiary,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           }),
         ],
       ),
     ).animate(delay: 400.ms).fadeIn().slideY(begin: 0.15);
+  }
+
+  // Spending Breakdown is expense-only, so filter for expenses of this
+  // category and hand off to the Transactions screen's existing filter UI.
+  void _openCategoryTransactions(
+    BuildContext context,
+    WidgetRef ref,
+    String categoryKey,
+  ) {
+    ref.read(categoryFilterProvider.notifier).state = {categoryKey};
+    ref.read(transactionTypeFilterProvider.notifier).state =
+        TransactionTypeFilter.expense;
+    context.push('/transactions');
   }
 }

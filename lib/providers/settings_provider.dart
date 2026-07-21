@@ -68,11 +68,20 @@ class CustomCategoriesNotifier extends StateNotifier<List<CustomCategory>> {
 
   Future<void> add(CustomCategory cat) async {
     try {
-      final res = await _dio.post(ApiConstants.categories, data: cat.toMap());
-      final created =
-          CustomCategory.fromMap(res.data['data'] as Map<String, dynamic>);
-      state = [...state, created];
+      await createAndAdd(cat);
     } catch (_) {}
+  }
+
+  /// Same as [add], but returns the server-assigned category (with its real
+  /// id) and rethrows on failure instead of swallowing the error — used by
+  /// flows (like CSV import) that need to know immediately whether creation
+  /// succeeded and what id to reference.
+  Future<CustomCategory> createAndAdd(CustomCategory cat) async {
+    final res = await _dio.post(ApiConstants.categories, data: cat.toMap());
+    final created =
+        CustomCategory.fromMap(res.data['data'] as Map<String, dynamic>);
+    state = [...state, created];
+    return created;
   }
 
   Future<void> remove(String id) async {

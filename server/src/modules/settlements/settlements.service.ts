@@ -1,10 +1,12 @@
-import { ForbiddenError } from '../../utils/app-error';
+import { ForbiddenError, BadRequestError } from '../../utils/app-error';
 import * as settlementsRepository from './settlements.repository';
 import { SettlementWithUsers } from './settlements.repository';
 import * as groupsRepository from '../groups/groups.repository';
+import * as expensesRepository from '../expenses/expenses.repository';
 import * as activityRepository from '../activity/activity.repository';
 import * as notificationsService from '../notifications/notifications.service';
 import { CreateSettlementInput } from '../../validations/settlement.validation';
+import { calculateNetBalances, simplifyDebts } from '../../utils/balance';
 
 export async function createSettlement(
   userId: string,
@@ -20,6 +22,35 @@ export async function createSettlement(
   const isMember = await groupsRepository.isMember(groupId, userId);
   if (!isMember) {
     throw new ForbiddenError('You are not a member of this group');
+  }
+
+  // A settlement should never exceed what the payer currently owes the
+  // payee — otherwise it silently flips the debt direction instead of
+  // erroring out.
+  const expenses = await expensesRepository.findGroupExpensesForBalance(groupId);
+  const existingSettlements = await settlementsRepository.findGroupSettlementsForBalance(groupId);
+
+  const expenseData = expenses.map((e) => ({
+    id: e.id,
+    amount: Number(e.amount),
+    paidById: e.paidById,
+    participants: e.participants.map((p) => ({ userId: p.userId, share: Number(p.share) })),
+  }));
+  const settlementData = existingSettlements.map((s) => ({
+    payerId: s.payerId,
+    payeeId: s.payeeId,
+    amount: Number(s.amount),
+  }));
+
+  const rawBalances = calculateNetBalances(expenseData, settlementData);
+  const simplified = simplifyDebts(rawBalances);
+  const owed =
+    simplified.find((b) => b.fromUserId === userId && b.toUserId === input.payeeId)?.amount ?? 0;
+
+  if (input.amount - owed > 0.01) {
+    throw new BadRequestError(
+      `Settlement amount (${input.amount}) exceeds the outstanding balance (${owed})`
+    );
   }
 
   const settlement = await settlementsRepository.createSettlement({

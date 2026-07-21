@@ -92,3 +92,17 @@ export async function deleteNotification(
     next(err);
   }
 }
+
+export async function deleteAllNotifications(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    await notificationsService.deleteAllNotifications(authReq.user.userId);
+    sendSuccess(res, null, 'All notifications deleted');
+  } catch (err) {
+    next(err);
+  }
+}

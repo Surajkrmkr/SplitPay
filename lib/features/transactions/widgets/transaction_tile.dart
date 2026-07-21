@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/category_app_icons.dart';
@@ -13,14 +12,12 @@ class TransactionTile extends ConsumerWidget {
   final Transaction transaction;
   final VoidCallback onDelete;
   final VoidCallback onEdit;
-  final int index;
 
   const TransactionTile({
     super.key,
     required this.transaction,
     required this.onDelete,
     required this.onEdit,
-    required this.index,
   });
 
   @override
@@ -163,11 +160,7 @@ class TransactionTile extends ConsumerWidget {
           ),
         ),
       ),
-    ).animate(delay: (index * 50).ms).fadeIn().slideX(
-          begin: 0.05,
-          end: 0,
-          curve: Curves.easeOutCubic,
-        );
+    );
   }
 }
 

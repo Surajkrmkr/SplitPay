@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import 'custom_category.dart';
 
 enum TransactionType { income, expense }
 
@@ -8,21 +9,31 @@ enum RecurrenceType { none, daily, weekly, monthly, yearly }
 extension RecurrenceTypeExt on RecurrenceType {
   String get label {
     switch (this) {
-      case RecurrenceType.none: return 'One-time';
-      case RecurrenceType.daily: return 'Daily';
-      case RecurrenceType.weekly: return 'Weekly';
-      case RecurrenceType.monthly: return 'Monthly';
-      case RecurrenceType.yearly: return 'Yearly';
+      case RecurrenceType.none:
+        return 'One-time';
+      case RecurrenceType.daily:
+        return 'Daily';
+      case RecurrenceType.weekly:
+        return 'Weekly';
+      case RecurrenceType.monthly:
+        return 'Monthly';
+      case RecurrenceType.yearly:
+        return 'Yearly';
     }
   }
 
   IconData get icon {
     switch (this) {
-      case RecurrenceType.none: return Icons.bolt_rounded;
-      case RecurrenceType.daily: return Icons.today_rounded;
-      case RecurrenceType.weekly: return Icons.view_week_rounded;
-      case RecurrenceType.monthly: return Icons.calendar_month_rounded;
-      case RecurrenceType.yearly: return Icons.event_repeat_rounded;
+      case RecurrenceType.none:
+        return Icons.bolt_rounded;
+      case RecurrenceType.daily:
+        return Icons.today_rounded;
+      case RecurrenceType.weekly:
+        return Icons.view_week_rounded;
+      case RecurrenceType.monthly:
+        return Icons.calendar_month_rounded;
+      case RecurrenceType.yearly:
+        return Icons.event_repeat_rounded;
     }
   }
 
@@ -46,47 +57,107 @@ enum Category {
 extension CategoryExt on Category {
   String get label {
     switch (this) {
-      case Category.food: return 'Food';
-      case Category.shopping: return 'Shopping';
-      case Category.bills: return 'Bills';
-      case Category.travel: return 'Travel';
-      case Category.salary: return 'Salary';
-      case Category.entertainment: return 'Entertainment';
-      case Category.health: return 'Health';
-      case Category.subscription: return 'Subscription';
-      case Category.other: return 'Other';
+      case Category.food:
+        return 'Food';
+      case Category.shopping:
+        return 'Shopping';
+      case Category.bills:
+        return 'Bills';
+      case Category.travel:
+        return 'Travel';
+      case Category.salary:
+        return 'Salary';
+      case Category.entertainment:
+        return 'Entertainment';
+      case Category.health:
+        return 'Health';
+      case Category.subscription:
+        return 'Subscription';
+      case Category.other:
+        return 'Other';
     }
   }
 
   IconData get icon {
     switch (this) {
-      case Category.food: return Icons.restaurant_rounded;
-      case Category.shopping: return Icons.shopping_bag_rounded;
-      case Category.bills: return Icons.receipt_long_rounded;
-      case Category.travel: return Icons.flight_rounded;
-      case Category.salary: return Icons.account_balance_wallet_rounded;
-      case Category.entertainment: return Icons.movie_rounded;
-      case Category.health: return Icons.favorite_rounded;
-      case Category.subscription: return Icons.subscriptions_rounded;
-      case Category.other: return Icons.category_rounded;
+      case Category.food:
+        return Icons.restaurant_rounded;
+      case Category.shopping:
+        return Icons.shopping_bag_rounded;
+      case Category.bills:
+        return Icons.receipt_long_rounded;
+      case Category.travel:
+        return Icons.flight_rounded;
+      case Category.salary:
+        return Icons.account_balance_wallet_rounded;
+      case Category.entertainment:
+        return Icons.movie_rounded;
+      case Category.health:
+        return Icons.favorite_rounded;
+      case Category.subscription:
+        return Icons.subscriptions_rounded;
+      case Category.other:
+        return Icons.category_rounded;
     }
   }
 
   Color get color {
     switch (this) {
-      case Category.food: return AppColors.catFood;
-      case Category.shopping: return AppColors.catShopping;
-      case Category.bills: return AppColors.catBills;
-      case Category.travel: return AppColors.catTravel;
-      case Category.salary: return AppColors.catSalary;
-      case Category.entertainment: return AppColors.catEntertainment;
-      case Category.health: return AppColors.catHealth;
-      case Category.subscription: return AppColors.catSubscription;
-      case Category.other: return AppColors.catOther;
+      case Category.food:
+        return AppColors.catFood;
+      case Category.shopping:
+        return AppColors.catShopping;
+      case Category.bills:
+        return AppColors.catBills;
+      case Category.travel:
+        return AppColors.catTravel;
+      case Category.salary:
+        return AppColors.catSalary;
+      case Category.entertainment:
+        return AppColors.catEntertainment;
+      case Category.health:
+        return AppColors.catHealth;
+      case Category.subscription:
+        return AppColors.catSubscription;
+      case Category.other:
+        return AppColors.catOther;
     }
   }
 
   bool get isIncome => this == Category.salary;
+}
+
+/// Resolved display info for a category breakdown/filter key — the same key
+/// scheme used everywhere a transaction's effective category is looked up:
+/// [Transaction.customCategoryId] if set, otherwise [Transaction.category]'s
+/// enum name.
+class CategoryDisplay {
+  final String label;
+  final IconData icon;
+  final Color color;
+  const CategoryDisplay(
+      {required this.label, required this.icon, required this.color});
+}
+
+/// Resolves a breakdown/filter [key] to its display info, checking custom
+/// categories first since a custom category's key is its id (never a
+/// [Category] enum name).
+CategoryDisplay resolveCategoryDisplay(
+  String key,
+  List<CustomCategory> customCategories,
+) {
+  for (final c in customCategories) {
+    if (c.id == key) {
+      return CategoryDisplay(label: c.label, icon: c.icon, color: c.color);
+    }
+  }
+  Category cat;
+  try {
+    cat = Category.values.byName(key);
+  } catch (_) {
+    cat = Category.other;
+  }
+  return CategoryDisplay(label: cat.label, icon: cat.icon, color: cat.color);
 }
 
 /// Tracks the local→server sync lifecycle of a transaction.
@@ -110,10 +181,14 @@ extension SyncStatusExt on SyncStatus {
   /// The action string sent to the sync API.
   String get action {
     switch (this) {
-      case SyncStatus.pendingCreate: return 'create';
-      case SyncStatus.pendingUpdate: return 'update';
-      case SyncStatus.pendingDelete: return 'delete';
-      case SyncStatus.synced: return 'update';
+      case SyncStatus.pendingCreate:
+        return 'create';
+      case SyncStatus.pendingUpdate:
+        return 'update';
+      case SyncStatus.pendingDelete:
+        return 'delete';
+      case SyncStatus.synced:
+        return 'update';
     }
   }
 }
@@ -156,25 +231,26 @@ class Transaction {
   }) : updatedAt = updatedAt ?? createdAt;
 
   Map<String, dynamic> toMap() => {
-    'id': id,
-    'amount': amount,
-    'type': type.name,
-    'category': category.name,
-    'customCategoryId': customCategoryId,
-    'appIcon': appIcon,
-    'note': note,
-    'date': date.millisecondsSinceEpoch,
-    'createdAt': createdAt.millisecondsSinceEpoch,
-    'recurrence': recurrence.name,
-    'serverId': serverId,
-    'syncStatus': syncStatus.name,
-    'updatedAt': updatedAt.millisecondsSinceEpoch,
-    'lastSyncedAt': lastSyncedAt?.millisecondsSinceEpoch,
-    'isDeleted': isDeleted,
-  };
+        'id': id,
+        'amount': amount,
+        'type': type.name,
+        'category': category.name,
+        'customCategoryId': customCategoryId,
+        'appIcon': appIcon,
+        'note': note,
+        'date': date.millisecondsSinceEpoch,
+        'createdAt': createdAt.millisecondsSinceEpoch,
+        'recurrence': recurrence.name,
+        'serverId': serverId,
+        'syncStatus': syncStatus.name,
+        'updatedAt': updatedAt.millisecondsSinceEpoch,
+        'lastSyncedAt': lastSyncedAt?.millisecondsSinceEpoch,
+        'isDeleted': isDeleted,
+      };
 
   factory Transaction.fromMap(Map map) {
-    final createdAt = DateTime.fromMillisecondsSinceEpoch(map['createdAt'] as int);
+    final createdAt =
+        DateTime.fromMillisecondsSinceEpoch(map['createdAt'] as int);
     return Transaction(
       id: map['id'] as String,
       amount: (map['amount'] as num).toDouble(),
@@ -205,19 +281,19 @@ class Transaction {
 
   /// Converts to the payload sent to the server sync API.
   Map<String, dynamic> toSyncPayload() => {
-    'localId': id,
-    if (serverId != null) 'serverId': serverId,
-    'action': syncStatus.action,
-    'amount': amount,
-    'type': type == TransactionType.income ? 'INCOME' : 'EXPENSE',
-    'categoryKey': category.name,
-    if (customCategoryId != null) 'customCategoryId': customCategoryId,
-    if (appIcon != null) 'appIcon': appIcon,
-    if (note != null) 'note': note,
-    'date': date.toUtc().toIso8601String(),
-    'recurrence': recurrence.serverValue,
-    'updatedAt': updatedAt.toUtc().toIso8601String(),
-  };
+        'localId': id,
+        if (serverId != null) 'serverId': serverId,
+        'action': syncStatus.action,
+        'amount': amount,
+        'type': type == TransactionType.income ? 'INCOME' : 'EXPENSE',
+        'categoryKey': category.name,
+        if (customCategoryId != null) 'customCategoryId': customCategoryId,
+        if (appIcon != null) 'appIcon': appIcon,
+        if (note != null) 'note': note,
+        'date': date.toUtc().toIso8601String(),
+        'recurrence': recurrence.serverValue,
+        'updatedAt': updatedAt.toUtc().toIso8601String(),
+      };
 
   Transaction copyWith({
     String? id,

@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/storage/token_storage.dart';
 import '../data/models/transaction_model.dart';
 import '../data/repositories/transaction_repository.dart';
+import '../data/services/transaction_api_service.dart' show ImportResult;
 
 final transactionProvider =
     StateNotifierProvider<TransactionNotifier, List<Transaction>>(
@@ -63,7 +66,61 @@ class TransactionNotifier extends StateNotifier<List<Transaction>> {
 
   /// Pull-to-refresh: reload from server.
   Future<void> syncAndReload() => load();
+
+  /// Replaces all existing personal transactions with [transactions] (e.g.
+  /// from a CSV import) and reloads state from the server afterwards.
+  Future<ImportResult> importAll(List<Transaction> transactions) async {
+    final result = await _repo.importAll(transactions);
+    await load();
+    return result;
+  }
 }
+
+// ─── Swipe-to-delete undo ──────────────────────────────────────────────────────
+//
+// Lives on this app-scoped provider — not on a page's State — so the pending
+// delete's timer keeps running (and the transaction actually gets deleted)
+// even if the user navigates away from the screen they swiped on before the
+// undo window elapses.
+
+class PendingDeletesNotifier extends Notifier<Set<String>> {
+  final Map<String, Timer> _timers = {};
+
+  @override
+  Set<String> build() {
+    ref.onDispose(() {
+      for (final timer in _timers.values) {
+        timer.cancel();
+      }
+    });
+    return {};
+  }
+
+  /// Hides [tx] immediately; commits the real delete after [undoWindow]
+  /// unless [undo] is called first.
+  void schedule(Transaction tx,
+      {Duration undoWindow = const Duration(seconds: 3)}) {
+    state = {...state, tx.id};
+    _timers[tx.id]?.cancel();
+    _timers[tx.id] = Timer(undoWindow, () {
+      _timers.remove(tx.id);
+      if (state.contains(tx.id)) {
+        state = {...state}..remove(tx.id);
+        ref.read(transactionProvider.notifier).delete(tx);
+      }
+    });
+  }
+
+  void undo(String id) {
+    _timers.remove(id)?.cancel();
+    state = {...state}..remove(id);
+  }
+}
+
+final pendingDeletesProvider =
+    NotifierProvider<PendingDeletesNotifier, Set<String>>(
+  PendingDeletesNotifier.new,
+);
 
 // ─── Month selector ───────────────────────────────────────────────────────────
 
@@ -127,10 +184,19 @@ final previousMonthIncomeProvider = Provider<double>((ref) {
 });
 
 final recentTransactionsProvider = Provider<List<Transaction>>((ref) {
-  return ref.watch(transactionProvider).take(5).toList();
+  final pending = ref.watch(pendingDeletesProvider);
+  return ref
+      .watch(transactionProvider)
+      .where((t) => !pending.contains(t.id))
+      .take(5)
+      .toList();
 });
 
-final categoryBreakdownProvider = Provider<Map<Category, double>>((ref) {
+// Keyed by the transaction's effective category — customCategoryId if set,
+// otherwise the built-in Category's enum name — so custom-category spending
+// is grouped under its own category instead of collapsing into "Other".
+// Resolve a key's display info (label/icon/color) via [resolveCategoryDisplay].
+final categoryBreakdownProvider = Provider<Map<String, double>>((ref) {
   final txs = ref.watch(transactionProvider);
   final month = ref.watch(selectedMonthProvider);
   final expenses = txs.where((t) =>
@@ -138,14 +204,15 @@ final categoryBreakdownProvider = Provider<Map<Category, double>>((ref) {
       t.date.year == month.year &&
       t.date.month == month.month);
 
-  final map = <Category, double>{};
+  final map = <String, double>{};
   for (final tx in expenses) {
-    map[tx.category] = (map[tx.category] ?? 0) + tx.amount;
+    final key = tx.customCategoryId ?? tx.category.name;
+    map[key] = (map[key] ?? 0) + tx.amount;
   }
   return map;
 });
 
-final categoryBreakdownIncomeProvider = Provider<Map<Category, double>>((ref) {
+final categoryBreakdownIncomeProvider = Provider<Map<String, double>>((ref) {
   final txs = ref.watch(transactionProvider);
   final month = ref.watch(selectedMonthProvider);
   final incomes = txs.where((t) =>
@@ -153,9 +220,10 @@ final categoryBreakdownIncomeProvider = Provider<Map<Category, double>>((ref) {
       t.date.year == month.year &&
       t.date.month == month.month);
 
-  final map = <Category, double>{};
+  final map = <String, double>{};
   for (final tx in incomes) {
-    map[tx.category] = (map[tx.category] ?? 0) + tx.amount;
+    final key = tx.customCategoryId ?? tx.category.name;
+    map[key] = (map[key] ?? 0) + tx.amount;
   }
   return map;
 });
@@ -273,7 +341,11 @@ final amountRangeProvider =
     StateProvider<AmountRange>((_) => const AmountRange());
 
 final filteredTransactionsProvider = Provider<List<Transaction>>((ref) {
-  final txs = ref.watch(transactionProvider);
+  final pending = ref.watch(pendingDeletesProvider);
+  final txs = ref
+      .watch(transactionProvider)
+      .where((t) => !pending.contains(t.id))
+      .toList();
   final filter = ref.watch(filterProvider);
   final typeFilter = ref.watch(transactionTypeFilterProvider);
   final sort = ref.watch(transactionSortProvider);

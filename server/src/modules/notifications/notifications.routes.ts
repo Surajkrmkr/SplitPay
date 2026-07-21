@@ -14,6 +14,9 @@ router.patch('/read-all', notificationsController.markAllRead);
 // PATCH /notifications/:id/read
 router.patch('/:id/read', notificationsController.markRead);
 
+// DELETE /notifications      — clear all
+router.delete('/', notificationsController.deleteAllNotifications);
+
 // DELETE /notifications/:id
 router.delete('/:id', notificationsController.deleteNotification);
 

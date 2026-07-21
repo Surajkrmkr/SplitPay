@@ -1,7 +1,12 @@
 import { PersonalTxType, TxRecurrenceType } from '@prisma/client';
 import { NotFoundError, ForbiddenError } from '../../utils/app-error';
 import * as repo from './transactions.repository';
-import { CreateTransactionInput, UpdateTransactionInput, ListTransactionsQuery } from '../../validations/transaction.validation';
+import {
+  CreateTransactionInput,
+  UpdateTransactionInput,
+  ListTransactionsQuery,
+  ImportTransactionsInput,
+} from '../../validations/transaction.validation';
 
 export async function createTransaction(userId: string, input: CreateTransactionInput) {
   return repo.createTransaction({
@@ -57,4 +62,22 @@ export async function deleteTransaction(userId: string, id: string) {
   if (tx.userId !== userId) throw new ForbiddenError('Not your transaction');
 
   await repo.softDeleteTransaction(id, userId);
+}
+
+export async function importTransactions(userId: string, input: ImportTransactionsInput) {
+  const rows: repo.CreateTransactionData[] = input.transactions.map((t) => ({
+    userId,
+    amount: t.amount,
+    type: t.type as PersonalTxType,
+    categoryKey: t.categoryKey,
+    customCategoryId: t.customCategoryId ?? null,
+    appIcon: t.appIcon ?? null,
+    note: t.note ?? null,
+    date: new Date(t.date),
+    recurrence: (t.recurrence ?? 'NONE') as TxRecurrenceType,
+    groupId: null,
+    deviceId: null,
+  }));
+
+  return repo.replaceAllTransactions(userId, rows);
 }

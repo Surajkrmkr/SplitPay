@@ -100,3 +100,22 @@ export async function softDeleteTransaction(id: string, userId: string) {
     data: { deletedAt: new Date() },
   });
 }
+
+// Soft-deletes every existing (non-deleted) transaction for the user, then
+// inserts the imported rows — both in one DB transaction so a mid-import
+// failure never leaves the user with their old data half-wiped and no
+// replacement.
+export async function replaceAllTransactions(userId: string, rows: CreateTransactionData[]) {
+  return prisma.$transaction(async (tx) => {
+    const { count: replaced } = await tx.transaction.updateMany({
+      where: { userId, deletedAt: null },
+      data: { deletedAt: new Date() },
+    });
+
+    if (rows.length > 0) {
+      await tx.transaction.createMany({ data: rows });
+    }
+
+    return { replaced, imported: rows.length };
+  });
+}

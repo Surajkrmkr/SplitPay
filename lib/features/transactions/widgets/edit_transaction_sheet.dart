@@ -8,6 +8,7 @@ import '../../../data/models/transaction_model.dart';
 import '../../../providers/settings_provider.dart';
 import '../../../providers/transaction_provider.dart';
 import '../../../shared/widgets/app_icon_picker.dart';
+import '../../../shared/widgets/category_dropdown_field.dart';
 import '../../../shared/widgets/sp_button.dart';
 
 class EditTransactionSheet extends ConsumerStatefulWidget {
@@ -144,16 +145,6 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currency = ref.watch(currencyProvider);
-    final hidden = ref.watch(hiddenCategoriesProvider);
-    final customCats = ref.watch(customCategoriesProvider);
-    final visibleCategories = Category.values
-        .where((c) =>
-            !hidden.contains(c.name) ||
-            (c == _category && _customCategoryId == null))
-        .where((c) => _type == TransactionType.income
-            ? c == Category.salary || c == Category.other
-            : c != Category.salary)
-        .toList();
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final safeAreaBottom = MediaQuery.of(context).viewPadding.bottom;
 
@@ -331,47 +322,19 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
                     // Category
                     _label('Category', isDark),
                     const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        ...visibleCategories.map((cat) {
-                          final selected =
-                              _customCategoryId == null && _category == cat;
-                          return _CategoryChip(
-                            label: cat.label,
-                            icon: cat.icon,
-                            color: cat.color,
-                            selected: selected,
-                            isDark: isDark,
-                            onTap: () => setState(() {
-                              _category = cat;
-                              _customCategoryId = null;
-                              if (_appIcon != null &&
-                                  !CategoryAppIcons.iconsFor(cat)
-                                      .contains(_appIcon)) {
-                                _appIcon = null;
-                              }
-                            }),
-                          );
-                        }),
-                        if (_type != TransactionType.income)
-                          ...customCats.map((cat) {
-                            final selected = _customCategoryId == cat.id;
-                            return _CategoryChip(
-                              label: cat.label,
-                              icon: cat.icon,
-                              color: cat.color,
-                              selected: selected,
-                              isDark: isDark,
-                              onTap: () => setState(() {
-                                _category = Category.other;
-                                _customCategoryId = cat.id;
-                                _appIcon = null;
-                              }),
-                            );
-                          }),
-                      ],
+                    CategoryDropdownField(
+                      selectedCategory: _category,
+                      customCategoryId: _customCategoryId,
+                      type: _type,
+                      onChanged: (cat, customId) => setState(() {
+                        _category = cat;
+                        _customCategoryId = customId;
+                        if (_appIcon != null &&
+                            !CategoryAppIcons.iconsFor(cat)
+                                .contains(_appIcon)) {
+                          _appIcon = null;
+                        }
+                      }),
                     ),
                     const SizedBox(height: 16),
                     if (CategoryAppIcons.iconsFor(_category).isNotEmpty &&
@@ -627,62 +590,6 @@ class _EditRecurrencePicker extends StatelessWidget {
             ),
           );
         },
-      ),
-    );
-  }
-}
-
-class _CategoryChip extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final Color color;
-  final bool selected;
-  final bool isDark;
-  final VoidCallback onTap;
-
-  const _CategoryChip({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.selected,
-    required this.isDark,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected
-              ? color.withValues(alpha: 0.15)
-              : (isDark ? AppColors.darkCard : AppColors.lightCard),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected
-                ? color.withValues(alpha: 0.5)
-                : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon,
-                size: 14, color: selected ? color : AppColors.textSecondary),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: selected ? color : AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

@@ -21,9 +21,17 @@ export function simplifyDebts(rawBalances: RawBalance[]): SimplifiedDebt[] {
   for (const { fromUserId, toUserId, amount } of rawBalances) {
     if (amount <= 0) continue;
 
-    // fromUserId owes toUserId `amount`
-    netBalance.set(fromUserId, (netBalance.get(fromUserId) ?? 0) - amount);
-    netBalance.set(toUserId, (netBalance.get(toUserId) ?? 0) + amount);
+    // fromUserId owes toUserId `amount`. Round after each accumulation so
+    // rounding dust from many expenses never drifts into a visible "phantom"
+    // balance once debts are netted below.
+    netBalance.set(
+      fromUserId,
+      Math.round(((netBalance.get(fromUserId) ?? 0) - amount) * 100) / 100
+    );
+    netBalance.set(
+      toUserId,
+      Math.round(((netBalance.get(toUserId) ?? 0) + amount) * 100) / 100
+    );
   }
 
   // Separate into debtors (negative) and creditors (positive)

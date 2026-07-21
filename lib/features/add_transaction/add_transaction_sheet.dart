@@ -6,12 +6,13 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/category_app_icons.dart';
-import '../../data/models/custom_category.dart';
 import '../../data/models/transaction_model.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../shared/widgets/app_icon_picker.dart';
 import '../../shared/widgets/bill_scan_button.dart';
+import '../../shared/widgets/category_dropdown_field.dart';
+import '../../shared/widgets/quick_capture_button.dart';
 
 class AddTransactionSheet extends ConsumerStatefulWidget {
   final TransactionType initialType;
@@ -63,6 +64,29 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
       }
       if (scan.dateTime != null) {
         _date = scan.dateTime!;
+      }
+    });
+  }
+
+  void _applySmsPaste(SmsPasteApplied sms) {
+    setState(() {
+      if (sms.type != null && sms.type != _type) {
+        _type = sms.type!;
+        _customCategoryId = null;
+        _appIcon = null;
+        _category =
+            _type == TransactionType.income ? Category.salary : Category.food;
+      }
+      if (sms.amount != null) {
+        _amountController.text = sms.amount!.toStringAsFixed(2);
+      }
+      // Add-transaction has no title field — drop the payee/merchant name
+      // into the note so it isn't lost. Only fill if note is currently empty.
+      if (sms.title != null && _noteController.text.trim().isEmpty) {
+        _noteController.text = sms.title!;
+      }
+      if (sms.dateTime != null) {
+        _date = sms.dateTime!;
       }
     });
   }
@@ -160,14 +184,9 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currency = ref.watch(currencyProvider);
-    final hidden = ref.watch(hiddenCategoriesProvider);
-    final customCats = ref.watch(customCategoriesProvider);
 
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final safeAreaBottom = MediaQuery.of(context).viewPadding.bottom;
-
-    final visibleBuiltIn =
-        Category.values.where((c) => !hidden.contains(c.name)).toList();
 
     return DraggableScrollableSheet(
       initialChildSize: 0.9,
@@ -210,9 +229,10 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                           ?.copyWith(fontWeight: FontWeight.w800),
                     ),
                     const Spacer(),
-                    BillScanButton(
+                    QuickCaptureButton(
                       supportsTitle: false,
-                      onApply: _applyScannedBill,
+                      onScanApply: _applyScannedBill,
+                      onSmsApply: _applySmsPaste,
                     ),
                     const SizedBox(width: 8),
                     IconButton(
@@ -257,12 +277,10 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                     const SizedBox(height: 16),
                     _sectionLabel(context, 'Category'),
                     const SizedBox(height: 10),
-                    _CategoryPicker(
-                      selected: _category,
+                    CategoryDropdownField(
+                      selectedCategory: _category,
                       customCategoryId: _customCategoryId,
                       type: _type,
-                      visibleBuiltIn: visibleBuiltIn,
-                      customCats: customCats,
                       onChanged: (cat, customId) => setState(() {
                         _category = cat;
                         _customCategoryId = customId;
@@ -507,133 +525,6 @@ class _AmountInput extends StatelessWidget {
         fillColor: color.withValues(alpha: 0.06),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-      ),
-    );
-  }
-}
-
-// ─── Category Picker ──────────────────────────────────────────────────────────
-
-class _CategoryPicker extends StatelessWidget {
-  final Category selected;
-  final String? customCategoryId;
-  final TransactionType type;
-  final List<Category> visibleBuiltIn;
-  final List<CustomCategory> customCats;
-  final void Function(Category cat, String? customId) onChanged;
-
-  const _CategoryPicker({
-    required this.selected,
-    required this.customCategoryId,
-    required this.type,
-    required this.visibleBuiltIn,
-    required this.customCats,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final builtInForType = type == TransactionType.income
-        ? visibleBuiltIn
-            .where((c) => c == Category.salary || c == Category.other)
-            .toList()
-        : visibleBuiltIn.where((c) => c != Category.salary).toList();
-
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        ...builtInForType.map((cat) {
-          final isSelected = customCategoryId == null && selected == cat;
-          final color = cat.color;
-          return _Chip(
-            label: cat.label,
-            icon: cat.icon,
-            color: color,
-            isSelected: isSelected,
-            isDark: isDark,
-            onTap: () => onChanged(cat, null),
-          );
-        }),
-        if (type != TransactionType.income)
-          ...customCats.map((cat) {
-            final isSelected = customCategoryId == cat.id;
-            return _Chip(
-              label: cat.label,
-              icon: cat.icon,
-              color: cat.color,
-              isSelected: isSelected,
-              isDark: isDark,
-              onTap: () => onChanged(Category.other, cat.id),
-            );
-          }),
-      ],
-    );
-  }
-}
-
-class _Chip extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final Color color;
-  final bool isSelected;
-  final bool isDark;
-  final VoidCallback onTap;
-
-  const _Chip({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.isSelected,
-    required this.isDark,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: 200.ms,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? color.withValues(alpha: 0.15)
-              : isDark
-                  ? AppColors.darkCard
-                  : AppColors.lightCard,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: isSelected
-                ? color.withValues(alpha: 0.5)
-                : isDark
-                    ? AppColors.darkBorder
-                    : AppColors.lightBorder,
-            width: isSelected ? 1.5 : 0.5,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon,
-                color: isSelected ? color : AppColors.textTertiary, size: 14),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected
-                    ? color
-                    : isDark
-                        ? AppColors.textSecondary
-                        : AppColors.textLightSecondary,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                fontSize: 13,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

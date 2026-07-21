@@ -62,6 +62,10 @@ export async function deleteNotification(
   await notificationsRepository.deleteNotification(notificationId, userId);
 }
 
+export async function deleteAllNotifications(userId: string): Promise<void> {
+  await notificationsRepository.deleteAllNotifications(userId);
+}
+
 // ── Push Notification Senders ─────────────────────────────────────────────────
 // These are called fire-and-forget from other service modules.
 

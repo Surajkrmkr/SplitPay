@@ -89,7 +89,7 @@ function calculateShares(
     }
 
     case 'PERCENTAGE': {
-      return participants.map((p) => {
+      const shares = participants.map((p) => {
         if (p.percentage === undefined) {
           throw new BadRequestError(`Missing percentage for participant ${p.userId}`);
         }
@@ -99,6 +99,15 @@ function calculateShares(
           percentage: p.percentage,
         };
       });
+      // Rounding each share independently can leave the sum a cent or two off
+      // the total amount. Apply the remainder to the first participant so
+      // shares always add up exactly, matching the EQUAL split behavior above.
+      const sum = shares.reduce((s, p) => s + p.share, 0);
+      const remainder = Math.round((totalAmount - sum) * 100) / 100;
+      if (remainder !== 0 && shares.length > 0) {
+        shares[0].share = Math.round((shares[0].share + remainder) * 100) / 100;
+      }
+      return shares;
     }
 
     case 'EXACT': {
@@ -152,10 +161,19 @@ export async function updateExpense(
   const isMember = await groupsRepository.isMember(expense.groupId, userId);
   if (!isMember) throw new ForbiddenError('You are not a member of this group');
 
-  const { date, ...rest } = input;
+  const { date, participants, ...rest } = input;
   const updated = await expensesRepository.updateExpense(expenseId, {
     ...rest,
     ...(date ? { date: new Date(date) } : {}),
+    ...(participants
+      ? {
+          participants: calculateShares(
+            rest.splitType ?? expense.splitType,
+            rest.amount ?? Number(expense.amount),
+            participants
+          ),
+        }
+      : {}),
   });
 
   await activityRepository.createActivity({

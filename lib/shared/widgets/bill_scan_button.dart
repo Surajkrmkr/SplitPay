@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/errors/app_exception.dart';
 import '../../data/services/bill_scanner_service.dart';
+import 'detected_field_row.dart';
 
 /// Outcome returned from the scan flow. Callers apply whichever fields are
 /// non-null and leave the rest of their form untouched.
@@ -70,10 +71,14 @@ class _BillScanButtonState extends ConsumerState<BillScanButton> {
         return;
       }
 
-      final applied = await _showConfirmDialog(result);
-      if (applied != null && applied.hasAny) {
-        widget.onApply.call(applied._toBillScanApplied());
-        _toast(applied.summary, isError: false);
+      final applied = await showBillScanConfirmDialog(
+        context,
+        result: result,
+        supportsTitle: widget.supportsTitle,
+      );
+      if (applied != null && !applied.isEmpty) {
+        widget.onApply.call(applied);
+        _toast('Applied details from your bill', isError: false);
       }
     } catch (e) {
       if (mounted) {
@@ -150,130 +155,6 @@ class _BillScanButtonState extends ConsumerState<BillScanButton> {
               const SizedBox(height: 4),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Future<_ConfirmedResult?> _showConfirmDialog(BillScanResult result) async {
-    // The "selected" candidate starts as the parser's top pick. Pills below
-    // each row let the user swap to a lower-ranked alternative without leaving
-    // the dialog.
-    double? selectedAmount = result.amount;
-    String? selectedTitle = widget.supportsTitle ? result.title : null;
-
-    bool useAmount = selectedAmount != null;
-    bool useTitle = widget.supportsTitle && selectedTitle != null;
-    bool useDate = result.dateTime != null;
-
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return showDialog<_ConfirmedResult>(
-      context: context,
-      builder: (dialogCtx) => StatefulBuilder(
-        builder: (ctx, setLocal) => AlertDialog(
-          backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-          title: Row(
-            children: [
-              const Icon(Icons.auto_awesome_rounded,
-                  color: AppColors.primary, size: 18),
-              const SizedBox(width: 8),
-              const Text('Detected from your bill',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-            ],
-          ),
-          content: SizedBox(
-            width: 320,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Tap a pill to swap; untick anything you want to leave unchanged.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _DetectedRow(
-                    icon: Icons.currency_rupee_rounded,
-                    label: 'Amount',
-                    value: selectedAmount?.toStringAsFixed(2),
-                    checked: useAmount,
-                    onChanged: selectedAmount == null
-                        ? null
-                        : (v) => setLocal(() => useAmount = v),
-                    pills: result.amountCandidates
-                        .map((v) => v.toStringAsFixed(2))
-                        .toList(),
-                    selectedPill: selectedAmount?.toStringAsFixed(2),
-                    onPickPill: (label) {
-                      final picked = double.tryParse(label);
-                      if (picked == null) return;
-                      setLocal(() {
-                        selectedAmount = picked;
-                        useAmount = true;
-                      });
-                    },
-                  ),
-                  if (widget.supportsTitle)
-                    _DetectedRow(
-                      icon: Icons.storefront_rounded,
-                      label: 'Title',
-                      value: selectedTitle,
-                      checked: useTitle,
-                      onChanged: selectedTitle == null
-                          ? null
-                          : (v) => setLocal(() => useTitle = v),
-                      pills: result.titleCandidates,
-                      selectedPill: selectedTitle,
-                      onPickPill: (label) => setLocal(() {
-                        selectedTitle = label;
-                        useTitle = true;
-                      }),
-                    ),
-                  _DetectedRow(
-                    icon: Icons.event_rounded,
-                    label: 'Date & Time',
-                    value: result.dateTime != null
-                        ? DateFormat('d MMM yyyy · h:mm a')
-                            .format(result.dateTime!)
-                        : null,
-                    checked: useDate,
-                    onChanged: result.dateTime == null
-                        ? null
-                        : (v) => setLocal(() => useDate = v),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogCtx).pop(null),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: () => Navigator.of(dialogCtx).pop(
-                _ConfirmedResult(
-                  amount: useAmount ? selectedAmount : null,
-                  title: useTitle ? selectedTitle : null,
-                  dateTime: useDate ? result.dateTime : null,
-                ),
-              ),
-              child: const Text('Apply'),
-            ),
-          ],
         ),
       ),
     );
@@ -382,157 +263,133 @@ class _SourceTile extends StatelessWidget {
   }
 }
 
-class _DetectedRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String? value;
-  final bool checked;
-  final ValueChanged<bool>? onChanged;
+/// Shows the "what we detected" confirm dialog for a bill scan and returns
+/// the user-approved subset to apply (null if cancelled or nothing applied).
+/// Pure function of [result] — shared by [BillScanButton] and any other
+/// entry point that runs OCR and needs the same confirm step.
+Future<BillScanApplied?> showBillScanConfirmDialog(
+  BuildContext context, {
+  required BillScanResult result,
+  required bool supportsTitle,
+}) async {
+  // The "selected" candidate starts as the parser's top pick. Pills below
+  // each row let the user swap to a lower-ranked alternative without leaving
+  // the dialog.
+  double? selectedAmount = result.amount;
+  String? selectedTitle = supportsTitle ? result.title : null;
 
-  /// Optional alternative candidates from the parser. Rendered below the main
-  /// value as tappable pills — the [selectedPill] is highlighted; tapping a
-  /// pill calls [onPickPill] so the caller can swap the selection.
-  final List<String> pills;
-  final String? selectedPill;
-  final ValueChanged<String>? onPickPill;
+  bool useAmount = selectedAmount != null;
+  bool useTitle = supportsTitle && selectedTitle != null;
+  bool useDate = result.dateTime != null;
 
-  const _DetectedRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.checked,
-    required this.onChanged,
-    this.pills = const [],
-    this.selectedPill,
-    this.onPickPill,
-  });
+  final isDark = Theme.of(context).brightness == Brightness.dark;
 
-  @override
-  Widget build(BuildContext context) {
-    final isDisabled = onChanged == null;
-    // Only show alternatives — drop the one we're already displaying.
-    final alternatives =
-        pills.where((p) => p != selectedPill).toList(growable: false);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 16, color: AppColors.textSecondary),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: const TextStyle(
-                          fontSize: 11, color: AppColors.textSecondary),
-                    ),
-                    const SizedBox(height: 1),
-                    Text(
-                      value ?? 'Not detected',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: isDisabled
-                            ? AppColors.textTertiary
-                            : Theme.of(context).textTheme.bodyMedium?.color,
-                        fontStyle: isDisabled ? FontStyle.italic : null,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              Checkbox(
-                value: checked,
-                onChanged: isDisabled ? null : (v) => onChanged!(v ?? false),
-                activeColor: AppColors.primary,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4)),
-              ),
-            ],
-          ),
-          if (alternatives.isNotEmpty && onPickPill != null) ...[
-            const SizedBox(height: 6),
-            Padding(
-              padding: const EdgeInsets.only(left: 26),
-              child: Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  for (final p in alternatives)
-                    _SuggestionPill(
-                      label: p,
-                      onTap: () => onPickPill!(p),
-                    ),
-                ],
-              ),
-            ),
+  return showDialog<BillScanApplied>(
+    context: context,
+    builder: (dialogCtx) => StatefulBuilder(
+      builder: (ctx, setLocal) => AlertDialog(
+        backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Row(
+          children: [
+            const Icon(Icons.auto_awesome_rounded,
+                color: AppColors.primary, size: 18),
+            const SizedBox(width: 8),
+            const Text('Detected from your bill',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
           ],
-        ],
-      ),
-    );
-  }
-}
-
-class _SuggestionPill extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-  const _SuggestionPill({required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: AppColors.primary.withValues(alpha: 0.35),
-              width: 0.8,
-            ),
-          ),
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: AppColors.primary,
+        ),
+        content: SizedBox(
+          width: 320,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Tap a pill to swap; untick anything you want to leave unchanged.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                DetectedFieldRow(
+                  icon: Icons.currency_rupee_rounded,
+                  label: 'Amount',
+                  value: selectedAmount?.toStringAsFixed(2),
+                  checked: useAmount,
+                  onChanged: selectedAmount == null
+                      ? null
+                      : (v) => setLocal(() => useAmount = v),
+                  pills: result.amountCandidates
+                      .map((v) => v.toStringAsFixed(2))
+                      .toList(),
+                  selectedPill: selectedAmount?.toStringAsFixed(2),
+                  onPickPill: (label) {
+                    final picked = double.tryParse(label);
+                    if (picked == null) return;
+                    setLocal(() {
+                      selectedAmount = picked;
+                      useAmount = true;
+                    });
+                  },
+                ),
+                if (supportsTitle)
+                  DetectedFieldRow(
+                    icon: Icons.storefront_rounded,
+                    label: 'Title',
+                    value: selectedTitle,
+                    checked: useTitle,
+                    onChanged: selectedTitle == null
+                        ? null
+                        : (v) => setLocal(() => useTitle = v),
+                    pills: result.titleCandidates,
+                    selectedPill: selectedTitle,
+                    onPickPill: (label) => setLocal(() {
+                      selectedTitle = label;
+                      useTitle = true;
+                    }),
+                  ),
+                DetectedFieldRow(
+                  icon: Icons.event_rounded,
+                  label: 'Date & Time',
+                  value: result.dateTime != null
+                      ? DateFormat('d MMM yyyy · h:mm a')
+                          .format(result.dateTime!)
+                      : null,
+                  checked: useDate,
+                  onChanged: result.dateTime == null
+                      ? null
+                      : (v) => setLocal(() => useDate = v),
+                ),
+              ],
             ),
           ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(null),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () => Navigator.of(dialogCtx).pop(
+              BillScanApplied(
+                amount: useAmount ? selectedAmount : null,
+                title: useTitle ? selectedTitle : null,
+                dateTime: useDate ? result.dateTime : null,
+              ),
+            ),
+            child: const Text('Apply'),
+          ),
+        ],
       ),
-    );
-  }
-}
-
-class _ConfirmedResult {
-  final double? amount;
-  final String? title;
-  final DateTime? dateTime;
-  const _ConfirmedResult({this.amount, this.title, this.dateTime});
-
-  bool get hasAny => amount != null || title != null || dateTime != null;
-
-  String get summary {
-    final parts = <String>[];
-    if (amount != null) parts.add('amount');
-    if (title != null) parts.add('title');
-    if (dateTime != null) parts.add('date');
-    return 'Applied ${parts.join(', ')} from your bill';
-  }
-
-  BillScanApplied _toBillScanApplied() =>
-      BillScanApplied(amount: amount, title: title, dateTime: dateTime);
+    ),
+  );
 }

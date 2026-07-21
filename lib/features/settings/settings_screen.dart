@@ -11,6 +11,8 @@ import '../../core/utils/currency_formatter.dart';
 import '../../data/services/biometric_service.dart';
 import '../../data/models/custom_category.dart';
 import '../../data/models/transaction_model.dart';
+import '../../shared/widgets/create_category_dialog.dart';
+import 'import_data_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -67,6 +69,18 @@ class SettingsScreen extends ConsumerWidget {
                   const SizedBox(height: 12),
                   _SettingsGroup(
                     children: [
+                      _SettingsTile(
+                        icon: Icons.file_download_rounded,
+                        iconColor: AppColors.secondary,
+                        title: 'Import Data',
+                        subtitle: 'Import expenses from a CSV file',
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const ImportDataScreen(),
+                          ),
+                        ),
+                      ),
+                      _Divider(),
                       _SettingsTile(
                         icon: Icons.upload_file_rounded,
                         iconColor: AppColors.secondary,
@@ -742,7 +756,7 @@ class _CategoryManagerSheet extends ConsumerWidget {
   void _showCreateDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
-      builder: (ctx) => _CreateCategoryDialog(isDark: isDark, ref: ref),
+      builder: (ctx) => const CreateCategoryDialog(),
     );
   }
 
@@ -767,161 +781,6 @@ class _CategoryManagerSheet extends ConsumerWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _CreateCategoryDialog extends StatefulWidget {
-  final bool isDark;
-  final WidgetRef ref;
-  const _CreateCategoryDialog({required this.isDark, required this.ref});
-
-  @override
-  State<_CreateCategoryDialog> createState() => _CreateCategoryDialogState();
-}
-
-class _CreateCategoryDialogState extends State<_CreateCategoryDialog> {
-  final _nameController = TextEditingController();
-  int _selectedIcon = 0;
-  int _selectedColor = 0;
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('New Category',
-          style: TextStyle(fontWeight: FontWeight.w700)),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: _nameController,
-              autofocus: true,
-              textCapitalization: TextCapitalization.words,
-              decoration: InputDecoration(
-                hintText: 'Category name',
-                filled: true,
-                fillColor:
-                    widget.isDark ? AppColors.darkCard : AppColors.lightCard,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text('Color',
-                style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondary)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: List.generate(
-                CustomCategory.colors.length,
-                (i) => GestureDetector(
-                  onTap: () => setState(() => _selectedColor = i),
-                  child: Container(
-                    width: 30,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: CustomCategory.colors[i],
-                      shape: BoxShape.circle,
-                      border: _selectedColor == i
-                          ? Border.all(color: Colors.white, width: 2.5)
-                          : null,
-                      boxShadow: _selectedColor == i
-                          ? [
-                              BoxShadow(
-                                  color: CustomCategory.colors[i]
-                                      .withValues(alpha: 0.5),
-                                  blurRadius: 8)
-                            ]
-                          : null,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text('Icon',
-                style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondary)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: List.generate(
-                CustomCategory.icons.length,
-                (i) => GestureDetector(
-                  onTap: () => setState(() => _selectedIcon = i),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: _selectedIcon == i
-                          ? CustomCategory.colors[_selectedColor]
-                              .withValues(alpha: 0.2)
-                          : (widget.isDark
-                              ? AppColors.darkCard
-                              : AppColors.lightCard),
-                      borderRadius: BorderRadius.circular(10),
-                      border: _selectedIcon == i
-                          ? Border.all(
-                              color: CustomCategory.colors[_selectedColor]
-                                  .withValues(alpha: 0.6))
-                          : null,
-                    ),
-                    child: Icon(
-                      CustomCategory.icons[i],
-                      size: 20,
-                      color: _selectedIcon == i
-                          ? CustomCategory.colors[_selectedColor]
-                          : AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
-          onPressed: () {
-            final name = _nameController.text.trim();
-            if (name.isEmpty) return;
-            widget.ref.read(customCategoriesProvider.notifier).add(
-                  CustomCategory(
-                    id: 'custom_${DateTime.now().millisecondsSinceEpoch}',
-                    label: name,
-                    iconIndex: _selectedIcon,
-                    colorIndex: _selectedColor,
-                  ),
-                );
-            Navigator.pop(context);
-          },
-          child: const Text('Create'),
-        ),
-      ],
     );
   }
 }

@@ -20,7 +20,8 @@ class ApiConstants {
   static const String groups = '/groups';
   static String groupById(String id) => '/groups/$id';
   static String groupMembers(String id) => '/groups/$id/members';
-  static String groupMember(String gId, String mId) => '/groups/$gId/members/$mId';
+  static String groupMember(String gId, String mId) =>
+      '/groups/$gId/members/$mId';
   static String groupExpenses(String id) => '/groups/$id/expenses';
   static String groupBalances(String id) => '/groups/$id/balances';
   static String groupSettlements(String id) => '/groups/$id/settlements';
@@ -42,11 +43,13 @@ class ApiConstants {
   static String notificationById(String id) => '/notifications/$id';
   static String notificationRead(String id) => '/notifications/$id/read';
   static const String notificationsReadAll = '/notifications/read-all';
-  static const String notificationsRegisterToken = '/notifications/register-token';
+  static const String notificationsRegisterToken =
+      '/notifications/register-token';
 
   // Personal Transactions
   static const String transactions = '/transactions';
   static String transactionById(String id) => '/transactions/$id';
+  static const String transactionsImport = '/transactions/import';
 
   // Custom Categories
   static const String categories = '/categories';

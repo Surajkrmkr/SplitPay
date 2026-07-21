@@ -34,6 +34,16 @@ export const listTransactionsSchema = z.object({
   endDate: z.string().datetime().optional(),
 });
 
+// CSV import — client resolves/creates categories first, then sends fully-formed
+// rows here. groupId/deviceId are omitted since imported rows are always personal.
+export const importTransactionsSchema = z.object({
+  transactions: z
+    .array(createTransactionSchema.omit({ groupId: true, deviceId: true }))
+    .min(1, 'At least one transaction is required')
+    .max(5000, 'Cannot import more than 5000 transactions at once'),
+});
+
 export type CreateTransactionInput = z.infer<typeof createTransactionSchema>;
 export type UpdateTransactionInput = z.infer<typeof updateTransactionSchema>;
 export type ListTransactionsQuery = z.infer<typeof listTransactionsSchema>;
+export type ImportTransactionsInput = z.infer<typeof importTransactionsSchema>;

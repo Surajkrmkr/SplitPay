@@ -16,6 +16,7 @@ class AnalyticsMini extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final weekly = ref.watch(weeklySpendingProvider);
     final breakdown = ref.watch(categoryBreakdownProvider);
+    final customCats = ref.watch(customCategoriesProvider);
     final currency = ref.watch(currencyProvider);
     final selectedMonth = ref.watch(selectedMonthProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -104,14 +105,14 @@ class AnalyticsMini extends ConsumerWidget {
             ],
           ),
 
-          // ── Weekly mini bar chart ──
+          // ── Weekly mini bar chart (spending only) ──
           if (weekTotal > 0) ...[
             const SizedBox(height: 14),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'This week',
+                  "This week's spending",
                   style: TextStyle(
                     fontSize: 11,
                     color: AppColors.textSecondary,
@@ -122,7 +123,7 @@ class AnalyticsMini extends ConsumerWidget {
                   CurrencyFormatter.format(weekTotal, symbol: currency),
                   style: const TextStyle(
                     fontSize: 12,
-                    color: AppColors.secondary,
+                    color: AppColors.expense,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -138,7 +139,7 @@ class AnalyticsMini extends ConsumerWidget {
             Divider(color: borderColor, height: 1),
             const SizedBox(height: 14),
             const Text(
-              'Top Categories',
+              'Top Spending Categories',
               style: TextStyle(
                 fontSize: 12,
                 color: AppColors.textSecondary,
@@ -160,8 +161,9 @@ class AnalyticsMini extends ConsumerWidget {
               itemBuilder: (context, i) {
                 final entry = top[i];
                 final pct = total > 0 ? entry.value / total : 0.0;
+                final display = resolveCategoryDisplay(entry.key, customCats);
                 return _CategoryCard(
-                  category: entry.key,
+                  display: display,
                   amount: entry.value,
                   percentage: pct,
                   currency: currency,
@@ -199,11 +201,18 @@ class _MiniBarChart extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: List.generate(7, (i) {
-        final ratio = weekly[i] / maxVal;
+        // A day with real (but small) spending next to a much bigger day
+        // would otherwise scale down to a sliver indistinguishable from a
+        // day with no spending at all — floor it so any nonzero day stays
+        // visibly taller than the true-zero placeholder bar.
+        final ratio = weekly[i] == 0 ? 0.0 : (weekly[i] / maxVal).clamp(0.12, 1.0);
         final isToday = i == todayIndex;
+        // Expense-coded (not primary/secondary brand colors) since this
+        // chart is spending-only — using brand colors here read as
+        // ambiguous income-or-expense to users.
         final color = isToday
-            ? AppColors.primary
-            : AppColors.secondary.withValues(alpha: 0.45);
+            ? AppColors.expense
+            : AppColors.expense.withValues(alpha: 0.45);
 
         return Expanded(
           child: Padding(
@@ -233,8 +242,7 @@ class _MiniBarChart extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: isToday ? FontWeight.w700 : FontWeight.w400,
-                    color:
-                        isToday ? AppColors.primary : AppColors.textTertiary,
+                    color: isToday ? AppColors.primary : AppColors.textTertiary,
                   ),
                 ),
               ],
@@ -249,14 +257,14 @@ class _MiniBarChart extends StatelessWidget {
 // ── Category card (2×2 grid item) ────────────────────────────────────────────
 
 class _CategoryCard extends StatelessWidget {
-  final Category category;
+  final CategoryDisplay display;
   final double amount;
   final double percentage;
   final String currency;
   final bool isDark;
 
   const _CategoryCard({
-    required this.category,
+    required this.display,
     required this.amount,
     required this.percentage,
     required this.currency,
@@ -265,7 +273,7 @@ class _CategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = category.color;
+    final color = display.color;
     final bgColor = isDark ? AppColors.darkElevated : AppColors.lightCard;
     final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
 
@@ -289,7 +297,7 @@ class _CategoryCard extends StatelessWidget {
                   color: color.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(category.icon, color: color, size: 15),
+                child: Icon(display.icon, color: color, size: 15),
               ),
               Text(
                 '${(percentage * 100).toStringAsFixed(0)}%',
@@ -305,7 +313,7 @@ class _CategoryCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                category.label,
+                display.label,
                 style: TextStyle(
                   color: isDark
                       ? AppColors.textSecondary

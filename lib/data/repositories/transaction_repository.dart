@@ -23,6 +23,10 @@ class TransactionRepository {
   Future<void> delete(Transaction tx) async {
     await _api.deleteTransaction(tx.serverId!);
   }
+
+  Future<ImportResult> importAll(List<Transaction> transactions) async {
+    return _api.importTransactions(transactions);
+  }
 }
 
 final transactionRepositoryProvider = Provider<TransactionRepository>((ref) {

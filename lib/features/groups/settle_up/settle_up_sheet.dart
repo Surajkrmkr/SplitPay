@@ -110,6 +110,10 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
       _showSnack('Enter a valid amount');
       return false;
     }
+    if (amount - widget.balance.amount > 0.01) {
+      _showSnack('Amount cannot exceed what you owe');
+      return false;
+    }
     if (!UpiService.isValidUpiId(upiId)) {
       setState(() => _upiIdError = 'Enter a valid UPI ID (e.g. name@bank)');
       return false;
@@ -151,6 +155,10 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
     final amount = double.tryParse(_amountCtrl.text.trim());
     if (amount == null || amount <= 0) {
       _showSnack('Enter a valid amount');
+      return;
+    }
+    if (amount - widget.balance.amount > 0.01) {
+      _showSnack('Amount cannot exceed what you owe');
       return;
     }
 

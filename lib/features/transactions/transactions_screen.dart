@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -854,39 +852,18 @@ class _AmountLabel extends StatelessWidget {
 
 // ── Transaction list ──────────────────────────────────────────────────────────
 
-class _TransactionList extends ConsumerStatefulWidget {
+class _TransactionList extends ConsumerWidget {
   const _TransactionList();
 
-  @override
-  ConsumerState<_TransactionList> createState() => _TransactionListState();
-}
+  static const _undoWindow = Duration(seconds: 3);
 
-class _TransactionListState extends ConsumerState<_TransactionList> {
-  static const _undoWindow = Duration(seconds: 4);
-
-  // Items the user just swiped away — hidden from view immediately (so the
-  // Dismissible contract is satisfied) but not actually deleted until the
-  // undo window passes.
-  final Map<String, Transaction> _pendingDeletes = {};
-  final Map<String, Timer> _timers = {};
-
-  @override
-  void dispose() {
-    for (final timer in _timers.values) {
-      timer.cancel();
-    }
-    super.dispose();
-  }
-
-  void _handleSwipeDelete(Transaction tx) {
-    setState(() => _pendingDeletes[tx.id] = tx);
-
-    _timers[tx.id] = Timer(_undoWindow, () {
-      _timers.remove(tx.id);
-      if (_pendingDeletes.remove(tx.id) != null) {
-        ref.read(transactionProvider.notifier).delete(tx);
-      }
-    });
+  void _handleSwipeDelete(BuildContext context, WidgetRef ref, Transaction tx) {
+    // Scheduled on the app-scoped pendingDeletesProvider (not this widget's
+    // own state) so the delete still commits on schedule even if the user
+    // navigates away before the undo window elapses.
+    ref
+        .read(pendingDeletesProvider.notifier)
+        .schedule(tx, undoWindow: _undoWindow);
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -901,21 +878,17 @@ class _TransactionListState extends ConsumerState<_TransactionList> {
         duration: _undoWindow,
         action: SnackBarAction(
           label: 'UNDO',
-          onPressed: () {
-            _timers.remove(tx.id)?.cancel();
-            if (mounted) setState(() => _pendingDeletes.remove(tx.id));
-          },
+          onPressed: () =>
+              ref.read(pendingDeletesProvider.notifier).undo(tx.id),
         ),
       ),
     );
   }
 
   @override
-  Widget build(BuildContext context) {
-    final transactions = ref
-        .watch(searchedTransactionsProvider)
-        .where((t) => !_pendingDeletes.containsKey(t.id))
-        .toList();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final transactions = ref.watch(searchedTransactionsProvider);
+    final currency = ref.watch(currencyProvider);
 
     if (transactions.isEmpty) {
       return RefreshIndicator(
@@ -952,8 +925,7 @@ class _TransactionListState extends ConsumerState<_TransactionList> {
             final tx = transactions[i];
             return TransactionTile(
               transaction: tx,
-              index: i,
-              onDelete: () => _handleSwipeDelete(tx),
+              onDelete: () => _handleSwipeDelete(context, ref, tx),
               onEdit: () => showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
@@ -968,12 +940,14 @@ class _TransactionListState extends ConsumerState<_TransactionList> {
     }
 
     // Date-grouped list
-    final grouped = <String, List<_IndexedTx>>{};
-    var globalIndex = 0;
+    final grouped = <String, List<Transaction>>{};
+    final dayNet = <String, double>{};
     for (final tx in transactions) {
       final key = _dateKey(tx.date);
       grouped.putIfAbsent(key, () => []);
-      grouped[key]!.add(_IndexedTx(tx, globalIndex++));
+      grouped[key]!.add(tx);
+      dayNet[key] = (dayNet[key] ?? 0) +
+          (tx.type == TransactionType.income ? tx.amount : -tx.amount);
     }
 
     final keys = grouped.keys.toList();
@@ -991,18 +965,21 @@ class _TransactionListState extends ConsumerState<_TransactionList> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _DateHeader(label: key),
+              _DateHeader(
+                label: key,
+                total: dayNet[key] ?? 0,
+                currency: currency,
+              ),
               ...items.map(
-                (item) => TransactionTile(
-                  transaction: item.tx,
-                  index: item.index,
-                  onDelete: () => _handleSwipeDelete(item.tx),
+                (tx) => TransactionTile(
+                  transaction: tx,
+                  onDelete: () => _handleSwipeDelete(context, ref, tx),
                   onEdit: () => showModalBottomSheet(
                     context: context,
                     isScrollControlled: true,
                     useRootNavigator: true,
                     backgroundColor: Colors.transparent,
-                    builder: (_) => EditTransactionSheet(transaction: item.tx),
+                    builder: (_) => EditTransactionSheet(transaction: tx),
                   ),
                 ),
               ),
@@ -1040,30 +1017,50 @@ class _TransactionListState extends ConsumerState<_TransactionList> {
       ][m];
 }
 
-class _IndexedTx {
-  final Transaction tx;
-  final int index;
-  const _IndexedTx(this.tx, this.index);
-}
-
 class _DateHeader extends StatelessWidget {
   final String label;
-  const _DateHeader({required this.label});
+  final double total;
+  final String currency;
+  const _DateHeader({
+    required this.label,
+    required this.total,
+    required this.currency,
+  });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isExpense = total < 0;
+    final amountColor = total == 0
+        ? (isDark ? AppColors.textSecondary : AppColors.textLightSecondary)
+        : (isDark ? AppColors.textSecondary : AppColors.textLightSecondary);
+    final prefix = total == 0 ? '' : (isExpense ? '-' : '+');
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color:
-              isDark ? AppColors.textSecondary : AppColors.textLightSecondary,
-          letterSpacing: 0.3,
-        ),
+      child: Row(
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: isDark
+                  ? AppColors.textSecondary
+                  : AppColors.textLightSecondary,
+              letterSpacing: 0.3,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            '$prefix${CurrencyFormatter.format(total.abs(), symbol: currency)}',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: amountColor,
+            ),
+          ),
+        ],
       ),
     );
   }

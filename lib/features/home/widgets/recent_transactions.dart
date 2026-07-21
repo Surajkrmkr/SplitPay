@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,39 +13,18 @@ import '../../../providers/settings_provider.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../transactions/widgets/edit_transaction_sheet.dart';
 
-class RecentTransactions extends ConsumerStatefulWidget {
+class RecentTransactions extends ConsumerWidget {
   const RecentTransactions({super.key});
 
-  @override
-  ConsumerState<RecentTransactions> createState() => _RecentTransactionsState();
-}
+  static const _undoWindow = Duration(seconds: 3);
 
-class _RecentTransactionsState extends ConsumerState<RecentTransactions> {
-  static const _undoWindow = Duration(seconds: 4);
-
-  // Items the user just swiped away — hidden from view immediately (so the
-  // Dismissible contract is satisfied) but not actually deleted until the
-  // undo window passes.
-  final Map<String, Transaction> _pendingDeletes = {};
-  final Map<String, Timer> _timers = {};
-
-  @override
-  void dispose() {
-    for (final timer in _timers.values) {
-      timer.cancel();
-    }
-    super.dispose();
-  }
-
-  void _handleSwipeDelete(Transaction tx) {
-    setState(() => _pendingDeletes[tx.id] = tx);
-
-    _timers[tx.id] = Timer(_undoWindow, () {
-      _timers.remove(tx.id);
-      if (_pendingDeletes.remove(tx.id) != null) {
-        ref.read(transactionProvider.notifier).delete(tx);
-      }
-    });
+  void _handleSwipeDelete(BuildContext context, WidgetRef ref, Transaction tx) {
+    // Scheduled on the app-scoped pendingDeletesProvider (not this widget's
+    // own state) so the delete still commits on schedule even if the user
+    // navigates away before the undo window elapses.
+    ref
+        .read(pendingDeletesProvider.notifier)
+        .schedule(tx, undoWindow: _undoWindow);
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -62,21 +39,16 @@ class _RecentTransactionsState extends ConsumerState<RecentTransactions> {
         duration: _undoWindow,
         action: SnackBarAction(
           label: 'UNDO',
-          onPressed: () {
-            _timers.remove(tx.id)?.cancel();
-            if (mounted) setState(() => _pendingDeletes.remove(tx.id));
-          },
+          onPressed: () =>
+              ref.read(pendingDeletesProvider.notifier).undo(tx.id),
         ),
       ),
     );
   }
 
   @override
-  Widget build(BuildContext context) {
-    final transactions = ref
-        .watch(recentTransactionsProvider)
-        .where((t) => !_pendingDeletes.containsKey(t.id))
-        .toList();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final transactions = ref.watch(recentTransactionsProvider);
     final currency = ref.watch(currencyProvider);
 
     return Column(
@@ -129,7 +101,7 @@ class _RecentTransactionsState extends ConsumerState<RecentTransactions> {
                   key: ValueKey(tx.id),
                   transaction: tx,
                   currency: currency,
-                  onSwipeDelete: () => _handleSwipeDelete(tx),
+                  onSwipeDelete: () => _handleSwipeDelete(context, ref, tx),
                 ).animate(delay: (i * 60).ms).fadeIn().slideX(
                       begin: 0.1,
                       end: 0,

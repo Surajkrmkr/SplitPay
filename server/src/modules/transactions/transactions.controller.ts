@@ -6,6 +6,7 @@ import {
   CreateTransactionInput,
   UpdateTransactionInput,
   ListTransactionsQuery,
+  ImportTransactionsInput,
 } from '../../validations/transaction.validation';
 
 export async function createTransaction(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -54,6 +55,16 @@ export async function deleteTransaction(req: Request, res: Response, next: NextF
     const { userId } = (req as AuthenticatedRequest).user;
     await service.deleteTransaction(userId, req.params.id);
     sendSuccess(res, null, 'Transaction deleted');
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function importTransactions(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { userId } = (req as AuthenticatedRequest).user;
+    const result = await service.importTransactions(userId, req.body as ImportTransactionsInput);
+    sendSuccess(res, result, 'Transactions imported');
   } catch (err) {
     next(err);
   }

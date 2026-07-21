@@ -66,6 +66,11 @@ dependencies:
   share_plus: ^10.0.3
   image_picker: ^1.1.2
 
+  # Data import (CSV) — used by Settings > Import Data
+  file_picker: ^8.1.2
+  csv: ^6.0.0
+  path_provider: ^2.1.4
+
   # UPI payments (India only)
   upi_intent: ^1.0.1
   url_launcher: ^6.3.0
@@ -92,3 +97,4 @@ flutter:
   assets:
     - assets/icon/
     - assets/app_icons/
+    - assets/sample/

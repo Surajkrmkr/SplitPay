@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 
+import '../../core/utils/fuzzy_date_parser.dart';
+
 /// What we managed to extract from a scanned bill.
 ///
 /// Amount and title now ship as ranked candidate lists (best guess first) so
@@ -89,7 +91,8 @@ class BillScannerService {
 
     final amounts = _extractAmounts(lines);
     final titles = _extractTitles(lines);
-    final dateTime = _extractDateTime(lines);
+    final dateTime =
+        extractDateTimeFromLines(lines.map((l) => l.text).toList());
 
     _log('━━━━━ PARSED ━━━━━');
     _log('  amounts  : ${amounts.isEmpty ? "(none)" : amounts.join(", ")}');
@@ -109,19 +112,50 @@ class BillScannerService {
 
   // Lines that mention any of these are typically *not* about money.
   static const _nonMoneyLineKeywords = [
-    'phone', 'tel.', 'tel:', 'tel ', 'telephone', 'mob', 'mobile', 'fax',
-    'cell', 'contact', 'customer care', 'helpline', 'whatsapp',
-    'gstin', 'gst no', 'gst:', 'pan', 'cin', 'fssai',
-    'invoice no', 'bill no', 'order no', 'order id', 'table no', 'kot',
-    'pin code', 'pincode', 'zip',
+    'phone',
+    'tel.',
+    'tel:',
+    'tel ',
+    'telephone',
+    'mob',
+    'mobile',
+    'fax',
+    'cell',
+    'contact',
+    'customer care',
+    'helpline',
+    'whatsapp',
+    'gstin',
+    'gst no',
+    'gst:',
+    'pan',
+    'cin',
+    'fssai',
+    'invoice no',
+    'bill no',
+    'order no',
+    'order id',
+    'table no',
+    'kot',
+    'pin code',
+    'pincode',
+    'zip',
   ];
 
   // Lines that strongly suggest the number on them is the bill total.
   // First list wins ties — earlier = stronger signal.
   static const _amountKeywordsRanked = [
     ['grand total'],
-    ['amount due', 'total amount', 'net amount', 'net payable',
-      'bill amount', 'amount payable', 'final total', 'final amount'],
+    [
+      'amount due',
+      'total amount',
+      'net amount',
+      'net payable',
+      'bill amount',
+      'amount payable',
+      'final total',
+      'final amount'
+    ],
     ['total'],
     ['amount', 'subtotal', 'sub total', 'net', 'payable', 'due'],
   ];
@@ -152,9 +186,8 @@ class BillScannerService {
 
       // Strip phone-number tokens from the line so they can't pollute the
       // number scan (e.g. a phone next to an amount on the same line).
-      final cleaned = line
-          .replaceAll(_phoneLikeRe, ' ')
-          .replaceAll(_longDigitRunRe, ' ');
+      final cleaned =
+          line.replaceAll(_phoneLikeRe, ' ').replaceAll(_longDigitRunRe, ' ');
 
       for (final m in _amountRe.allMatches(cleaned)) {
         final raw = m.group(1)!;
@@ -197,7 +230,8 @@ class BillScannerService {
         if (raw.contains('.')) score += 12; // monetary decimals
         // Numbers at end-of-line are usually totals; line items often have
         // qty, rate, amount columns where the amount is right-most too.
-        if (cleaned.trim().endsWith(raw) || cleaned.trim().endsWith('$raw.00')) {
+        if (cleaned.trim().endsWith(raw) ||
+            cleaned.trim().endsWith('$raw.00')) {
           score += 4;
         }
 
@@ -261,8 +295,7 @@ class BillScannerService {
     // median height of the first 10 lines as a baseline.
     final topSlice = lines.take(10).toList();
     final heights = topSlice.map((l) => l.height).toList()..sort();
-    final medianHeight =
-        heights.isEmpty ? 0.0 : heights[heights.length ~/ 2];
+    final medianHeight = heights.isEmpty ? 0.0 : heights[heights.length ~/ 2];
 
     final candidates = <_Candidate<String>>[];
 
@@ -274,7 +307,8 @@ class BillScannerService {
       final letters = line.replaceAll(RegExp(r'[^A-Za-z]'), '').length;
       final ratio = letters / length;
       if (ratio < 0.55) {
-        _log('title   · skip "$line" (alpha ratio ${ratio.toStringAsFixed(2)})');
+        _log(
+            'title   · skip "$line" (alpha ratio ${ratio.toStringAsFixed(2)})');
         continue;
       }
 
@@ -317,8 +351,7 @@ class BillScannerService {
       if (ratio >= 0.85) score += 15;
 
       // All-caps brand names are extremely common.
-      final upperLetters =
-          line.replaceAll(RegExp(r'[^A-Z]'), '').length;
+      final upperLetters = line.replaceAll(RegExp(r'[^A-Z]'), '').length;
       if (letters > 0 && upperLetters / letters >= 0.7) score += 10;
 
       // Shorter title-cased lines feel right (2-25 chars sweet spot).
@@ -347,129 +380,6 @@ class BillScannerService {
     }
     _log('title   → top picks: ${top.join(" | ")}');
     return top;
-  }
-
-  // ── Date & Time ────────────────────────────────────────────────────────────
-
-  static final _months = {
-    'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
-    'jul': 7, 'aug': 8, 'sep': 9, 'sept': 9, 'oct': 10, 'nov': 11, 'dec': 12,
-    'january': 1, 'february': 2, 'march': 3, 'april': 4, 'june': 6,
-    'july': 7, 'august': 8, 'september': 9, 'october': 10, 'november': 11,
-    'december': 12,
-  };
-
-  DateTime? _extractDateTime(List<_Line> lines) {
-    final date = _extractDate(lines);
-    if (date == null) {
-      _log('date    → none found');
-      return null;
-    }
-    final time = _extractTime(lines);
-    if (time == null) {
-      _log('date    → ${date.toIso8601String()} (no time)');
-      return date;
-    }
-    final combined =
-        DateTime(date.year, date.month, date.day, time.hour, time.minute);
-    _log('date    → ${combined.toIso8601String()} '
-        '(date + ${time.hour}:${time.minute.toString().padLeft(2, '0')})');
-    return combined;
-  }
-
-  DateTime? _extractDate(List<_Line> lines) {
-    final monthRe = _months.keys.join('|');
-    final numericRe = RegExp(r'\b(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2,4})\b');
-    final dmyRe = RegExp(r'\b(\d{1,2})\s+(' + monthRe + r')\.?\s+(\d{2,4})\b',
-        caseSensitive: false);
-    final mdyRe = RegExp(r'\b(' + monthRe + r')\.?\s+(\d{1,2}),?\s+(\d{2,4})\b',
-        caseSensitive: false);
-
-    // Walk lines in order; the first plausible date wins (bills usually
-    // print the transaction date near the top, before line items).
-    for (final line in lines) {
-      for (final m in numericRe.allMatches(line.text)) {
-        final d = int.tryParse(m.group(1)!);
-        final mo = int.tryParse(m.group(2)!);
-        var y = int.tryParse(m.group(3)!);
-        if (d == null || mo == null || y == null) continue;
-        if (y < 100) y += 2000;
-
-        // Assume DD/MM (Indian convention); swap if month > 12.
-        var day = d, month = mo;
-        if (month > 12 && day <= 12) {
-          day = mo;
-          month = d;
-        }
-        try {
-          final dt = DateTime(y, month, day);
-          if (dt.year < 2000) continue;
-          if (dt.isAfter(DateTime.now().add(const Duration(days: 1)))) continue;
-          return dt;
-        } catch (_) {}
-      }
-
-      for (final m in dmyRe.allMatches(line.text)) {
-        final d = int.tryParse(m.group(1)!);
-        final mo = _months[m.group(2)!.toLowerCase()];
-        var y = int.tryParse(m.group(3)!);
-        if (d == null || mo == null || y == null) continue;
-        if (y < 100) y += 2000;
-        try {
-          return DateTime(y, mo, d);
-        } catch (_) {}
-      }
-
-      for (final m in mdyRe.allMatches(line.text)) {
-        final mo = _months[m.group(1)!.toLowerCase()];
-        final d = int.tryParse(m.group(2)!);
-        var y = int.tryParse(m.group(3)!);
-        if (d == null || mo == null || y == null) continue;
-        if (y < 100) y += 2000;
-        try {
-          return DateTime(y, mo, d);
-        } catch (_) {}
-      }
-    }
-
-    return null;
-  }
-
-  ({int hour, int minute})? _extractTime(List<_Line> lines) {
-    final re = RegExp(r'\b(\d{1,2}):(\d{2})(?:\s*([AaPp][Mm]))?\b');
-
-    for (final line in lines) {
-      final lower = line.text.toLowerCase();
-      // Skip lines that almost never carry a real time: bill/invoice/order
-      // numbers, KOT, table — the digits there are IDs, not clocks.
-      if (lower.contains('bill no') ||
-          lower.contains('invoice no') ||
-          lower.contains('order no') ||
-          lower.contains('order id') ||
-          lower.contains('kot') ||
-          lower.contains('table')) {
-        continue;
-      }
-
-      for (final m in re.allMatches(line.text)) {
-        final h = int.tryParse(m.group(1)!);
-        final mn = int.tryParse(m.group(2)!);
-        if (h == null || mn == null) continue;
-        if (mn < 0 || mn > 59) continue;
-
-        var hour = h;
-        final suffix = m.group(3)?.toLowerCase();
-        if (suffix != null) {
-          if (hour < 1 || hour > 12) continue;
-          if (suffix.startsWith('p') && hour < 12) hour += 12;
-          if (suffix.startsWith('a') && hour == 12) hour = 0;
-        } else {
-          if (hour > 23) continue;
-        }
-        return (hour: hour, minute: mn);
-      }
-    }
-    return null;
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
