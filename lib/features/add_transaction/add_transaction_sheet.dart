@@ -180,212 +180,209 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
         ));
   }
 
+  Future<void> _pickDateTime() async {
+    await _pickDate();
+    if (!mounted) return;
+    await _pickTime();
+  }
+
+  void _showRecurrencePicker() {
+    showModalBottomSheet(
+      context: context,
+      useRootNavigator: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _RecurrencePickerSheet(
+        selected: _recurrence,
+        onChanged: (r) => setState(() => _recurrence = r),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currency = ref.watch(currencyProvider);
+    final bgColor = isDark ? AppColors.darkSurface : AppColors.lightSurface;
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
-    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-    final safeAreaBottom = MediaQuery.of(context).viewPadding.bottom;
-
-    return DraggableScrollableSheet(
-      initialChildSize: 0.9,
-      maxChildSize: 0.9,
-      minChildSize: 0.5,
-      expand: false,
-      snap: true,
-      snapSizes: const [0.75, 0.9],
-      builder: (_, scrollController) {
-        return Container(
-          clipBehavior: Clip.hardEdge,
+    // Hug content height instead of always claiming the full screen — with
+    // the keyboard closed there's often a lot of empty middle space. Capped
+    // at 92% of screen height as a safety net for small devices / long
+    // content.
+    //
+    // showModalBottomSheet doesn't reposition for the keyboard on its own —
+    // padding the *outside* of the sheet by the keyboard height is what
+    // actually shifts it up to clear the keyboard; the maxHeight budget is
+    // shrunk by the same amount so the whole thing still fits on screen.
+    //
+    // Only the middle (amount/note/app-icon) section scrolls — wrapping the
+    // date/category/save row in the same scroll view let it get pushed below
+    // the fold (and out of sight) whenever the middle content grew taller
+    // than the available space, e.g. the Suggested Apps row for Food/Expense.
+    // Flexible (not Expanded) lets the middle shrink-to-fit when there's
+    // room, so the sheet still hugs short content instead of always maxing
+    // out its height budget.
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.92 - bottomInset,
+        ),
+        child: Container(
           decoration: BoxDecoration(
-            color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+            color: bgColor,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           ),
-          child: Column(
-            children: [
-              // Handle
-              const SizedBox(height: 12),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.textTertiary.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(2),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Handle
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.textTertiary.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
 
-              // Header
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Row(
-                  children: [
-                    Text(
-                      'Add Transaction',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleLarge
-                          ?.copyWith(fontWeight: FontWeight.w800),
-                    ),
-                    const Spacer(),
-                    QuickCaptureButton(
-                      supportsTitle: false,
-                      onScanApply: _applyScannedBill,
-                      onSmsApply: _applySmsPaste,
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: Icon(Icons.close_rounded,
-                          color: AppColors.textSecondary),
-                      style: IconButton.styleFrom(
-                        backgroundColor:
-                            isDark ? AppColors.darkCard : AppColors.lightCard,
-                        padding: const EdgeInsets.all(8),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 4),
-
-              // Scrollable form
-              Expanded(
-                child: ListView(
-                  controller: scrollController,
-                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
-                  children: [
-                    _TypeToggle(
-                      selected: _type,
-                      onChanged: (t) => setState(() {
-                        _type = t;
-                        _customCategoryId = null;
-                        _appIcon = null;
-                        _category = t == TransactionType.income
-                            ? Category.salary
-                            : Category.food;
-                      }),
-                    ).animate().fadeIn(duration: 300.ms),
-                    const SizedBox(height: 20),
-                    _AmountInput(
-                      controller: _amountController,
-                      currency: currency,
-                      type: _type,
-                      onChanged: (_) => setState(() {}),
-                    ).animate(delay: 50.ms).fadeIn().slideY(begin: 0.1),
-                    const SizedBox(height: 16),
-                    _sectionLabel(context, 'Category'),
-                    const SizedBox(height: 10),
-                    CategoryDropdownField(
-                      selectedCategory: _category,
-                      customCategoryId: _customCategoryId,
-                      type: _type,
-                      onChanged: (cat, customId) => setState(() {
-                        _category = cat;
-                        _customCategoryId = customId;
-                        // Clear the app icon if it's not relevant to the new
-                        // category — keeps suggestions consistent with the
-                        // user's pick.
-                        if (_appIcon != null &&
-                            !CategoryAppIcons.iconsFor(cat)
-                                .contains(_appIcon)) {
-                          _appIcon = null;
-                        }
-                      }),
-                    ).animate(delay: 100.ms).fadeIn().slideY(begin: 0.1),
-                    const SizedBox(height: 16),
-                    if (CategoryAppIcons.iconsFor(_category).isNotEmpty) ...[
-                      AppIconPicker(
-                        category: _category,
-                        selected: _appIcon,
-                        onSelected: (v) => setState(() => _appIcon = v),
+                // Top bar
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                  child: Row(
+                    children: [
+                      _CircleIconButton(
+                        icon: Icons.close_rounded,
                         isDark: isDark,
-                      ).animate(delay: 130.ms).fadeIn().slideY(begin: 0.1),
-                      const SizedBox(height: 16),
+                        onTap: () => Navigator.of(context).pop(),
+                      ),
+                      Expanded(
+                        child: Center(
+                          child: _TypeToggle(
+                            selected: _type,
+                            onChanged: (t) => setState(() {
+                              _type = t;
+                              _customCategoryId = null;
+                              _appIcon = null;
+                              _category = t == TransactionType.income
+                                  ? Category.salary
+                                  : Category.food;
+                            }),
+                          ),
+                        ),
+                      ),
+                      _CircleIconButton(
+                        icon: Icons.repeat_rounded,
+                        isDark: isDark,
+                        active: _recurrence != RecurrenceType.none,
+                        onTap: _showRecurrencePicker,
+                      ),
                     ],
-                    _sectionLabel(context, 'Note (optional)'),
-                    const SizedBox(height: 10),
-                    _NoteInput(controller: _noteController)
-                        .animate(delay: 150.ms)
-                        .fadeIn()
-                        .slideY(begin: 0.1),
-                    const SizedBox(height: 16),
-                    _sectionLabel(context, 'Date & Time'),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _DateSelector(
-                            date: _date,
-                            onTap: _pickDate,
-                            isDark: isDark,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _TimeSelector(
-                            date: _date,
-                            onTap: _pickTime,
-                            isDark: isDark,
-                          ),
-                        ),
-                      ],
-                    ).animate(delay: 200.ms).fadeIn().slideY(begin: 0.1),
-                    const SizedBox(height: 16),
-                    _sectionLabel(context, 'Repeats'),
-                    const SizedBox(height: 10),
-                    _RecurrencePicker(
-                      selected: _recurrence,
-                      onChanged: (r) => setState(() => _recurrence = r),
-                    ).animate(delay: 250.ms).fadeIn().slideY(begin: 0.1),
-                    const SizedBox(height: 8),
-                  ],
+                  ),
                 ),
-              ),
 
-              // Fixed button — rises with keyboard
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOut,
-                padding: EdgeInsets.fromLTRB(
-                  24,
-                  12,
-                  24,
-                  (keyboardHeight > 0 ? keyboardHeight : safeAreaBottom) + 16,
-                ),
-                decoration: BoxDecoration(
-                  color:
-                      isDark ? AppColors.darkSurface : AppColors.lightSurface,
-                  border: Border(
-                    top: BorderSide(
-                      color:
-                          isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                      width: 0.5,
+                // Amount, note, app icon suggestions — the only scrollable part
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(height: 12),
+                        Center(
+                          child: QuickCaptureButton(
+                            supportsTitle: false,
+                            onScanApply: _applyScannedBill,
+                            onSmsApply: _applySmsPaste,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        _AmountInput(
+                          controller: _amountController,
+                          currency: currency,
+                          type: _type,
+                          onChanged: (_) => setState(() {}),
+                        ),
+                        const SizedBox(height: 20),
+                        _NotePill(controller: _noteController),
+                        if (CategoryAppIcons.iconsFor(_category)
+                            .isNotEmpty) ...[
+                          const SizedBox(height: 20),
+                          AppIconPicker(
+                            category: _category,
+                            selected: _appIcon,
+                            onSelected: (v) => setState(() => _appIcon = v),
+                            isDark: isDark,
+                          ),
+                        ],
+                        const SizedBox(height: 24),
+                      ],
                     ),
                   ),
                 ),
-                child: _SaveButton(
-                  saving: _saving,
-                  enabled: _isValid,
-                  type: _type,
-                  onPressed: _save,
-                ).animate(delay: 250.ms).fadeIn().slideY(begin: 0.1),
-              ),
-            ],
+
+                // Date/time + category, and save — always fully visible
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    20,
+                    8,
+                    20,
+                    MediaQuery.of(context).viewPadding.bottom + 16,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _DateTimeField(
+                              date: _date,
+                              isDark: isDark,
+                              onTap: _pickDateTime,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: CategoryDropdownField(
+                              selectedCategory: _category,
+                              customCategoryId: _customCategoryId,
+                              type: _type,
+                              onChanged: (cat, customId) => setState(() {
+                                _category = cat;
+                                _customCategoryId = customId;
+                                // Clear the app icon if it's not relevant to
+                                // the new category — keeps suggestions
+                                // consistent with the user's pick.
+                                if (_appIcon != null &&
+                                    !CategoryAppIcons.iconsFor(cat)
+                                        .contains(_appIcon)) {
+                                  _appIcon = null;
+                                }
+                              }),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      _SaveButton(
+                        saving: _saving,
+                        enabled: _isValid,
+                        type: _type,
+                        onPressed: _save,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
-
-  Widget _sectionLabel(BuildContext context, String text) => Text(
-        text,
-        style: Theme.of(context)
-            .textTheme
-            .labelLarge
-            ?.copyWith(color: AppColors.textSecondary),
-      );
 }
 
 // ─── Type Toggle ──────────────────────────────────────────────────────────────
@@ -401,57 +398,57 @@ class _TypeToggle extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.all(4),
+      height: 40,
+      padding: const EdgeInsets.symmetric(horizontal: 4),
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkCard : AppColors.lightCard,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: TransactionType.values.map((type) {
           final isSelected = selected == type;
           final isExpense = type == TransactionType.expense;
           final color = isExpense ? AppColors.expense : AppColors.income;
 
-          return Expanded(
-            child: GestureDetector(
-              onTap: () {
-                HapticFeedback.selectionClick();
-                onChanged(type);
-              },
-              child: AnimatedContainer(
-                duration: 200.ms,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? color.withValues(alpha: 0.15)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                  border: isSelected
-                      ? Border.all(color: color.withValues(alpha: 0.3))
-                      : null,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      isExpense
-                          ? Icons.arrow_upward_rounded
-                          : Icons.arrow_downward_rounded,
+          return GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onChanged(type);
+            },
+            child: AnimatedContainer(
+              duration: 200.ms,
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? color.withValues(alpha: 0.15)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(10),
+                border: isSelected
+                    ? Border.all(color: color.withValues(alpha: 0.3))
+                    : null,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isExpense
+                        ? Icons.arrow_upward_rounded
+                        : Icons.arrow_downward_rounded,
+                    color: isSelected ? color : AppColors.textTertiary,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    isExpense ? 'Expense' : 'Income',
+                    style: TextStyle(
                       color: isSelected ? color : AppColors.textTertiary,
-                      size: 16,
+                      fontWeight:
+                          isSelected ? FontWeight.w700 : FontWeight.w500,
+                      fontSize: 14,
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      isExpense ? 'Expense' : 'Income',
-                      style: TextStyle(
-                        color: isSelected ? color : AppColors.textTertiary,
-                        fontWeight:
-                            isSelected ? FontWeight.w700 : FontWeight.w500,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           );
@@ -481,83 +478,105 @@ class _AmountInput extends StatelessWidget {
     final color =
         type == TransactionType.expense ? AppColors.expense : AppColors.income;
 
-    return TextField(
-      controller: controller,
-      onChanged: onChanged,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      inputFormatters: [
-        FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: Text(
+            currency,
+            style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.w700,
+              color: color.withValues(alpha: 0.6),
+            ),
+          ),
+        ),
+        const SizedBox(width: 6),
+        IntrinsicWidth(
+          child: TextField(
+            controller: controller,
+            onChanged: onChanged,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+            ],
+            autofocus: true,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 48,
+              fontWeight: FontWeight.w800,
+              color: color,
+              letterSpacing: -1,
+            ),
+            decoration: InputDecoration(
+              hintText: '0',
+              hintStyle: TextStyle(
+                fontSize: 48,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textTertiary,
+                letterSpacing: -1,
+              ),
+              border: InputBorder.none,
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+        ),
       ],
-      autofocus: true,
-      style: TextStyle(
-        fontSize: 32,
-        fontWeight: FontWeight.w800,
-        color: color,
-        letterSpacing: -1,
-      ),
-      decoration: InputDecoration(
-        prefixText: '$currency ',
-        prefixStyle: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.w700,
-          color: color.withValues(alpha: 0.6),
-        ),
-        hintText: '0.00',
-        hintStyle: TextStyle(
-          fontSize: 32,
-          fontWeight: FontWeight.w800,
-          color: AppColors.textTertiary,
-          letterSpacing: -1,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: color.withValues(alpha: 0.3)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: color.withValues(alpha: 0.2)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: color, width: 1.5),
-        ),
-        filled: true,
-        fillColor: color.withValues(alpha: 0.06),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-      ),
     );
   }
 }
 
-// ─── Note Input ───────────────────────────────────────────────────────────────
+// ─── Note Pill ────────────────────────────────────────────────────────────────
 
-class _NoteInput extends StatelessWidget {
+class _NotePill extends StatelessWidget {
   final TextEditingController controller;
-  const _NoteInput({required this.controller});
+  const _NotePill({required this.controller});
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      maxLines: 2,
-      textCapitalization: TextCapitalization.sentences,
-      decoration: const InputDecoration(
-        hintText: 'What was this for?',
-        prefixIcon: Icon(Icons.edit_note_rounded, size: 22),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      constraints: const BoxConstraints(minWidth: 160),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkCard : AppColors.lightCard,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+          width: 0.5,
+        ),
+      ),
+      child: TextField(
+        controller: controller,
+        textAlign: TextAlign.center,
+        textCapitalization: TextCapitalization.sentences,
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        decoration: InputDecoration(
+          isDense: true,
+          hintText: 'Add Note',
+          icon: Padding(
+            padding: const EdgeInsets.only(left: 4),
+            child: Icon(Icons.notes_rounded,
+                size: 16, color: AppColors.textSecondary),
+          ),
+          border: InputBorder.none,
+        ),
       ),
     );
   }
 }
 
-// ─── Date Selector ────────────────────────────────────────────────────────────
+// ─── Date & Time field ────────────────────────────────────────────────────────
 
-class _DateSelector extends StatelessWidget {
+class _DateTimeField extends StatelessWidget {
   final DateTime date;
   final VoidCallback onTap;
   final bool isDark;
 
-  const _DateSelector({
+  const _DateTimeField({
     required this.date,
     required this.onTap,
     required this.isDark,
@@ -565,12 +584,19 @@ class _DateSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final isToday =
+        date.year == now.year && date.month == now.month && date.day == now.day;
+    final dateLabel = isToday
+        ? 'Today, ${DateFormat('d MMM').format(date)}'
+        : DateFormat('d MMM yyyy').format(date);
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.darkSurface : AppColors.lightCard,
+          color: isDark ? AppColors.darkCard : AppColors.lightCard,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
@@ -580,20 +606,32 @@ class _DateSelector extends StatelessWidget {
         child: Row(
           children: [
             Icon(Icons.calendar_today_rounded,
-                size: 18, color: AppColors.primary),
-            const SizedBox(width: 12),
-            Flexible(
-              child: Text(
-                DateFormat('d MMM yyyy').format(date),
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(fontWeight: FontWeight.w500),
-                overflow: TextOverflow.ellipsis,
+                size: 16, color: AppColors.primary),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    dateLabel,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : AppColors.textLight,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    TimeOfDay.fromDateTime(date).format(context),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded,
-                color: AppColors.textTertiary, size: 18),
           ],
         ),
       ),
@@ -601,15 +639,19 @@ class _DateSelector extends StatelessWidget {
   }
 }
 
-class _TimeSelector extends StatelessWidget {
-  final DateTime date;
-  final VoidCallback onTap;
-  final bool isDark;
+// ─── Circle Icon Button ───────────────────────────────────────────────────────
 
-  const _TimeSelector({
-    required this.date,
-    required this.onTap,
+class _CircleIconButton extends StatelessWidget {
+  final IconData icon;
+  final bool isDark;
+  final bool active;
+  final VoidCallback onTap;
+
+  const _CircleIconButton({
+    required this.icon,
     required this.isDark,
+    required this.onTap,
+    this.active = false,
   });
 
   @override
@@ -617,102 +659,122 @@ class _TimeSelector extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        width: 40,
+        height: 40,
         decoration: BoxDecoration(
-          color: isDark ? AppColors.darkSurface : AppColors.lightCard,
+          color: active
+              ? AppColors.primary.withValues(alpha: 0.15)
+              : (isDark ? AppColors.darkCard : AppColors.lightCard),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-            width: 0.5,
-          ),
+          border: active
+              ? Border.all(color: AppColors.primary.withValues(alpha: 0.4))
+              : null,
         ),
-        child: Row(
-          children: [
-            Icon(Icons.access_time_rounded, size: 18, color: AppColors.primary),
-            const SizedBox(width: 10),
-            Text(
-              TimeOfDay.fromDateTime(date).format(context),
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(fontWeight: FontWeight.w500),
-            ),
-            const Spacer(),
-            Icon(Icons.chevron_right_rounded,
-                color: AppColors.textTertiary, size: 18),
-          ],
+        alignment: Alignment.center,
+        child: Icon(
+          icon,
+          size: 18,
+          color: active ? AppColors.primary : AppColors.textSecondary,
         ),
       ),
     );
   }
 }
 
-// ─── Recurrence Picker ────────────────────────────────────────────────────────
+// ─── Recurrence Picker Sheet ──────────────────────────────────────────────────
 
-class _RecurrencePicker extends StatelessWidget {
+class _RecurrencePickerSheet extends StatelessWidget {
   final RecurrenceType selected;
   final ValueChanged<RecurrenceType> onChanged;
 
-  const _RecurrencePicker({required this.selected, required this.onChanged});
+  const _RecurrencePickerSheet({
+    required this.selected,
+    required this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return SizedBox(
-      height: 36,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: RecurrenceType.values.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (_, i) {
-          final type = RecurrenceType.values[i];
-          final isSelected = type == selected;
-          return GestureDetector(
-            onTap: () {
-              HapticFeedback.selectionClick();
-              onChanged(type);
-            },
-            child: AnimatedContainer(
-              duration: 180.ms,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? AppColors.primary.withValues(alpha: 0.15)
-                    : (isDark ? AppColors.darkCard : AppColors.lightCard),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: isSelected
-                      ? AppColors.primary
-                      : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
-                  width: isSelected ? 1.2 : 0.5,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    type.icon,
-                    size: 14,
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        20,
+        20,
+        20,
+        20 + MediaQuery.of(context).viewPadding.bottom,
+      ),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurface : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Repeat',
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: RecurrenceType.values.map((type) {
+              final isSelected = type == selected;
+              return GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  onChanged(type);
+                  Navigator.of(context).pop();
+                },
+                child: AnimatedContainer(
+                  duration: 180.ms,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
                     color: isSelected
-                        ? AppColors.primary
-                        : AppColors.textSecondary,
-                  ),
-                  const SizedBox(width: 5),
-                  Text(
-                    type.label,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                        ? AppColors.primary.withValues(alpha: 0.15)
+                        : (isDark ? AppColors.darkCard : AppColors.lightCard),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
                       color: isSelected
                           ? AppColors.primary
-                          : AppColors.textSecondary,
+                          : (isDark
+                              ? AppColors.darkBorder
+                              : AppColors.lightBorder),
+                      width: isSelected ? 1.2 : 0.5,
                     ),
                   ),
-                ],
-              ),
-            ),
-          );
-        },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        type.icon,
+                        size: 15,
+                        color: isSelected
+                            ? AppColors.primary
+                            : AppColors.textSecondary,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        type.label,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: isSelected
+                              ? AppColors.primary
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
   }

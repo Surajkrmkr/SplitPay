@@ -429,29 +429,44 @@ class _QuickCaptureButtonState extends ConsumerState<QuickCaptureButton> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Tooltip(
-      message: 'Auto-fill from a bill or SMS',
-      child: GestureDetector(
-        onTap: _busy ? null : _startFlow,
-        child: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.darkCard : AppColors.lightCard,
-            borderRadius: BorderRadius.circular(12),
+    return GestureDetector(
+      onTap: _busy ? null : _startFlow,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppColors.primary.withValues(alpha: 0.16),
+              AppColors.secondary.withValues(alpha: 0.10),
+            ],
           ),
-          alignment: Alignment.center,
-          child: _busy
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: AppColors.primary,
-                  ),
-                )
-              : const Icon(Icons.auto_awesome_rounded,
-                  size: 18, color: AppColors.primary),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _busy
+                ? const SizedBox(
+                    width: 15,
+                    height: 15,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.primary,
+                    ),
+                  )
+                : const Icon(Icons.auto_awesome_rounded,
+                    size: 16, color: AppColors.primary),
+            const SizedBox(width: 8),
+            Text(
+              _busy ? 'Working…' : 'Autofill from bill or SMS',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: isDark ? Colors.white : AppColors.textLight,
+              ),
+            ),
+          ],
         ),
       ),
     );
