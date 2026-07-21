@@ -115,7 +115,7 @@ class _SplitBanner extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  'Add group expenses and settle up easily.',
+                  'Add shared expenses, split them automatically, and pay with ease.',
                   style: TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,

@@ -210,7 +210,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   static const _features = [
     (Icons.account_balance_wallet_rounded, 'Personal expense tracking'),
     (Icons.group_rounded, 'Group expense splitting'),
-    (Icons.check_circle_rounded, 'Simplified debt settlement'),
+    (Icons.check_circle_rounded, 'Seamless in-app payments'),
   ];
 }
 

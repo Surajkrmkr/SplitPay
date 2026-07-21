@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/storage/token_storage.dart';
 import '../data/models/notification_model.dart';
 import '../data/repositories/notification_repository.dart';
 import '../data/services/notification_service.dart';
@@ -19,6 +20,11 @@ class NotificationsNotifier
       _onForegroundNotification,
     );
     ref.onDispose(() => _foregroundSub?.cancel());
+
+    // Invalidated (and, if still watched by a kept-alive tab, eagerly
+    // rebuilt) as part of logout/session-expiry cleanup — skip the fetch
+    // once there's no token so that doesn't fire a doomed API call.
+    if (!await ref.read(tokenStorageProvider).hasTokens()) return [];
 
     try {
       final repo = ref.read(notificationRepositoryProvider);

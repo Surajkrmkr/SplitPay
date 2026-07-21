@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/storage/token_storage.dart';
 import '../data/models/transaction_model.dart';
 import '../data/repositories/transaction_repository.dart';
 
@@ -7,7 +8,14 @@ final transactionProvider =
   (ref) {
     final notifier =
         TransactionNotifier(ref.watch(transactionRepositoryProvider));
-    Future.microtask(notifier.load);
+    Future.microtask(() async {
+      // Providers get invalidated (and, if still watched by a kept-alive tab,
+      // eagerly rebuilt) as part of logout/session-expiry cleanup. Skip the
+      // fetch when there's no token so that doesn't fire a doomed API call.
+      if (await ref.read(tokenStorageProvider).hasTokens()) {
+        await notifier.load();
+      }
+    });
     return notifier;
   },
 );

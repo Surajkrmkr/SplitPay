@@ -28,7 +28,18 @@ class FirebaseAuthService {
       final googleAccount = await _googleSignIn.signIn();
       if (googleAccount == null) return null;
 
-      final googleAuth = await googleAccount.authentication;
+      var googleAuth = await googleAccount.authentication;
+
+      // Right after a recent signOut(), Play Services can hand back this
+      // account before its tokens are minted, so idToken comes back null on
+      // the first call. Re-request a few times before giving up — this is
+      // what previously showed up as needing 2-3 manual login taps.
+      for (var attempt = 0; googleAuth.idToken == null && attempt < 3; attempt++) {
+        await Future.delayed(const Duration(milliseconds: 400));
+        googleAuth = await googleAccount.authentication;
+      }
+
+      if (googleAuth.idToken == null) return null;
 
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,

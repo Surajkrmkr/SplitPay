@@ -1,7 +1,10 @@
 class ApiConstants {
+  // Default points at the deployed server so plain `flutter build`/Xcode
+  // Archive runs (which don't pass --dart-define) still hit the real API.
+  // Override with --dart-define=API_BASE_URL=... for local/LAN development.
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://192.168.1.68:3000/api/v1',
+    defaultValue: 'http://64.227.135.37:3000/api/v1',
   );
 
   // Auth

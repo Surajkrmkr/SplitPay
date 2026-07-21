@@ -10,6 +10,10 @@ class AuthInterceptor extends Interceptor {
   // Marker on RequestOptions.extra so we never retry the same request twice.
   static const _retryMarker = '__auth_retry__';
 
+  // Marker on RequestOptions.extra for requests (e.g. logout cleanup calls)
+  // that must not trigger auto-refresh/reauth or session invalidation on 401.
+  static const skipAuthHandling = '__skip_auth_handling__';
+
   final Dio _dio;
   final TokenStorage _tokenStorage;
   final VoidCallback? onSessionExpired;
@@ -20,6 +24,12 @@ class AuthInterceptor extends Interceptor {
 
   // Single in-flight refresh shared across concurrent 401s.
   Completer<String?>? _refreshCompleter;
+
+  // Set once a session has been invalidated so a burst of concurrent 401s
+  // (e.g. every request in flight when the session expires) only fires
+  // onSessionExpired once instead of once per request. Cleared as soon as a
+  // request goes out with a fresh token, i.e. after a new login/refresh.
+  bool _sessionInvalidated = false;
 
   AuthInterceptor(
     this._dio,
@@ -44,6 +54,9 @@ class AuthInterceptor extends Interceptor {
     final token = await _tokenStorage.getAccessToken();
     if (token != null && token.isNotEmpty) {
       options.headers['Authorization'] = 'Bearer $token';
+      // A fresh token is going out — this is a new session (new login or
+      // post-refresh), so a future 401 burst is allowed to invalidate again.
+      _sessionInvalidated = false;
     }
     handler.next(options);
   }
@@ -58,6 +71,13 @@ class AuthInterceptor extends Interceptor {
     }
 
     final options = err.requestOptions;
+
+    // Best-effort cleanup calls (e.g. logout) opt out of auto-refresh/reauth
+    // entirely — a 401 there just fails silently, it must never race with
+    // the logout flow's own token clearing.
+    if (options.extra[skipAuthHandling] == true) {
+      return handler.next(err);
+    }
 
     // A 401 from the refresh endpoint propagates back to _refreshAccessToken's
     // catch block, which handles silent reauth and/or session invalidation.
@@ -173,6 +193,12 @@ class AuthInterceptor extends Interceptor {
   }
 
   Future<void> _invalidateSession() async {
+    // Guards against a burst of concurrent 401s (e.g. every request the home
+    // screen fires in parallel) each independently calling this and firing
+    // onSessionExpired N times, which cascades into N redundant rounds of
+    // provider invalidation/refetch — the "API calls in a loop" symptom.
+    if (_sessionInvalidated) return;
+    _sessionInvalidated = true;
     await _tokenStorage.clearTokens();
     onSessionExpired?.call();
   }

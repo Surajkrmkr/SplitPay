@@ -136,7 +136,27 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" \"https://github.com/YashKashyap/upi_intent\")",
       "Bash(curl -sL \"https://pub.dev/api/archives/upi_intent-1.0.1.tar.gz\" -o upi_intent.tar.gz)",
       "Bash(mkdir -p upi_intent_src)",
-      "Bash(tar -xzf upi_intent.tar.gz -C upi_intent_src)"
+      "Bash(tar -xzf upi_intent.tar.gz -C upi_intent_src)",
+      "Bash(ruby -v)",
+      "Bash(gh repo *)",
+      "Bash(python3 -c \"import yaml,sys; yaml.safe_load\\(open\\('/Users/surajkrmkr/Storage/Xiaomi Contract/Repos/dimeflow/.github/workflows/release.yml'\\)\\); print\\('YAML OK'\\)\")",
+      "Bash(pip3 install *)",
+      "Bash(ruby -ryaml -e \"YAML.load_file\\('/Users/surajkrmkr/Storage/Xiaomi Contract/Repos/dimeflow/.github/workflows/release.yml'\\); puts 'YAML OK'\")",
+      "Bash(./gradlew :app:signingReport -q)",
+      "Bash(cd \"/Users/surajkrmkr/Storage/Xiaomi Contract/Repos/dimeflow\" *)",
+      "Read(//Users/surajkrmkr/**)",
+      "Bash(cd \"/Users/surajkrmkr/Storage/Xiaomi Contract/Repos/dimeflow\" && find \"/Users/surajkrmkr/Storage/Xiaomi Contract/Repos\" -iname \"splitpay.jks\" 2>/dev/null)",
+      "Bash(find test *)",
+      "Bash(ls test *)",
+      "Bash(find assets *)",
+      "Bash(ls ios/Runner/Assets.xcassets/AppIcon.appiconset/)",
+      "Bash(file assets/icon/app_icon.png)",
+      "Bash(sips -g hasAlpha assets/icon/app_icon.png)",
+      "Bash(sips -g hasAlpha ios/Runner/Assets.xcassets/AppIcon.appiconset/*1024*.png)",
+      "Bash(dart run *)",
+      "Bash(sips -g hasAlpha ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png)",
+      "Bash(sips -g hasAlpha ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-60x60@3x.png)",
+      "Bash(sips -g hasAlpha ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@1x.png)"
     ],
     "additionalDirectories": [
       "/private/tmp"

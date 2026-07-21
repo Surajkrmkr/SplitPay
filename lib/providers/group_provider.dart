@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/storage/token_storage.dart';
 import '../data/models/activity_model.dart';
 import '../data/models/balance_model.dart';
 import '../data/models/group_expense_model.dart';
@@ -14,6 +15,10 @@ import 'auth_provider.dart';
 class GroupsNotifier extends AsyncNotifier<List<GroupModel>> {
   @override
   Future<List<GroupModel>> build() async {
+    // Invalidated (and, if still watched by a kept-alive tab, eagerly
+    // rebuilt) as part of logout/session-expiry cleanup — skip the fetch
+    // once there's no token so that doesn't fire a doomed API call.
+    if (!await ref.read(tokenStorageProvider).hasTokens()) return [];
     return ref.read(groupApiServiceProvider).getGroups();
   }
 

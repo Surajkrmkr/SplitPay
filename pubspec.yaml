@@ -1,11 +1,11 @@
 name: splitpay
 description: SplitPay - Premium Expense Tracker
-version: 1.0.0+1
+version: 1.0.5+6
 
-publish_to: 'none'
+publish_to: "none"
 
 environment:
-  sdk: '>=3.3.0 <4.0.0'
+  sdk: ">=3.3.0 <4.0.0"
 
 dependencies:
   flutter:

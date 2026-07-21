@@ -22,6 +22,22 @@
           }
         },
         {
+          "client_id": "127223843872-6re107rui1b28ut6nbru9m6kinaichu4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.splitpay.expensetracker",
+            "certificate_hash": "0ad2522c25b4146928c64fe511bc1a69d8891277"
+          }
+        },
+        {
+          "client_id": "127223843872-br6lqdbh6et7o5coe6n2i7nu4qtf9q45.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.splitpay.expensetracker",
+            "certificate_hash": "b96b90638bbdd8ea704e41c5f988df9f451cea77"
+          }
+        },
+        {
           "client_id": "127223843872-sou5unj9eitknesrlidsqg5tjclnio1o.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -37,6 +53,13 @@
             {
               "client_id": "127223843872-sou5unj9eitknesrlidsqg5tjclnio1o.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "127223843872-p55s7s5l1b2tdvj8uuep8hpndqbenh23.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.splitpay.expensetracker"
+              }
             }
           ]
         }

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/storage/token_storage.dart';
 import '../data/models/budget_model.dart';
 import '../data/models/transaction_model.dart';
 import '../data/repositories/budget_repository.dart';
@@ -10,7 +11,13 @@ import 'transaction_provider.dart';
 final budgetProvider = StateNotifierProvider<BudgetNotifier, List<Budget>>(
   (ref) {
     final notifier = BudgetNotifier(ref.watch(budgetRepositoryProvider));
-    Future.microtask(notifier.load);
+    Future.microtask(() async {
+      // See transaction_provider.dart — skip the auto-fetch when logged out
+      // so an eager rebuild from logout/session-expiry cleanup can't fire it.
+      if (await ref.read(tokenStorageProvider).hasTokens()) {
+        await notifier.load();
+      }
+    });
     return notifier;
   },
 );

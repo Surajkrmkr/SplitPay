@@ -8,9 +8,9 @@
             "name": "dimeflow",
             "request": "launch",
             "type": "dart",
-            // "args": [
-            //     "--dart-define=API_BASE_URL=http://64.227.135.37:3000/api/v1"
-            // ]
+            "args": [
+                "--dart-define=API_BASE_URL=http://64.227.135.37:3000/api/v1"
+            ]
         },
         {
             "name": "dimeflow (integration tests)",

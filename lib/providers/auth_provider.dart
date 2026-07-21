@@ -4,6 +4,7 @@ import '../core/errors/app_exception.dart';
 import '../core/network/api_client.dart';
 import '../core/network/api_constants.dart';
 import '../core/network/auth_events.dart';
+import '../core/network/interceptors/auth_interceptor.dart';
 import '../core/storage/token_storage.dart';
 import '../data/models/auth_user_model.dart';
 import '../data/repositories/notification_repository.dart';
@@ -135,6 +136,10 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       state = AsyncValue.data(
         AuthState(status: AuthStatus.authenticated, user: user),
       );
+      // Providers were left invalidated-but-unfetched by the previous
+      // logout's guarded rebuild (no tokens then) — invalidate again now
+      // that tokens are saved so they actually fetch this user's data.
+      _invalidateUserScopedProviders();
 
       // Register FCM token with backend
       await _registerFcmToken(user.id);
@@ -147,6 +152,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         state = AsyncValue.data(
           AuthState(status: AuthStatus.authenticated, user: user),
         );
+        _invalidateUserScopedProviders();
         await _registerFcmToken(user.id);
       } else {
         state = AsyncValue.data(
@@ -182,6 +188,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         await dio.post(
           ApiConstants.authLogout,
           data: {'refreshToken': refreshToken},
+          options: Options(extra: {AuthInterceptor.skipAuthHandling: true}),
         );
       } catch (_) {
         // Best-effort logout on server
@@ -193,7 +200,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         PreferencesService.clearUserData(),
       ]);
 
-      _clearCache();
+      _invalidateUserScopedProviders();
 
       state = AsyncValue.data(
         const AuthState(status: AuthStatus.unauthenticated),
@@ -205,7 +212,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     }
   }
 
-  void _clearCache() {
+  void _invalidateUserScopedProviders() {
     ref.invalidate(transactionProvider);
     ref.invalidate(budgetProvider);
     ref.invalidate(notificationsProvider);
@@ -224,7 +231,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         PreferencesService.clearUserData(),
       ]);
     } catch (_) {}
-    _clearCache();
+    _invalidateUserScopedProviders();
     state = AsyncValue.data(
       const AuthState(status: AuthStatus.unauthenticated),
     );

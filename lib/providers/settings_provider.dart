@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/network/api_client.dart';
 import '../core/network/api_constants.dart';
 import '../core/storage/preferences_service.dart';
+import '../core/storage/token_storage.dart';
 import '../data/models/custom_category.dart';
 import '../data/models/transaction_model.dart';
 
@@ -42,13 +43,18 @@ final currencyProvider = StateNotifierProvider<CurrencyNotifier, String>(
 // ─── Custom Categories (API-backed) ───────────────────────────────────────────
 
 class CustomCategoriesNotifier extends StateNotifier<List<CustomCategory>> {
-  CustomCategoriesNotifier(this._dio) : super([]) {
+  CustomCategoriesNotifier(this._dio, this._tokenStorage) : super([]) {
     _load();
   }
 
   final Dio _dio;
+  final TokenStorage _tokenStorage;
 
   Future<void> _load() async {
+    // Invalidated (and, if still watched by a kept-alive tab, eagerly
+    // rebuilt) as part of logout/session-expiry cleanup — skip the fetch
+    // once there's no token so that doesn't fire a doomed API call.
+    if (!await _tokenStorage.hasTokens()) return;
     try {
       final res = await _dio.get(ApiConstants.categories);
       final list = res.data['data'] as List<dynamic>;
@@ -79,7 +85,10 @@ class CustomCategoriesNotifier extends StateNotifier<List<CustomCategory>> {
 
 final customCategoriesProvider =
     StateNotifierProvider<CustomCategoriesNotifier, List<CustomCategory>>(
-  (ref) => CustomCategoriesNotifier(ref.watch(dioProvider)),
+  (ref) => CustomCategoriesNotifier(
+    ref.watch(dioProvider),
+    ref.watch(tokenStorageProvider),
+  ),
 );
 
 // ─── Hidden Categories ────────────────────────────────────────────────────────

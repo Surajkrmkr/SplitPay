@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/network/api_client.dart';
 import '../../core/network/api_constants.dart';
+import '../../core/network/interceptors/auth_interceptor.dart';
 import '../models/notification_model.dart';
 import '../services/notification_service.dart';
 
@@ -37,9 +38,12 @@ class NotificationRepository {
     try {
       final token = await NotificationService.instance.getToken();
       if (token == null) return;
+      // Called during logout — a 401 here must not trigger auto-refresh/reauth,
+      // which would race with the logout flow's own token clearing.
       await _dio.delete(
         ApiConstants.notificationsRegisterToken,
         data: {'fcmToken': token},
+        options: Options(extra: {AuthInterceptor.skipAuthHandling: true}),
       );
     } catch (_) {}
   }
