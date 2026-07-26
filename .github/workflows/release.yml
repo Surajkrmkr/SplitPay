@@ -1,4 +1,4 @@
-name: Release to testing tracks
+name: Release to testing and production tracks
 
 on:
   workflow_dispatch:
@@ -12,13 +12,28 @@ on:
           - both
           - android
           - ios
+      track:
+        description: "Target track for Play Store (Android)"
+        required: true
+        default: internal
+        type: choice
+        options:
+          - internal
+          - production
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   FLUTTER_VERSION: "3.41.7"
 
 jobs:
   android:
-    if: ${{ github.event.inputs.platforms == 'android' || github.event.inputs.platforms == 'both' }}
+    if: ${{ github.event_name == 'push' || github.event.inputs.platforms == 'android' || github.event.inputs.platforms == 'both' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -68,14 +83,14 @@ jobs:
       - name: Decode Play Console service account key
         run: echo "${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON_BASE64 }}" | base64 --decode > android/play-service-account.json
 
-      - name: Upload to Play Console internal testing track
+      - name: Upload to Play Console
         working-directory: android
         env:
           PLAY_STORE_JSON_KEY_PATH: play-service-account.json
-        run: bundle exec fastlane internal
+        run: bundle exec fastlane ${{ inputs.track || 'internal' }}
 
   ios:
-    if: ${{ github.event.inputs.platforms == 'ios' || github.event.inputs.platforms == 'both' }}
+    if: ${{ github.event_name == 'push' || github.event.inputs.platforms == 'ios' || github.event.inputs.platforms == 'both' }}
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -87,6 +102,10 @@ jobs:
           cache: true
 
       - run: flutter pub get
+
+      - name: Install CocoaPods
+        working-directory: ios
+        run: pod install
 
       - name: Set up temporary keychain
         env:
