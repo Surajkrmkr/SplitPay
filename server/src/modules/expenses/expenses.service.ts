@@ -179,7 +179,7 @@ export async function updateExpense(
   await activityRepository.createActivity({
     groupId: expense.groupId,
     userId,
-    type: 'EXPENSE_ADDED',
+    type: 'EXPENSE_UPDATED',
     expenseId,
     metadata: { title: updated.title, amount: Number(updated.amount) },
   });
@@ -196,6 +196,10 @@ export async function deleteExpense(expenseId: string, userId: string): Promise<
 
   const groupId = expense.groupId;
   const title = expense.title;
+  const amount = Number(expense.amount);
+
+  const group = await groupsRepository.findGroupById(groupId);
+
   await expensesRepository.deleteExpense(expenseId);
 
   await activityRepository.createActivity({
@@ -204,6 +208,23 @@ export async function deleteExpense(expenseId: string, userId: string): Promise<
     type: 'EXPENSE_DELETED',
     metadata: { title, expenseId },
   });
+
+  if (group) {
+    const actor = group.members.find((m) => m.userId === userId)?.user;
+    const recipientUserIds = group.members.map((m) => m.userId);
+    notificationsService
+      .notifyGroupExpenseDeleted({
+        groupId,
+        groupName: group.name,
+        actorId: userId,
+        actorName: actor?.name ?? 'Someone',
+        actorAvatar: actor?.avatar ?? null,
+        expenseTitle: title,
+        amount,
+        recipientUserIds,
+      })
+      .catch(() => {});
+  }
 }
 
 export interface GroupBalancesResult {

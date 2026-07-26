@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/category_app_icons.dart';
+import '../../../../core/utils/currency_formatter.dart';
 import '../../../../data/models/expense_participant_model.dart';
 import '../../../../data/models/group_expense_model.dart';
 import '../../../../providers/auth_provider.dart';
@@ -166,7 +167,7 @@ class _ExpenseTileState extends ConsumerState<ExpenseTile> {
       statusLabel = 'you paid';
       statusColor = AppColors.income;
     } else if (myShare > 0) {
-      statusLabel = 'owe $currency${myShare.toStringAsFixed(0)}';
+      statusLabel = 'owe ${CurrencyFormatter.formatAmountWithCommas(myShare, symbol: currency)}';
       statusColor = AppColors.expense;
     } else {
       statusLabel = 'not involved';
@@ -347,7 +348,7 @@ class _ExpenseTileState extends ConsumerState<ExpenseTile> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                '$currency${expense.amount.toStringAsFixed(0)}',
+                                CurrencyFormatter.formatAmountWithCommas(expense.amount, symbol: currency),
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
@@ -641,7 +642,7 @@ class _MemberRow extends StatelessWidget {
         ),
         const SizedBox(width: 10),
         Text(
-          '$currency${share.toStringAsFixed(0)}',
+          CurrencyFormatter.formatAmountWithCommas(share, symbol: currency),
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w700,

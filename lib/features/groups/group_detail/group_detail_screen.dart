@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../../core/constants/ad_constants.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/errors/app_exception.dart';
+import '../../../core/utils/currency_formatter.dart';
 import '../../../shared/widgets/app_ad_banner.dart';
 import '../../../shared/widgets/app_back_button.dart';
 import '../../../data/models/activity_model.dart';
@@ -541,6 +542,7 @@ class _BalancesTab extends ConsumerWidget {
         onRefresh: () async {
           ref.invalidate(groupDetailProvider(groupId));
           ref.invalidate(groupBalancesProvider(groupId));
+          ref.invalidate(groupSettlementsProvider(groupId));
         },
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -560,6 +562,7 @@ class _BalancesTab extends ConsumerWidget {
             onRefresh: () async {
               ref.invalidate(groupDetailProvider(groupId));
               ref.invalidate(groupBalancesProvider(groupId));
+              ref.invalidate(groupSettlementsProvider(groupId));
             },
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -579,6 +582,7 @@ class _BalancesTab extends ConsumerWidget {
           onRefresh: () async {
             ref.invalidate(groupDetailProvider(groupId));
             ref.invalidate(groupBalancesProvider(groupId));
+            ref.invalidate(groupSettlementsProvider(groupId));
           },
           child: ListView(
             padding: const EdgeInsets.only(top: 12, bottom: 100),
@@ -696,7 +700,7 @@ class _BalanceSummaryCard extends ConsumerWidget {
                     ),
                     if (!isSettled)
                       Text(
-                        '$currency${net.abs().toStringAsFixed(0)}',
+                        CurrencyFormatter.formatAmountWithCommas(net.abs(), symbol: currency),
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.w800,
@@ -719,8 +723,7 @@ class _BalanceSummaryCard extends ConsumerWidget {
                 Expanded(
                   child: _StatChip(
                     label: 'Total Lent',
-                    value:
-                        '$currency${(summary.totalLent as double).toStringAsFixed(0)}',
+                    value: CurrencyFormatter.formatAmountWithCommas((summary.totalLent as double), symbol: currency),
                     color: AppColors.income,
                     icon: Icons.arrow_upward_rounded,
                     isDark: isDark,
@@ -730,8 +733,7 @@ class _BalanceSummaryCard extends ConsumerWidget {
                 Expanded(
                   child: _StatChip(
                     label: 'Total Borrowed',
-                    value:
-                        '$currency${(summary.totalOwed as double).toStringAsFixed(0)}',
+                    value: CurrencyFormatter.formatAmountWithCommas((summary.totalOwed as double), symbol: currency),
                     color: AppColors.expense,
                     icon: Icons.arrow_downward_rounded,
                     isDark: isDark,
@@ -1805,6 +1807,8 @@ class _ActivityTile extends StatelessWidget {
     switch (type) {
       case ActivityType.expenseAdded:
         return Icons.receipt_long_rounded;
+      case ActivityType.expenseUpdated:
+        return Icons.edit_note_rounded;
       case ActivityType.expenseDeleted:
         return Icons.delete_outline_rounded;
       case ActivityType.settlementCompleted:
@@ -1822,6 +1826,8 @@ class _ActivityTile extends StatelessWidget {
     switch (type) {
       case ActivityType.expenseAdded:
         return AppColors.secondary;
+      case ActivityType.expenseUpdated:
+        return AppColors.primary;
       case ActivityType.expenseDeleted:
         return AppColors.expense;
       case ActivityType.settlementCompleted:
@@ -2022,23 +2028,42 @@ class _TotalTab extends ConsumerWidget {
     return expensesAsync.when(
       loading: () => const Center(
           child: CircularProgressIndicator(color: AppColors.primary)),
-      error: (e, _) => EmptyState(
-        icon: Icons.error_outline_rounded,
-        title: 'Could not load totals',
-        subtitle: friendlyErrorMessage(e),
+      error: (e, _) => RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: () async => ref.invalidate(groupExpensesProvider(groupId)),
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            EmptyState(
+              icon: Icons.error_outline_rounded,
+              title: 'Could not load totals',
+              subtitle: friendlyErrorMessage(e),
+            ),
+          ],
+        ),
       ),
       data: (expenses) {
         if (expenses.isEmpty) {
-          return const EmptyState(
-            icon: Icons.bar_chart_rounded,
-            title: 'Nothing to total yet',
-            subtitle: 'Add an expense to see spending totals for this group.',
+          return RefreshIndicator(
+            color: AppColors.primary,
+            onRefresh: () async => ref.invalidate(groupExpensesProvider(groupId)),
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: const [
+                EmptyState(
+                  icon: Icons.bar_chart_rounded,
+                  title: 'Nothing to total yet',
+                  subtitle: 'Add an expense to see spending totals for this group.',
+                ),
+              ],
+            ),
           );
         }
 
         final totalSpent = expenses.fold<double>(0, (sum, e) => sum + e.amount);
         final yourShare = expenses.fold<double>(
             0, (sum, e) => sum + e.shareForUser(currentUserId));
+        final otherSpent = (totalSpent - yourShare).clamp(0.0, double.infinity);
 
         // Bucket by month, chronological, most recent 6 months with data.
         final byMonth = <DateTime, double>{};
@@ -2059,32 +2084,46 @@ class _TotalTab extends ConsumerWidget {
             isDark ? AppColors.darkBorder : AppColors.lightBorder;
         final gridColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
 
-        return ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: _StatChip(
-                    label: 'Total Spent',
-                    value: '$currency${totalSpent.toStringAsFixed(0)}',
-                    color: AppColors.secondary,
-                    icon: Icons.groups_rounded,
-                    isDark: isDark,
+        return RefreshIndicator(
+          color: AppColors.primary,
+          onRefresh: () async => ref.invalidate(groupExpensesProvider(groupId)),
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _StatChip(
+                      label: 'Total Spent',
+                      value: CurrencyFormatter.formatAmountWithCommas(totalSpent, symbol: currency),
+                      color: AppColors.secondary,
+                      icon: Icons.groups_rounded,
+                      isDark: isDark,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _StatChip(
-                    label: 'Your Share',
-                    value: '$currency${yourShare.toStringAsFixed(0)}',
-                    color: AppColors.primary,
-                    icon: Icons.person_rounded,
-                    isDark: isDark,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _StatChip(
+                      label: 'Your Share',
+                      value: CurrencyFormatter.formatAmountWithCommas(yourShare, symbol: currency),
+                      color: AppColors.primary,
+                      icon: Icons.person_rounded,
+                      isDark: isDark,
+                    ),
                   ),
-                ),
-              ],
-            ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _StatChip(
+                      label: 'Other Spent',
+                      value: CurrencyFormatter.formatAmountWithCommas(otherSpent, symbol: currency),
+                      color: const Color(0xFF8B5CF6),
+                      icon: Icons.people_outline_rounded,
+                      isDark: isDark,
+                    ),
+                  ),
+                ],
+              ),
             const SizedBox(height: 20),
             Container(
               padding: const EdgeInsets.all(20),
@@ -2217,9 +2256,10 @@ class _TotalTab extends ConsumerWidget {
               margin: EdgeInsets.zero,
             ),
           ],
-        );
-      },
-    );
+        ),
+      );
+    },
+  );
   }
 }
 

@@ -39,10 +39,11 @@ export function simplifyDebts(rawBalances: RawBalance[]): SimplifiedDebt[] {
   const creditors: { userId: string; amount: number }[] = [];
 
   for (const [userId, balance] of netBalance.entries()) {
-    if (balance < -0.001) {
-      debtors.push({ userId, amount: -balance });
-    } else if (balance > 0.001) {
-      creditors.push({ userId, amount: balance });
+    const rounded = Math.round(balance * 100) / 100;
+    if (rounded <= -0.01) {
+      debtors.push({ userId, amount: -rounded });
+    } else if (rounded >= 0.01) {
+      creditors.push({ userId, amount: rounded });
     }
   }
 
@@ -58,7 +59,7 @@ export function simplifyDebts(rawBalances: RawBalance[]): SimplifiedDebt[] {
     const settledAmount = Math.min(debtor.amount, creditor.amount);
     const rounded = Math.round(settledAmount * 100) / 100;
 
-    if (rounded > 0.001) {
+    if (rounded >= 0.01) {
       result.push({
         fromUserId: debtor.userId,
         toUserId: creditor.userId,
@@ -66,11 +67,11 @@ export function simplifyDebts(rawBalances: RawBalance[]): SimplifiedDebt[] {
       });
     }
 
-    debtor.amount -= settledAmount;
-    creditor.amount -= settledAmount;
+    debtor.amount = Math.round((debtor.amount - settledAmount) * 100) / 100;
+    creditor.amount = Math.round((creditor.amount - settledAmount) * 100) / 100;
 
-    if (debtor.amount < 0.001) di++;
-    if (creditor.amount < 0.001) ci++;
+    if (debtor.amount < 0.01) di++;
+    if (creditor.amount < 0.01) ci++;
   }
 
   return result;

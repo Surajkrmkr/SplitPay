@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 class AppSearchBar extends StatefulWidget {
@@ -37,6 +38,7 @@ class _AppSearchBarState extends State<AppSearchBar> {
       padding: widget.padding,
       child: TextField(
         controller: _controller,
+        inputFormatters: [LengthLimitingTextInputFormatter(20)],
         onChanged: widget.onChanged,
         decoration: InputDecoration(
           hintText: widget.hintText,

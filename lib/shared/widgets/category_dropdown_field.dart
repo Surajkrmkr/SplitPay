@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../data/models/custom_category.dart';
@@ -217,6 +218,7 @@ class _CategoryPickerSheetState extends ConsumerState<_CategoryPickerSheet> {
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
                 child: TextField(
                   controller: _searchController,
+                  inputFormatters: [LengthLimitingTextInputFormatter(20)],
                   onChanged: (v) => setState(() => _query = v),
                   decoration: InputDecoration(
                     hintText: 'Search categories...',

@@ -131,6 +131,20 @@ export async function deleteGroup(groupId: string, requesterId: string): Promise
     throw new ForbiddenError('Only group admins can delete the group');
   }
 
+  // Notify all group members before deletion
+  const actor = group.members.find((m) => m.userId === requesterId)?.user;
+  const recipientUserIds = group.members.map((m) => m.userId);
+
+  await notificationsService
+    .notifyGroupDeleted({
+      groupId,
+      groupName: group.name,
+      actorId: requesterId,
+      actorName: actor?.name ?? 'An admin',
+      recipientUserIds,
+    })
+    .catch(() => {});
+
   await groupsRepository.deleteGroup(groupId);
 }
 

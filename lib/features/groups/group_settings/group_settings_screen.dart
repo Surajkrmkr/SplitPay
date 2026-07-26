@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
@@ -215,6 +216,7 @@ class _RenameGroupTile extends StatelessWidget {
                   children: [
                     TextField(
                       controller: nameController,
+                      inputFormatters: [LengthLimitingTextInputFormatter(20)],
                       autofocus: true,
                       decoration: InputDecoration(
                         labelText: 'Group Name',
@@ -234,6 +236,7 @@ class _RenameGroupTile extends StatelessWidget {
                     const SizedBox(height: 14),
                     TextField(
                       controller: descController,
+                      inputFormatters: [LengthLimitingTextInputFormatter(20)],
                       maxLines: 2,
                       decoration: InputDecoration(
                         labelText: 'Description (optional)',

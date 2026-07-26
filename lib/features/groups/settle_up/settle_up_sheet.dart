@@ -56,12 +56,17 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
   void initState() {
     super.initState();
     _amountCtrl = TextEditingController(
-      text: widget.balance.amount.toStringAsFixed(0),
+      text: widget.balance.amount.toStringAsFixed(2),
     );
     _upiIdCtrl = TextEditingController();
+    _upiIdCtrl.addListener(_onUpiIdChanged);
     _noteCtrl = TextEditingController();
     // Load installed UPI apps up front so the method-picker can preview them.
     _loadInstalledApps();
+  }
+
+  void _onUpiIdChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _loadInstalledApps() async {
@@ -77,6 +82,7 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
   @override
   void dispose() {
     _amountCtrl.dispose();
+    _upiIdCtrl.removeListener(_onUpiIdChanged);
     _upiIdCtrl.dispose();
     _noteCtrl.dispose();
     super.dispose();
@@ -110,7 +116,9 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
       _showSnack('Enter a valid amount');
       return false;
     }
-    if (amount - widget.balance.amount > 0.01) {
+    final roundedAmount = (amount * 100).round() / 100;
+    final roundedDebt = (widget.balance.amount * 100).round() / 100;
+    if (roundedAmount - roundedDebt > 0.01) {
       _showSnack('Amount cannot exceed what you owe');
       return false;
     }
@@ -157,7 +165,9 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
       _showSnack('Enter a valid amount');
       return;
     }
-    if (amount - widget.balance.amount > 0.01) {
+    final roundedAmount = (amount * 100).round() / 100;
+    final roundedDebt = (widget.balance.amount * 100).round() / 100;
+    if (roundedAmount - roundedDebt > 0.01) {
       _showSnack('Amount cannot exceed what you owe');
       return;
     }
@@ -330,8 +340,9 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
                 ),
                 child: SpButton(
                   label: 'Continue to Pay',
-                  onTap:
-                      _loadingApps || _upiApps.isEmpty ? null : _goToAppPicker,
+                  onTap: _loadingApps || _upiApps.isEmpty || _upiIdCtrl.text.trim().isEmpty
+                      ? null
+                      : _goToAppPicker,
                   icon: Icons.arrow_forward_rounded,
                 ),
               ),
@@ -639,6 +650,7 @@ class _UpiFormView extends ConsumerWidget {
             Expanded(
               child: TextField(
                 controller: upiIdCtrl,
+                inputFormatters: [LengthLimitingTextInputFormatter(20)],
                 style: TextStyle(
                     color: isDark ? Colors.white : AppColors.textLight,
                     fontSize: 15),
@@ -687,6 +699,7 @@ class _UpiFormView extends ConsumerWidget {
         const SizedBox(height: 8),
         TextField(
           controller: noteCtrl,
+          inputFormatters: [LengthLimitingTextInputFormatter(20)],
           style: TextStyle(
               color: isDark ? Colors.white : AppColors.textLight, fontSize: 14),
           decoration: InputDecoration(

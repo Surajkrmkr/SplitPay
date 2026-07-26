@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../data/models/custom_category.dart';
@@ -69,6 +70,7 @@ class _CreateCategoryDialogState extends ConsumerState<CreateCategoryDialog> {
           children: [
             TextField(
               controller: _nameController,
+              inputFormatters: [LengthLimitingTextInputFormatter(20)],
               autofocus: true,
               textCapitalization: TextCapitalization.words,
               decoration: InputDecoration(

@@ -227,3 +227,92 @@ export async function notifyMemberJoined(opts: {
     }).catch(() => {});
   }
 }
+
+/**
+ * Notify group members before a group is deleted.
+ */
+export async function notifyGroupDeleted(opts: {
+  groupId: string;
+  groupName: string;
+  actorId: string;
+  actorName: string;
+  recipientUserIds: string[];
+}): Promise<void> {
+  const { groupId, groupName, actorId, actorName, recipientUserIds } = opts;
+  const title = 'Group Deleted';
+  const body = `${actorName} deleted group "${groupName}"`;
+
+  const recipientIds = recipientUserIds.filter((id) => id !== actorId);
+  if (recipientIds.length === 0) return;
+
+  const tokens = await notificationsRepository.getUserFcmTokensFor(recipientIds);
+
+  await notificationsRepository.createNotifications(
+    recipientIds.map((userId) => ({
+      userId,
+      type: 'GROUP_ACTIVITY' as const,
+      title,
+      body,
+      groupId,
+      actorName,
+      data: { type: 'GROUP_DELETED', groupId },
+    }))
+  );
+
+  if (tokens.length > 0) {
+    await sendPushNotification({
+      tokens,
+      title,
+      body,
+      data: { type: 'GROUP_DELETED', groupId, actorName },
+    }).catch(() => {});
+  }
+}
+
+/**
+ * Notify group members when an expense is deleted.
+ */
+export async function notifyGroupExpenseDeleted(opts: {
+  groupId: string;
+  groupName: string;
+  actorId: string;
+  actorName: string;
+  actorAvatar: string | null;
+  expenseTitle: string;
+  amount: number;
+  recipientUserIds: string[];
+  currency?: string;
+}): Promise<void> {
+  const { groupId, groupName, actorId, actorName, actorAvatar, expenseTitle, amount, recipientUserIds } = opts;
+  const currency = opts.currency ?? '₹';
+  const title = groupName;
+  const body = `${actorName} deleted ${currency}${amount} for "${expenseTitle}"`;
+
+  const recipientIds = recipientUserIds.filter((id) => id !== actorId);
+  if (recipientIds.length === 0) return;
+
+  const tokens = await notificationsRepository.getUserFcmTokensFor(recipientIds);
+
+  await notificationsRepository.createNotifications(
+    recipientIds.map((userId) => ({
+      userId,
+      type: 'GROUP_ACTIVITY' as const,
+      title,
+      body,
+      groupId,
+      actorName,
+      actorAvatar: actorAvatar ?? undefined,
+      data: { type: 'GROUP_ACTIVITY', groupId },
+    }))
+  );
+
+  if (tokens.length > 0) {
+    sendPushNotification({
+      tokens,
+      title,
+      body,
+      data: { type: 'GROUP_ACTIVITY', groupId, actorName },
+    }).catch(() => {});
+  }
+}
+

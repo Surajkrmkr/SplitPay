@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/currency_formatter.dart';
 import '../../../providers/group_provider.dart';
 import '../../../providers/settings_provider.dart';
 
@@ -80,7 +81,7 @@ class MyBalanceSummary extends ConsumerWidget {
           Expanded(
             child: _StatItem(
               label: "You're owed",
-              value: '$currency${totalLent.toStringAsFixed(0)}',
+              value: CurrencyFormatter.formatAmountWithCommas(totalLent, symbol: currency),
               color: AppColors.income,
             ),
           ),
@@ -92,7 +93,7 @@ class MyBalanceSummary extends ConsumerWidget {
           Expanded(
             child: _StatItem(
               label: 'You owe',
-              value: '$currency${totalOwed.toStringAsFixed(0)}',
+              value: CurrencyFormatter.formatAmountWithCommas(totalOwed, symbol: currency),
               color: AppColors.expense,
             ),
           ),
@@ -105,7 +106,7 @@ class MyBalanceSummary extends ConsumerWidget {
             child: _StatItem(
               label: 'Net balance',
               value:
-                  '${isPositive ? '+' : ''}$currency${net.abs().toStringAsFixed(0)}',
+                  '${isPositive ? '+' : ''}${CurrencyFormatter.formatAmountWithCommas(net.abs(), symbol: currency)}',
               color: isPositive ? AppColors.income : AppColors.expense,
               showArrow: true,
               isPositive: isPositive,

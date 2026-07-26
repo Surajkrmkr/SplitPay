@@ -1,5 +1,8 @@
+import '../../core/utils/currency_formatter.dart';
+
 enum ActivityType {
   expenseAdded,
+  expenseUpdated,
   expenseDeleted,
   settlementCompleted,
   memberJoined,
@@ -10,6 +13,8 @@ enum ActivityType {
     switch (s) {
       case 'EXPENSE_ADDED':
         return ActivityType.expenseAdded;
+      case 'EXPENSE_UPDATED':
+        return ActivityType.expenseUpdated;
       case 'EXPENSE_DELETED':
         return ActivityType.expenseDeleted;
       case 'SETTLEMENT_COMPLETED':
@@ -55,21 +60,47 @@ class ActivityModel {
     switch (type) {
       case ActivityType.expenseAdded:
         final title = metadata?['title'] as String?;
+        final amountRaw = metadata?['amount'];
+        final amountNum = amountRaw is num
+            ? amountRaw.toDouble()
+            : (amountRaw != null ? double.tryParse(amountRaw.toString()) : null);
+        final amtStr = amountNum != null
+            ? ' (${CurrencyFormatter.formatAmountWithCommas(amountNum, symbol: '₹')})'
+            : '';
         return title != null
-            ? '$userName added "$title"'
+            ? '$userName added "$title"$amtStr'
             : '$userName added an expense';
+
+      case ActivityType.expenseUpdated:
+        final title = metadata?['title'] as String?;
+        final amountRaw = metadata?['amount'];
+        final amountNum = amountRaw is num
+            ? amountRaw.toDouble()
+            : (amountRaw != null ? double.tryParse(amountRaw.toString()) : null);
+        final amtStr = amountNum != null
+            ? ' (${CurrencyFormatter.formatAmountWithCommas(amountNum, symbol: '₹')})'
+            : '';
+        return title != null
+            ? '$userName edited "$title"$amtStr'
+            : '$userName edited an expense';
+
       case ActivityType.expenseDeleted:
         final title = metadata?['title'] as String?;
         return title != null
             ? '$userName deleted "$title"'
             : '$userName deleted an expense';
+
       case ActivityType.settlementCompleted:
-        final amount = metadata?['amount'];
+        final amountRaw = metadata?['amount'];
         final payee = metadata?['payeeName'] as String?;
-        if (amount != null && payee != null) {
-          return '$userName settled ₹$amount with $payee';
+        final amountNum = amountRaw is num
+            ? amountRaw.toDouble()
+            : (amountRaw != null ? double.tryParse(amountRaw.toString()) : null);
+        if (amountNum != null && payee != null) {
+          return '$userName settled ${CurrencyFormatter.formatAmountWithCommas(amountNum, symbol: '₹')} with $payee';
         }
         return '$userName completed a settlement';
+
       case ActivityType.memberJoined:
         return '$userName joined the group';
       case ActivityType.memberRemoved:

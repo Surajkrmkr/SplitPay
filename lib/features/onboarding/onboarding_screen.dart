@@ -58,8 +58,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 const Spacer(),
                 Center(
                   child: Container(
-                    width: 80,
-                    height: 80,
+                    width: 56,
+                    height: 56,
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
@@ -68,18 +68,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           width: 2),
                     ),
                     child: const Center(
-                      child: Text('💱', style: TextStyle(fontSize: 36)),
+                      child: Text('💱', style: TextStyle(fontSize: 26)),
                     ),
                   )
                       .animate()
                       .scale(duration: 600.ms, curve: Curves.elasticOut)
                       .fadeIn(duration: 400.ms),
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 12),
                 Center(
                   child: Text(
                     'Choose Your Currency',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.w800,
                         ),
@@ -89,28 +89,27 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       .fadeIn(delay: 200.ms, duration: 500.ms)
                       .slideY(begin: 0.3, end: 0, delay: 200.ms),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
                 Center(
                   child: Text(
-                    'Pick the currency you use daily. You can change this anytime in Settings.',
+                    'Pick the currency you use daily.',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: AppColors.textSecondary,
-                          height: 1.5,
+                          height: 1.3,
                         ),
                     textAlign: TextAlign.center,
-                  )
-                      .animate()
-                      .fadeIn(delay: 300.ms, duration: 500.ms),
+                  ).animate().fadeIn(delay: 300.ms, duration: 500.ms),
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 16),
                 Expanded(
                   child: GridView.builder(
-                    physics: const BouncingScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      childAspectRatio: 1.6,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 4,
+                      childAspectRatio: 1.35,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
                     ),
                     itemCount: _currencies.length,
                     itemBuilder: (_, i) {
@@ -124,7 +123,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             color: isSelected
                                 ? AppColors.primary.withValues(alpha: 0.2)
                                 : AppColors.darkCard.withValues(alpha: 0.6),
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: isSelected
                                   ? AppColors.primary
@@ -138,7 +137,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                               Text(
                                 symbol,
                                 style: TextStyle(
-                                  fontSize: 22,
+                                  fontSize: 18,
                                   fontWeight: FontWeight.w800,
                                   color: isSelected
                                       ? AppColors.primary
@@ -149,7 +148,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                               Text(
                                 code,
                                 style: TextStyle(
-                                  fontSize: 10,
+                                  fontSize: 9,
                                   color: isSelected
                                       ? AppColors.primary.withValues(alpha: 0.8)
                                       : AppColors.textSecondary,
@@ -159,10 +158,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             ],
                           ),
                         ),
-                      ).animate(delay: (i * 40).ms).fadeIn().scale(
+                      ).animate(delay: (i * 30).ms).fadeIn().scale(
                             begin: const Offset(0.9, 0.9),
                             end: const Offset(1, 1),
-                            duration: 250.ms,
+                            duration: 200.ms,
                           );
                     },
                   ),
