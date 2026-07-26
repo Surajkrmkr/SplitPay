@@ -281,13 +281,20 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final safeBottom = MediaQuery.of(context).viewPadding.bottom;
 
+    final isResultView = _view == _SheetView.result;
+    final initialSize = isResultView ? 0.38 : 0.75;
+    final minSize = isResultView ? 0.25 : 0.4;
+    final maxSize = isResultView ? 0.5 : 0.95;
+    final snapSizes = isResultView ? const [0.38, 0.5] : const [0.75, 0.95];
+
     return DraggableScrollableSheet(
-      initialChildSize: 0.75,
-      maxChildSize: 0.95,
-      minChildSize: 0.4,
+      key: ValueKey(_view),
+      initialChildSize: initialSize,
+      maxChildSize: maxSize,
+      minChildSize: minSize,
       expand: false,
       snap: true,
-      snapSizes: const [0.75, 0.95],
+      snapSizes: snapSizes,
       builder: (_, scrollController) => Container(
         decoration: BoxDecoration(
           color: isDark ? AppColors.darkSurface : Colors.white,

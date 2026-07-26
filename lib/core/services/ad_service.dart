@@ -17,7 +17,7 @@ class AdService {
 
   /// Initializes the Google Mobile Ads SDK. Safe for non-supported platforms (Web).
   Future<void> initialize() async {
-    if (kIsWeb) return;
+    if (!AdConstants.enableAds || kIsWeb) return;
     try {
       final status = await MobileAds.instance.initialize();
       _isInitialized = true;
@@ -39,7 +39,7 @@ class AdService {
     VoidCallback? onAdLoaded,
     Function(LoadAdError)? onAdFailedToLoad,
   }) {
-    if (kIsWeb) return;
+    if (!AdConstants.enableAds || kIsWeb) return;
     final unitId = adUnitId ?? AdConstants.interstitialAdUnitId;
     if (unitId.isEmpty) return;
 
@@ -66,8 +66,8 @@ class AdService {
     VoidCallback? onAdDismissed,
     Function(AdError)? onAdFailedToShow,
   }) {
-    if (_interstitialAd == null) {
-      AppLogger.instance.w('Attempted to show interstitial ad before loading', tag: 'AdService');
+    if (!AdConstants.enableAds || _interstitialAd == null) {
+      AppLogger.instance.w('Attempted to show interstitial ad when disabled or before loading', tag: 'AdService');
       onAdDismissed?.call();
       return;
     }
@@ -96,7 +96,7 @@ class AdService {
     VoidCallback? onAdLoaded,
     Function(LoadAdError)? onAdFailedToLoad,
   }) {
-    if (kIsWeb) return;
+    if (!AdConstants.enableAds || kIsWeb) return;
     final unitId = adUnitId ?? AdConstants.rewardedAdUnitId;
     if (unitId.isEmpty) return;
 
@@ -124,8 +124,8 @@ class AdService {
     VoidCallback? onAdDismissed,
     Function(AdError)? onAdFailedToShow,
   }) {
-    if (_rewardedAd == null) {
-      AppLogger.instance.w('Attempted to show rewarded ad before loading', tag: 'AdService');
+    if (!AdConstants.enableAds || _rewardedAd == null) {
+      AppLogger.instance.w('Attempted to show rewarded ad when disabled or before loading', tag: 'AdService');
       onAdDismissed?.call();
       return;
     }

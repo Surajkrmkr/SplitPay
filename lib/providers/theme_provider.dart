@@ -13,7 +13,7 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
   }
 
   void _load() {
-    final isDark = PreferencesService.get<bool>('isDarkMode') ?? true;
+    final isDark = PreferencesService.get<bool>('isDarkMode') ?? false;
     state = isDark ? ThemeMode.dark : ThemeMode.light;
   }
 

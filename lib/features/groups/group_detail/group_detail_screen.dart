@@ -540,9 +540,11 @@ class _BalancesTab extends ConsumerWidget {
       error: (e, _) => RefreshIndicator(
         color: AppColors.primary,
         onRefresh: () async {
-          ref.invalidate(groupDetailProvider(groupId));
+          ref.invalidate(groupExpensesProvider(groupId));
           ref.invalidate(groupBalancesProvider(groupId));
           ref.invalidate(groupSettlementsProvider(groupId));
+          ref.invalidate(groupActivityProvider(groupId));
+          ref.invalidate(groupDetailProvider(groupId));
         },
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -564,9 +566,11 @@ class _BalancesTab extends ConsumerWidget {
             return RefreshIndicator(
               color: AppColors.primary,
               onRefresh: () async {
-                ref.invalidate(groupDetailProvider(groupId));
+                ref.invalidate(groupExpensesProvider(groupId));
                 ref.invalidate(groupBalancesProvider(groupId));
                 ref.invalidate(groupSettlementsProvider(groupId));
+                ref.invalidate(groupActivityProvider(groupId));
+                ref.invalidate(groupDetailProvider(groupId));
               },
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -583,9 +587,11 @@ class _BalancesTab extends ConsumerWidget {
           return RefreshIndicator(
             color: AppColors.primary,
             onRefresh: () async {
-              ref.invalidate(groupDetailProvider(groupId));
+              ref.invalidate(groupExpensesProvider(groupId));
               ref.invalidate(groupBalancesProvider(groupId));
               ref.invalidate(groupSettlementsProvider(groupId));
+              ref.invalidate(groupActivityProvider(groupId));
+              ref.invalidate(groupDetailProvider(groupId));
             },
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -603,9 +609,11 @@ class _BalancesTab extends ConsumerWidget {
         return RefreshIndicator(
           color: AppColors.primary,
           onRefresh: () async {
-            ref.invalidate(groupDetailProvider(groupId));
+            ref.invalidate(groupExpensesProvider(groupId));
             ref.invalidate(groupBalancesProvider(groupId));
             ref.invalidate(groupSettlementsProvider(groupId));
+            ref.invalidate(groupActivityProvider(groupId));
+            ref.invalidate(groupDetailProvider(groupId));
           },
           child: ListView(
             padding: const EdgeInsets.only(top: 12, bottom: 100),
@@ -924,7 +932,7 @@ enum _ExpenseDateFilter { all, week, month }
 enum _ExpenseSortOrder { newestFirst, oldestFirst, highestAmount, lowestAmount }
 
 class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
-  _ExpenseDateFilter _dateFilter = _ExpenseDateFilter.month;
+  _ExpenseDateFilter _dateFilter = _ExpenseDateFilter.all;
   _ExpenseSortOrder _sort = _ExpenseSortOrder.newestFirst;
   Set<String> _payerFilter = {};
   double? _amountMin;
@@ -1804,10 +1812,7 @@ class _ActivityTab extends ConsumerWidget {
               activity: activities[i],
               isDark: isDark,
               isLast: i == activities.length - 1,
-            )
-                .animate(delay: (i * 40).ms)
-                .fadeIn(duration: 300.ms)
-                .slideY(begin: 0.05),
+            ),
           ),
         );
       },
@@ -2201,7 +2206,10 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                ...members.map((m) {
+                ...members.asMap().entries.map((entry) {
+                  final idx = entry.key;
+                  final m = entry.value;
+                  final userColor = _userColors[idx % _userColors.length];
                   final isYou = m.userId == currentUserId;
                   final paid = expenses.where((e) => e.paidById == m.userId).fold<double>(0, (s, e) => s + e.amount);
                   final share = expenses.fold<double>(0, (s, e) => s + e.shareForUser(m.userId));
@@ -2224,13 +2232,33 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     decoration: BoxDecoration(
-                      color: isDark ? AppColors.darkCard : Colors.white,
+                      color: userColor.withValues(alpha: isDark ? 0.12 : 0.07),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: borderColor, width: 0.5),
+                      border: Border.all(color: userColor.withValues(alpha: 0.35), width: 1),
                     ),
                     child: Row(
                       children: [
-                        AvatarWidget(name: m.name, imageUrl: m.avatar, size: 38),
+                        Stack(
+                          children: [
+                            AvatarWidget(name: m.name, imageUrl: m.avatar, size: 38),
+                            Positioned(
+                              right: 0,
+                              bottom: 0,
+                              child: Container(
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  color: userColor,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: isDark ? AppColors.darkCard : Colors.white,
+                                    width: 2,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
@@ -2275,7 +2303,7 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
                 const SizedBox(height: 20),
               ],
 
-              // Monthly Spending Chart (Total + All Users' Spend)
+              // Monthly Spending Chart (All Users' Spend)
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -2288,6 +2316,7 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Text(
                           'Monthly Spend Breakdown',
@@ -2296,6 +2325,27 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
                             fontWeight: FontWeight.w700,
                             color: isDark ? Colors.white : AppColors.textLight,
                           ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            const Text(
+                              'Total Spend',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Text(
+                              CurrencyFormatter.formatCompact(totalSpent, symbol: currency),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -2391,7 +2441,7 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
                                 showTitles: true,
                                 reservedSize: 42,
                                 getTitlesWidget: (value, meta) {
-                                  if (value == 0 || value == chartMax) {
+                                  if (value == chartMax) {
                                     return const SizedBox.shrink();
                                   }
                                   return Text(
@@ -2405,31 +2455,8 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
                                 },
                               ),
                             ),
-                            topTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true,
-                                reservedSize: 22,
-                                getTitlesWidget: (value, meta) {
-                                  final i = value.toInt();
-                                  if (i < 0 || i >= recentMonths.length) {
-                                    return const SizedBox.shrink();
-                                  }
-                                  final month = recentMonths[i];
-                                  final monthTotal = totalByMonth[month] ?? 0;
-                                  if (monthTotal <= 0) return const SizedBox.shrink();
-                                  return Padding(
-                                    padding: const EdgeInsets.only(bottom: 2),
-                                    child: Text(
-                                      CurrencyFormatter.formatCompact(monthTotal, symbol: currency),
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.primary,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
+                            topTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
                             ),
                             rightTitles: const AxisTitles(
                               sideTitles: SideTitles(showTitles: false),
@@ -2444,7 +2471,15 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
                               strokeWidth: 0.5,
                             ),
                           ),
-                          borderData: FlBorderData(show: false),
+                          borderData: FlBorderData(
+                            show: true,
+                            border: Border(
+                              bottom: BorderSide(
+                                color: gridColor,
+                                width: 1,
+                              ),
+                            ),
+                          ),
                           barTouchData: BarTouchData(
                             touchTooltipData: BarTouchTooltipData(
                               getTooltipColor: (_) =>

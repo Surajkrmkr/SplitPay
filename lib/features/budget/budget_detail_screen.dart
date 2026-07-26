@@ -6,8 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/constants/app_colors.dart';
 import '../../shared/widgets/app_back_button.dart';
+import '../../core/utils/category_app_icons.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../data/models/budget_model.dart';
+import '../../data/models/custom_category.dart';
 import '../../data/models/transaction_model.dart';
 import '../../providers/budget_provider.dart';
 import '../../providers/settings_provider.dart';
@@ -597,7 +599,7 @@ class _PeriodInfo extends StatelessWidget {
 
 // ── Transaction tile ─────────────────────────────────────────────────────────
 
-class _TransactionTile extends StatelessWidget {
+class _TransactionTile extends ConsumerWidget {
   final Transaction tx;
   final String currency;
   final bool isDark;
@@ -609,8 +611,22 @@ class _TransactionTile extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final color = tx.category.color;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final customCats = ref.watch(customCategoriesProvider);
+    CustomCategory? customCat;
+    if (tx.customCategoryId != null) {
+      for (final c in customCats) {
+        if (c.id == tx.customCategoryId) {
+          customCat = c;
+          break;
+        }
+      }
+    }
+
+    final color = customCat?.color ?? tx.category.color;
+    final icon = customCat?.icon ?? tx.category.icon;
+    final label = customCat?.label ?? tx.category.label;
+    final titleText = (tx.note != null && tx.note!.trim().isNotEmpty) ? tx.note! : label;
     final bgColor = isDark ? AppColors.darkCard : AppColors.lightSurface;
     final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
 
@@ -636,24 +652,47 @@ class _TransactionTile extends StatelessWidget {
             padding: const EdgeInsets.all(14),
             child: Row(
               children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
+                // Expense brand icon if selected, otherwise category icon
+                if (tx.appIcon != null && tx.appIcon!.isNotEmpty)
+                  Container(
+                    width: 42,
+                    height: 42,
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkCard : AppColors.lightCard,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                        width: 0.8,
+                      ),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.asset(
+                        CategoryAppIcons.pathFor(tx.appIcon!),
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  )
+                else
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(icon, color: color, size: 20),
                   ),
-                  child: Icon(tx.category.icon, color: color, size: 18),
-                ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        tx.note ?? tx.category.label,
+                        titleText,
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: isDark ? Colors.white : AppColors.textLight,
                         ),
@@ -662,12 +701,16 @@ class _TransactionTile extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        DateFormat('d MMM · h:mm a').format(tx.date),
+                        tx.note != null && tx.note!.trim().isNotEmpty
+                            ? '$label · ${DateFormat('d MMM · h:mm a').format(tx.date)}'
+                            : DateFormat('d MMM · h:mm a').format(tx.date),
                         style: const TextStyle(
                           fontSize: 11,
                           color: AppColors.textSecondary,
                           fontWeight: FontWeight.w500,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),

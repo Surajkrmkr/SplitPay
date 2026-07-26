@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_colors.dart';
 import '../debug/debug_log_screen.dart';
 import '../../providers/theme_provider.dart';
@@ -108,9 +109,7 @@ class SettingsScreen extends ConsumerWidget {
                         icon: Icons.info_outline_rounded,
                         iconColor: AppColors.primary,
                         title: 'App Version',
-                        subtitle: ref
-                                .watch(appVersionProvider)
-                                .valueOrNull ??
+                        subtitle: ref.watch(appVersionProvider).valueOrNull ??
                             'Loading...',
                         onTap: null,
                       ),
@@ -131,7 +130,19 @@ class SettingsScreen extends ConsumerWidget {
                         iconColor: AppColors.warning,
                         title: 'Rate SplitPay',
                         subtitle: 'Love the app? Leave a review',
-                        onTap: () => _showComingSoon(context),
+                        onTap: () async {
+                          final isIos =
+                              Theme.of(context).platform == TargetPlatform.iOS;
+                          final url = Uri.parse(
+                            isIos
+                                ? 'https://apps.apple.com/app/id6470000000'
+                                : 'https://play.google.com/store/apps/details?id=com.splitpay.expensetracker',
+                          );
+                          if (await canLaunchUrl(url)) {
+                            await launchUrl(url,
+                                mode: LaunchMode.externalApplication);
+                          }
+                        },
                       ),
                       _Divider(),
                       _SettingsTile(
@@ -139,7 +150,15 @@ class SettingsScreen extends ConsumerWidget {
                         iconColor: AppColors.secondary,
                         title: 'Privacy Policy',
                         subtitle: 'How we handle your data',
-                        onTap: () => _showComingSoon(context),
+                        onTap: () async {
+                          final url = Uri.parse(
+                            'https://doc-hosting.flycricket.io/splitpay-privacy-policy/81c23815-2230-40e4-bc43-7d80f0625aee/privacy',
+                          );
+                          if (await canLaunchUrl(url)) {
+                            await launchUrl(url,
+                                mode: LaunchMode.externalApplication);
+                          }
+                        },
                       ),
                       _Divider(),
                       _SettingsTile(
@@ -153,7 +172,6 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 24),
                   _SectionLabel(label: 'Account'),
                   const SizedBox(height: 12),
@@ -355,7 +373,6 @@ class _SettingsGroup extends StatelessWidget {
 }
 
 class _ThemeTile extends StatelessWidget {
-
   final bool isDark;
   final WidgetRef ref;
 
@@ -822,6 +839,56 @@ class _SettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bool comingSoon = subtitle.toLowerCase().contains('coming soon');
+
+    final effectiveIconColor = comingSoon
+        ? AppColors.textTertiary.withValues(alpha: 0.5)
+        : iconColor;
+    final effectiveBgColor = comingSoon
+        ? AppColors.textTertiary.withValues(alpha: 0.08)
+        : iconColor.withValues(alpha: 0.12);
+
+    final titleStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+          color: comingSoon
+              ? (isDark
+                  ? AppColors.textSecondary.withValues(alpha: 0.6)
+                  : AppColors.textLightSecondary.withValues(alpha: 0.6))
+              : null,
+        );
+
+    final subtitleStyle = TextStyle(
+      color: comingSoon
+          ? AppColors.textTertiary.withValues(alpha: 0.6)
+          : (isDark ? AppColors.textSecondary : AppColors.textLightSecondary),
+      fontSize: 12,
+    );
+
+    final Widget defaultTrailing = comingSoon
+        ? Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? AppColors.textTertiary.withValues(alpha: 0.15)
+                  : AppColors.textTertiary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Text(
+              'Soon',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textTertiary,
+              ),
+            ),
+          )
+        : (onTap != null
+            ? const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textTertiary,
+                size: 20,
+              )
+            : const SizedBox.shrink());
 
     return Material(
       color: Colors.transparent,
@@ -836,10 +903,10 @@ class _SettingsTile extends StatelessWidget {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: iconColor.withValues(alpha: 0.12),
+                  color: effectiveBgColor,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(icon, color: iconColor, size: 18),
+                child: Icon(icon, color: effectiveIconColor, size: 18),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -848,30 +915,16 @@ class _SettingsTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                      style: titleStyle,
                     ),
                     Text(
                       subtitle,
-                      style: TextStyle(
-                        color: isDark
-                            ? AppColors.textSecondary
-                            : AppColors.textLightSecondary,
-                        fontSize: 12,
-                      ),
+                      style: subtitleStyle,
                     ),
                   ],
                 ),
               ),
-              trailing ??
-                  (onTap != null
-                      ? Icon(
-                          Icons.chevron_right_rounded,
-                          color: AppColors.textTertiary,
-                          size: 20,
-                        )
-                      : const SizedBox.shrink()),
+              trailing ?? defaultTrailing,
             ],
           ),
         ),
@@ -1092,7 +1145,7 @@ class _AppBadgeState extends State<_AppBadge> {
             ),
             const SizedBox(height: 4),
             const Text(
-              'Made with ♥ · v1.0.0',
+              'Made with ♥',
               style: TextStyle(
                 color: AppColors.textTertiary,
                 fontSize: 12,

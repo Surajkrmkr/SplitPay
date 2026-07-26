@@ -39,7 +39,7 @@ class _AppAdBannerState extends State<AppAdBanner> {
   }
 
   void _loadAd() {
-    if (kIsWeb) {
+    if (!AdConstants.enableAds || kIsWeb) {
       setState(() => _hasFailed = true);
       return;
     }
@@ -97,6 +97,10 @@ class _AppAdBannerState extends State<AppAdBanner> {
 
   @override
   Widget build(BuildContext context) {
+    if (!AdConstants.enableAds) {
+      return const SizedBox.shrink();
+    }
+
     if (_hasFailed && !widget.showPlaceholderOnFailure) {
       return const SizedBox.shrink();
     }

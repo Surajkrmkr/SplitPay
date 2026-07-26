@@ -278,6 +278,7 @@ class GroupApiService {
   }) async {
     if (_useMock) {
       final now = DateTime.now();
+      _updateMockBalanceOnSettlement(groupId, payeeId, amount);
       return SettlementModel(
         id: 'set_${now.millisecondsSinceEpoch}',
         groupId: groupId,
@@ -588,73 +589,94 @@ class GroupApiService {
     return mockData[groupId] ?? mockData['grp_1']!;
   }
 
-  GroupBalanceSummary _mockBalances(String groupId, String currentUserId) {
-    final Map<String, List<BalanceModel>> mockBalances = {
-      'grp_1': [
-        BalanceModel(
-          fromUserId: 'user_2',
-          fromUserName: 'Rahul Sharma',
-          toUserId: 'user_1',
-          toUserName: 'You',
-          amount: 2200,
-        ),
-        BalanceModel(
-          fromUserId: 'user_1',
-          fromUserName: 'You',
-          toUserId: 'user_3',
-          toUserName: 'Priya Patel',
-          amount: 800,
-        ),
-        BalanceModel(
-          fromUserId: 'user_4',
-          fromUserName: 'Amit Kumar',
-          toUserId: 'user_2',
-          toUserName: 'Rahul Sharma',
-          amount: 1400,
-        ),
-      ],
-      'grp_2': [
-        BalanceModel(
-          fromUserId: 'user_1',
-          fromUserName: 'You',
-          toUserId: 'user_2',
-          toUserName: 'Rahul Sharma',
-          amount: 13800,
-        ),
-        BalanceModel(
-          fromUserId: 'user_5',
-          fromUserName: 'Sneha Gupta',
-          toUserId: 'user_2',
-          toUserName: 'Rahul Sharma',
-          amount: 13800,
-        ),
-      ],
-      'grp_3': [
-        BalanceModel(
-          fromUserId: 'user_3',
-          fromUserName: 'Priya Patel',
-          toUserId: 'user_1',
-          toUserName: 'You',
-          amount: 750,
-        ),
-        BalanceModel(
-          fromUserId: 'user_7',
-          fromUserName: 'Divya Nair',
-          toUserId: 'user_1',
-          toUserName: 'You',
-          amount: 750,
-        ),
-        BalanceModel(
-          fromUserId: 'user_8',
-          fromUserName: 'Vijay Reddy',
-          toUserId: 'user_1',
-          toUserName: 'You',
-          amount: 750,
-        ),
-      ],
-    };
+  static final Map<String, List<BalanceModel>> _mockBalancesStore = {
+    'grp_1': [
+      BalanceModel(
+        fromUserId: 'user_2',
+        fromUserName: 'Rahul Sharma',
+        toUserId: 'user_1',
+        toUserName: 'You',
+        amount: 2200,
+      ),
+      BalanceModel(
+        fromUserId: 'user_1',
+        fromUserName: 'You',
+        toUserId: 'user_3',
+        toUserName: 'Priya Patel',
+        amount: 800,
+      ),
+      BalanceModel(
+        fromUserId: 'user_4',
+        fromUserName: 'Amit Kumar',
+        toUserId: 'user_2',
+        toUserName: 'Rahul Sharma',
+        amount: 1400,
+      ),
+    ],
+    'grp_2': [
+      BalanceModel(
+        fromUserId: 'user_1',
+        fromUserName: 'You',
+        toUserId: 'user_2',
+        toUserName: 'Rahul Sharma',
+        amount: 13800,
+      ),
+      BalanceModel(
+        fromUserId: 'user_5',
+        fromUserName: 'Sneha Gupta',
+        toUserId: 'user_2',
+        toUserName: 'Rahul Sharma',
+        amount: 13800,
+      ),
+    ],
+    'grp_3': [
+      BalanceModel(
+        fromUserId: 'user_3',
+        fromUserName: 'Priya Patel',
+        toUserId: 'user_1',
+        toUserName: 'You',
+        amount: 750,
+      ),
+      BalanceModel(
+        fromUserId: 'user_7',
+        fromUserName: 'Divya Nair',
+        toUserId: 'user_1',
+        toUserName: 'You',
+        amount: 750,
+      ),
+      BalanceModel(
+        fromUserId: 'user_8',
+        fromUserName: 'Vijay Reddy',
+        toUserId: 'user_1',
+        toUserName: 'You',
+        amount: 750,
+      ),
+    ],
+  };
 
-    final balances = mockBalances[groupId] ?? [];
+  void _updateMockBalanceOnSettlement(String groupId, String payeeId, double amount) {
+    final list = _mockBalancesStore[groupId];
+    if (list == null) return;
+    final index = list.indexWhere((b) => b.fromUserId == 'user_1' && b.toUserId == payeeId);
+    if (index != -1) {
+      final existing = list[index];
+      final newAmt = existing.amount - amount;
+      if (newAmt <= 0.01) {
+        list.removeAt(index);
+      } else {
+        list[index] = BalanceModel(
+          fromUserId: existing.fromUserId,
+          fromUserName: existing.fromUserName,
+          toUserId: existing.toUserId,
+          toUserName: existing.toUserName,
+          amount: newAmt,
+        );
+      }
+    }
+  }
+
+  GroupBalanceSummary _mockBalances(String groupId, String currentUserId) {
+    final balances = _mockBalancesStore[groupId] ?? [];
 
     double owed = 0;
     double lent = 0;
