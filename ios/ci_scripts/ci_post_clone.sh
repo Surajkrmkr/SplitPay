@@ -10,6 +10,9 @@ cd "$CI_PRIMARY_REPOSITORY_PATH"
 git clone https://github.com/flutter/flutter.git --depth 1 -b stable $HOME/flutter
 export PATH="$PATH:$HOME/flutter/bin"
 
+# Precache iOS Flutter engine artifacts (downloads Flutter.xcframework)
+flutter precache --ios
+
 # Ensure CocoaPods is installed
 brew install cocoapods || true
 
