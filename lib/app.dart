@@ -5,6 +5,7 @@ import 'core/theme/app_theme.dart';
 import 'providers/theme_provider.dart';
 import 'router/app_router.dart';
 import 'shared/widgets/in_app_notification_banner.dart';
+import 'shared/widgets/network_status_banner.dart';
 
 class SplitPayApp extends ConsumerWidget {
   const SplitPayApp({super.key});
@@ -21,9 +22,12 @@ class SplitPayApp extends ConsumerWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       routerConfig: router,
-      builder: (context, child) => InAppNotificationListener(
-        child: child ?? const SizedBox.shrink(),
+      builder: (context, child) => NetworkStatusBannerListener(
+        child: InAppNotificationListener(
+          child: child ?? const SizedBox.shrink(),
+        ),
       ),
     );
   }
 }
+

@@ -153,6 +153,7 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
+
                   const SizedBox(height: 24),
                   _SectionLabel(label: 'Account'),
                   const SizedBox(height: 12),
@@ -354,6 +355,7 @@ class _SettingsGroup extends StatelessWidget {
 }
 
 class _ThemeTile extends StatelessWidget {
+
   final bool isDark;
   final WidgetRef ref;
 
