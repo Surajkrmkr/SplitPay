@@ -2,18 +2,34 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/constants/ad_constants.dart';
 import '../../core/constants/app_colors.dart';
 import '../../providers/transaction_provider.dart';
+import '../../shared/widgets/app_ad_banner.dart';
+import '../../core/services/update_service.dart';
 import 'widgets/analytics_mini.dart';
 import 'widgets/balance_card.dart';
 import 'widgets/greeting_header.dart';
 import 'widgets/recent_transactions.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      UpdateService.instance.checkForUpdate();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         bottom: false,
@@ -39,12 +55,19 @@ class HomeScreen extends ConsumerWidget {
                           const BalanceCard(),
                           const SizedBox(height: 28),
                           const _SplitBanner(),
+                          const AppAdBanner(
+                            placement: AdPlacement.homeSplitBanner,
+                            margin: EdgeInsets.fromLTRB(20, 16, 20, 0),
+                          ),
                           const SizedBox(height: 28),
                           const RecentTransactions(),
                           const SizedBox(height: 28),
                           const AnalyticsMini(),
+                          const AppAdBanner(
+                            placement: AdPlacement.homeQuickInsightsBanner,
+                            margin: EdgeInsets.fromLTRB(20, 16, 20, 0),
+                          ),
                           const SizedBox(height: 16),
-                          // _AdBannerArea(),
                           SizedBox(
                             height: 100 + MediaQuery.of(context).padding.bottom,
                           ),
@@ -147,34 +170,5 @@ class _SplitBanner extends StatelessWidget {
         ],
       ),
     ).animate(delay: 500.ms).fadeIn().slideY(begin: 0.2, end: 0);
-  }
-}
-
-class _AdBannerArea extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      height: 48,
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : AppColors.lightCard,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-          width: 0.5,
-        ),
-      ),
-      child: const Center(
-        child: Text(
-          'Banner Ad Placeholder',
-          style: TextStyle(
-            color: AppColors.textTertiary,
-            fontSize: 11,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-      ),
-    ).animate(delay: 600.ms).fadeIn();
   }
 }

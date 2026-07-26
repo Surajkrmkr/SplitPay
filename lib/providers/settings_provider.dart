@@ -1,5 +1,7 @@
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../core/network/api_client.dart';
 import '../core/network/api_constants.dart';
@@ -145,3 +147,24 @@ class BiometricLockNotifier extends StateNotifier<bool> {
 final biometricLockProvider =
     StateNotifierProvider<BiometricLockNotifier, bool>(
         (ref) => BiometricLockNotifier());
+
+// ─── App & Device Info ────────────────────────────────────────────────────────
+
+final appVersionProvider = FutureProvider<String>((ref) async {
+  try {
+    final info = await PackageInfo.fromPlatform();
+    return '${info.version} (Build ${info.buildNumber})';
+  } catch (_) {
+    return '1.0.6 (Build 7)';
+  }
+});
+
+final deviceInfoProvider = FutureProvider<String>((ref) async {
+  try {
+    final plugin = DeviceInfoPlugin();
+    final info = await plugin.deviceInfo;
+    return info.data['model']?.toString() ?? 'Mobile Device';
+  } catch (_) {
+    return 'Mobile Device';
+  }
+});

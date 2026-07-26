@@ -25,12 +25,19 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
   late final TextEditingController _amountController;
   late final TextEditingController _noteController;
   late TransactionType _type;
-  late Category _category;
+  Category? _category;
   String? _customCategoryId;
   String? _appIcon;
   late DateTime _date;
   late RecurrenceType _recurrence;
   bool _saving = false;
+
+  bool get _isValid {
+    final amount = double.tryParse(_amountController.text.trim());
+    return amount != null &&
+        amount > 0 &&
+        (_category != null || _customCategoryId != null);
+  }
 
   @override
   void initState() {
@@ -58,13 +65,14 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
   Future<void> _save() async {
     final amount = double.tryParse(_amountController.text.trim());
     if (amount == null || amount <= 0) return;
+    if (_category == null && _customCategoryId == null) return;
     setState(() => _saving = true);
     try {
       await ref.read(transactionProvider.notifier).update(
             widget.transaction.copyWith(
               amount: amount,
               type: _type,
-              category: _category,
+              category: _category ?? Category.other,
               customCategoryId: _customCategoryId,
               appIcon: _appIcon,
               note: _noteController.text.trim().isEmpty
@@ -229,9 +237,7 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
                               _type = t;
                               _customCategoryId = null;
                               _appIcon = null;
-                              _category = t == TransactionType.income
-                                  ? Category.salary
-                                  : Category.food;
+                              _category = null;
                             }),
                           ),
                         ),
@@ -262,11 +268,12 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
                         ),
                         const SizedBox(height: 20),
                         _NotePill(controller: _noteController),
-                        if (CategoryAppIcons.iconsFor(_category).isNotEmpty &&
+                        if (_category != null &&
+                            CategoryAppIcons.iconsFor(_category).isNotEmpty &&
                             _customCategoryId == null) ...[
                           const SizedBox(height: 20),
                           AppIconPicker(
-                            category: _category,
+                            category: _category!,
                             selected: _appIcon,
                             onSelected: (v) => setState(() => _appIcon = v),
                             isDark: isDark,
@@ -320,7 +327,7 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
                       const SizedBox(height: 12),
                       SpButton(
                         label: 'Save Changes',
-                        onTap: _saving ? null : _save,
+                        onTap: (_saving || !_isValid) ? null : _save,
                         isLoading: _saving,
                         icon: Icons.check_rounded,
                       ),

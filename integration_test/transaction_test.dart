@@ -44,8 +44,11 @@ void main() {
       await tester.enterText(find.byType(TextField).first, '500');
       await tester.pump();
 
-      // Tap the 'Food' category chip (default type is expense).
-      await tester.tap(find.text('Food'));
+      // Tap category dropdown ('Select Category') and pick 'Food'.
+      await tester.tap(find.text('Select Category'));
+      await tester.pump();
+      await pumpFrames(tester);
+      await tester.tap(find.text('Food').last);
       await tester.pump();
 
       // Submit.

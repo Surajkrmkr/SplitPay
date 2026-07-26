@@ -4,8 +4,10 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../../core/constants/ad_constants.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/errors/app_exception.dart';
+import '../../../shared/widgets/app_ad_banner.dart';
 import '../../../shared/widgets/app_back_button.dart';
 import '../../../data/models/activity_model.dart';
 import '../../../data/models/group_expense_model.dart';
@@ -762,16 +764,34 @@ class _StatChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
+        color: isDark ? AppColors.darkCard : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 6),
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 16, color: color),
+          ),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -779,16 +799,19 @@ class _StatChip extends StatelessWidget {
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: 10,
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 11,
+                    color: isDark
+                        ? AppColors.textTertiary
+                        : AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
+                const SizedBox(height: 1),
                 Text(
                   value,
                   style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
                     color: color,
                   ),
                 ),
@@ -2187,6 +2210,11 @@ class _TotalTab extends ConsumerWidget {
                   ).animate().fadeIn(duration: 500.ms, delay: 100.ms),
                 ],
               ),
+            ),
+            const SizedBox(height: 16),
+            const AppAdBanner(
+              placement: AdPlacement.groupDetailsTotalBanner,
+              margin: EdgeInsets.zero,
             ),
           ],
         );

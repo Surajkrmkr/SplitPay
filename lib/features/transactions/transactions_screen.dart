@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import '../../core/constants/ad_constants.dart';
 import '../../core/constants/app_colors.dart';
+import '../../shared/widgets/app_ad_banner.dart';
 import '../../shared/widgets/app_back_button.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../data/models/transaction_model.dart';
@@ -923,7 +926,8 @@ class _TransactionList extends ConsumerWidget {
           itemCount: transactions.length,
           itemBuilder: (context, i) {
             final tx = transactions[i];
-            return TransactionTile(
+            final showAd = (i + 1) % 4 == 0;
+            final tile = TransactionTile(
               transaction: tx,
               onDelete: () => _handleSwipeDelete(context, ref, tx),
               onEdit: () => showModalBottomSheet(
@@ -933,6 +937,18 @@ class _TransactionList extends ConsumerWidget {
                 backgroundColor: Colors.transparent,
                 builder: (_) => EditTransactionSheet(transaction: tx),
               ),
+            );
+            if (!showAd) return tile;
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                tile,
+                const AppAdBanner(
+                  placement: AdPlacement.transactionsListBanner,
+                  adSize: AdSize.mediumRectangle,
+                  margin: EdgeInsets.symmetric(vertical: 12),
+                ),
+              ],
             );
           },
         ),
@@ -962,6 +978,11 @@ class _TransactionList extends ConsumerWidget {
           final key = keys[groupIdx];
           final items = grouped[key]!;
 
+          int runningTxCount = 0;
+          for (int g = 0; g < groupIdx; g++) {
+            runningTxCount += grouped[keys[g]]!.length;
+          }
+
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -970,18 +991,36 @@ class _TransactionList extends ConsumerWidget {
                 total: dayNet[key] ?? 0,
                 currency: currency,
               ),
-              ...items.map(
-                (tx) => TransactionTile(
-                  transaction: tx,
-                  onDelete: () => _handleSwipeDelete(context, ref, tx),
-                  onEdit: () => showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    useRootNavigator: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (_) => EditTransactionSheet(transaction: tx),
-                  ),
-                ),
+              ...items.asMap().entries.map(
+                (entry) {
+                  final idx = entry.key;
+                  final tx = entry.value;
+                  final globalIdx = runningTxCount + idx + 1;
+                  final showAd = globalIdx % 4 == 0;
+                  final tile = TransactionTile(
+                    transaction: tx,
+                    onDelete: () => _handleSwipeDelete(context, ref, tx),
+                    onEdit: () => showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      useRootNavigator: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) => EditTransactionSheet(transaction: tx),
+                    ),
+                  );
+                  if (!showAd) return tile;
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      tile,
+                      const AppAdBanner(
+                        placement: AdPlacement.transactionsListBanner,
+                        adSize: AdSize.mediumRectangle,
+                        margin: EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ],
+                  );
+                },
               ),
             ],
           );

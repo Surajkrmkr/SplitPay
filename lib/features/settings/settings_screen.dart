@@ -12,6 +12,7 @@ import '../../data/services/biometric_service.dart';
 import '../../data/models/custom_category.dart';
 import '../../data/models/transaction_model.dart';
 import '../../shared/widgets/create_category_dialog.dart';
+import '../../core/services/update_service.dart';
 import 'import_data_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -107,8 +108,22 @@ class SettingsScreen extends ConsumerWidget {
                         icon: Icons.info_outline_rounded,
                         iconColor: AppColors.primary,
                         title: 'App Version',
-                        subtitle: '1.0.0 (MVP)',
+                        subtitle: ref
+                                .watch(appVersionProvider)
+                                .valueOrNull ??
+                            'Loading...',
                         onTap: null,
+                      ),
+                      _Divider(),
+                      _SettingsTile(
+                        icon: Icons.system_update_rounded,
+                        iconColor: AppColors.secondary,
+                        title: 'Check for Updates',
+                        subtitle: 'Check for latest app updates',
+                        onTap: () => UpdateService.instance.checkForUpdate(
+                          context: context,
+                          showNoUpdateToast: true,
+                        ),
                       ),
                       _Divider(),
                       _SettingsTile(

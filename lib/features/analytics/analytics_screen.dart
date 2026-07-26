@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/constants/ad_constants.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../data/models/transaction_model.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../shared/widgets/app_ad_banner.dart';
 import '../../shared/widgets/empty_state.dart';
 import 'widgets/monthly_trend.dart';
 import 'widgets/spending_pie_chart.dart';
@@ -48,6 +50,10 @@ class AnalyticsScreen extends ConsumerWidget {
                   const _InsightsRow(),
                   const SizedBox(height: 20),
                   const SpendingPieChart(),
+                  const AppAdBanner(
+                    placement: AdPlacement.analyticsCategoryBanner,
+                    margin: EdgeInsets.fromLTRB(20, 16, 20, 0),
+                  ),
                   const SizedBox(height: 16),
                   const WeeklyBarChart(),
                   const SizedBox(height: 16),

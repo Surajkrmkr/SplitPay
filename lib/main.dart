@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app.dart';
+import 'core/services/ad_service.dart';
 import 'core/services/app_logger.dart';
 import 'core/storage/preferences_service.dart';
 import 'data/services/notification_service.dart';
@@ -59,6 +60,7 @@ Future<void> _init() async {
   }
 
   await PreferencesService.init();
+  await AdService.instance.initialize();
 
   try {
     await NotificationService.instance.initialize().timeout(

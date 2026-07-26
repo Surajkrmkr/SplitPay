@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/constants/ad_constants.dart';
 import '../../core/constants/app_colors.dart';
 import '../../providers/budget_provider.dart';
+import '../../shared/widgets/app_ad_banner.dart';
 import '../../shared/widgets/app_search_bar.dart';
 import '../../shared/widgets/empty_state.dart';
 import 'add_budget_sheet.dart';
@@ -27,9 +29,12 @@ class BudgetScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final allBudgets = ref.watch(budgetProvider);
     final filtered = ref.watch(filteredBudgetsProvider);
     final activeBudgets = ref.watch(activeBudgetsProvider);
     final showArchived = ref.watch(showArchivedBudgetsProvider);
+    final hasAnyBudgets = allBudgets.isNotEmpty;
+    final hasArchivedBudgets = allBudgets.any((b) => b.isArchived);
 
     return Scaffold(
       body: SafeArea(
@@ -51,11 +56,15 @@ class BudgetScreen extends ConsumerWidget {
                   // ── Summary card (only when active budgets exist) ──
                   if (activeBudgets.isNotEmpty) ...[
                     const BudgetSummaryHeader(),
+                    const AppAdBanner(
+                      placement: AdPlacement.budgetSummaryBanner,
+                      margin: EdgeInsets.fromLTRB(20, 16, 20, 0),
+                    ),
                     const SizedBox(height: 16),
                   ],
 
                   // ── Search ──
-                  if (activeBudgets.isNotEmpty || showArchived)
+                  if (hasAnyBudgets)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 10.0),
                       child: AppSearchBar(
@@ -67,7 +76,7 @@ class BudgetScreen extends ConsumerWidget {
                     ),
 
                   // ── Archive toggle ──
-                  if (activeBudgets.isNotEmpty || showArchived)
+                  if (hasAnyBudgets)
                     _ArchiveToggle(showArchived: showArchived, ref: ref),
 
                   // ── Period filter — always show when active budgets exist
@@ -87,7 +96,11 @@ class BudgetScreen extends ConsumerWidget {
               SliverFillRemaining(
                 child: _EmptyBudgets(
                   isArchived: showArchived,
+                  hasArchivedBudgets: hasArchivedBudgets,
                   onAdd: () => _openAddSheet(context),
+                  onViewArchived: () => ref
+                      .read(showArchivedBudgetsProvider.notifier)
+                      .state = true,
                 ),
               )
             else
@@ -263,25 +276,45 @@ class _ArchiveToggle extends StatelessWidget {
 
 class _EmptyBudgets extends StatelessWidget {
   final bool isArchived;
+  final bool hasArchivedBudgets;
   final VoidCallback onAdd;
+  final VoidCallback onViewArchived;
 
-  const _EmptyBudgets({required this.isArchived, required this.onAdd});
+  const _EmptyBudgets({
+    required this.isArchived,
+    required this.hasArchivedBudgets,
+    required this.onAdd,
+    required this.onViewArchived,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return isArchived
-        ? const EmptyState(
-            icon: Icons.archive_outlined,
-            title: 'No archived budgets',
-            subtitle: 'Budgets you archive will appear here',
-          )
-        : EmptyState(
-            icon: Icons.account_balance_wallet_outlined,
-            title: 'No budgets yet',
-            subtitle:
-                'Create your first budget to start tracking your spending goals',
-            actionLabel: 'Create Budget',
-            onAction: onAdd,
-          );
+    if (isArchived) {
+      return const EmptyState(
+        icon: Icons.archive_outlined,
+        title: 'No archived budgets',
+        subtitle: 'Budgets you archive will appear here',
+      );
+    }
+
+    if (hasArchivedBudgets) {
+      return EmptyState(
+        icon: Icons.archive_outlined,
+        title: 'All budgets archived',
+        subtitle:
+            'All your budgets are currently archived. View them in Archived Budgets or create a new one.',
+        actionLabel: 'View Archived Budgets',
+        onAction: onViewArchived,
+      );
+    }
+
+    return EmptyState(
+      icon: Icons.account_balance_wallet_outlined,
+      title: 'No budgets yet',
+      subtitle:
+          'Create your first budget to start tracking your spending goals',
+      actionLabel: 'Create Budget',
+      onAction: onAdd,
+    );
   }
 }

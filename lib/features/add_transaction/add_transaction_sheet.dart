@@ -4,11 +4,13 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
+import '../../core/constants/ad_constants.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/category_app_icons.dart';
 import '../../data/models/transaction_model.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../shared/widgets/app_ad_banner.dart';
 import '../../shared/widgets/app_icon_picker.dart';
 import '../../shared/widgets/bill_scan_button.dart';
 import '../../shared/widgets/category_dropdown_field.dart';
@@ -32,8 +34,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   final _noteController = TextEditingController();
 
   late TransactionType _type = widget.initialType;
-  late Category _category =
-      _type == TransactionType.income ? Category.salary : Category.food;
+  Category? _category;
   String? _customCategoryId;
   String? _appIcon;
   DateTime _date = DateTime.now();
@@ -42,7 +43,9 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
 
   bool get _isValid {
     final amount = double.tryParse(_amountController.text.replaceAll(',', ''));
-    return amount != null && amount > 0;
+    return amount != null &&
+        amount > 0 &&
+        (_category != null || _customCategoryId != null);
   }
 
   @override
@@ -74,8 +77,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
         _type = sms.type!;
         _customCategoryId = null;
         _appIcon = null;
-        _category =
-            _type == TransactionType.income ? Category.salary : Category.food;
+        _category = null;
       }
       if (sms.amount != null) {
         _amountController.text = sms.amount!.toStringAsFixed(2);
@@ -94,6 +96,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   Future<void> _save() async {
     final amount = double.tryParse(_amountController.text.replaceAll(',', ''));
     if (amount == null || amount <= 0) return;
+    if (_category == null && _customCategoryId == null) return;
     setState(() => _saving = true);
     try {
       await ref.read(transactionProvider.notifier).add(
@@ -101,7 +104,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
               id: const Uuid().v4(),
               amount: amount,
               type: _type,
-              category: _category,
+              category: _category ?? Category.other,
               customCategoryId: _customCategoryId,
               appIcon: _appIcon,
               note: _noteController.text.trim().isEmpty
@@ -267,9 +270,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                               _type = t;
                               _customCategoryId = null;
                               _appIcon = null;
-                              _category = t == TransactionType.income
-                                  ? Category.salary
-                                  : Category.food;
+                              _category = null;
                             }),
                           ),
                         ),
@@ -308,16 +309,21 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                         ),
                         const SizedBox(height: 20),
                         _NotePill(controller: _noteController),
-                        if (CategoryAppIcons.iconsFor(_category)
-                            .isNotEmpty) ...[
+                        if (_category != null &&
+                            CategoryAppIcons.iconsFor(_category)
+                                .isNotEmpty) ...[
                           const SizedBox(height: 20),
                           AppIconPicker(
-                            category: _category,
+                            category: _category!,
                             selected: _appIcon,
                             onSelected: (v) => setState(() => _appIcon = v),
                             isDark: isDark,
                           ),
                         ],
+                        const AppAdBanner(
+                          placement: AdPlacement.addExpenseBanner,
+                          margin: EdgeInsets.only(top: 16),
+                        ),
                         const SizedBox(height: 24),
                       ],
                     ),

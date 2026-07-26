@@ -94,8 +94,8 @@ class CategoryAppIcons {
     Category.other: [],
   };
 
-  static List<String> iconsFor(Category category) =>
-      _byCategory[category] ?? const [];
+  static List<String> iconsFor(Category? category) =>
+      category == null ? const [] : (_byCategory[category] ?? const []);
 
   /// Tries to guess a category from an app-icon filename. Used as a fallback
   /// when an old expense/transaction has an appIcon set but no category yet.

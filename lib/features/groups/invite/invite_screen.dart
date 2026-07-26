@@ -382,24 +382,9 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
           child: Center(child: AppBackButton()),
         ),
         title: Text(
-          _joinOnly ? 'Join a Group' : 'Invite',
+          _joinOnly ? 'Join a Group' : 'Invite Members',
           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
         ),
-        bottom: _joinOnly
-            ? null
-            : TabBar(
-                controller: _tabs,
-                labelColor: AppColors.primary,
-                unselectedLabelColor: AppColors.textSecondary,
-                indicatorColor: AppColors.primary,
-                indicatorSize: TabBarIndicatorSize.label,
-                dividerColor:
-                    isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                tabs: const [
-                  Tab(text: 'Generate Code'),
-                  Tab(text: 'Join Group')
-                ],
-              ),
       ),
       body: _joinOnly
           ? _JoinTab(
@@ -412,31 +397,16 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
               onJoin: _joinGroup,
               onScanQr: _openQrScanner,
             )
-          : TabBarView(
-              controller: _tabs,
-              children: [
-                _GenerateTab(
-                  isDark: isDark,
-                  generatedCode: _generatedCode,
-                  expiresAt: _expiresAt,
-                  generating: _generating,
-                  loadingExisting: _loadingExisting,
-                  onGenerate: _generateCode,
-                  onCopy: _copyCode,
-                  onShare: _shareCode,
-                  onShareQr: _shareQrCode,
-                ),
-                _JoinTab(
-                  isDark: isDark,
-                  controller: _codeController,
-                  preview: _joinPreview,
-                  loadingPreview: _loadingPreview,
-                  joining: _joining,
-                  onCodeChanged: _previewInvite,
-                  onJoin: _joinGroup,
-                  onScanQr: _openQrScanner,
-                ),
-              ],
+          : _GenerateTab(
+              isDark: isDark,
+              generatedCode: _generatedCode,
+              expiresAt: _expiresAt,
+              generating: _generating,
+              loadingExisting: _loadingExisting,
+              onGenerate: _generateCode,
+              onCopy: _copyCode,
+              onShare: _shareCode,
+              onShareQr: _shareQrCode,
             ),
     );
   }

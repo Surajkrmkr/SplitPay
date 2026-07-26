@@ -12,7 +12,7 @@ import 'empty_state.dart';
 /// than a handful of categories) with an inline "add custom category" entry
 /// point so the user never has to leave the transaction sheet to make one.
 class CategoryDropdownField extends ConsumerWidget {
-  final Category selectedCategory;
+  final Category? selectedCategory;
   final String? customCategoryId;
   final TransactionType type;
   final void Function(Category category, String? customCategoryId) onChanged;
@@ -30,6 +30,9 @@ class CategoryDropdownField extends ConsumerWidget {
     final customCats = ref.watch(customCategoriesProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    final bool hasSelection =
+        selectedCategory != null || customCategoryId != null;
+
     CustomCategory? selectedCustom;
     if (customCategoryId != null) {
       for (final c in customCats) {
@@ -39,9 +42,16 @@ class CategoryDropdownField extends ConsumerWidget {
         }
       }
     }
-    final color = selectedCustom?.color ?? selectedCategory.color;
-    final icon = selectedCustom?.icon ?? selectedCategory.icon;
-    final label = selectedCustom?.label ?? selectedCategory.label;
+
+    final color = hasSelection
+        ? (selectedCustom?.color ?? selectedCategory!.color)
+        : AppColors.textTertiary;
+    final icon = hasSelection
+        ? (selectedCustom?.icon ?? selectedCategory!.icon)
+        : Icons.category_outlined;
+    final label = hasSelection
+        ? (selectedCustom?.label ?? selectedCategory!.label)
+        : 'Select Category';
 
     return GestureDetector(
       onTap: () => _openPicker(context),
@@ -74,7 +84,9 @@ class CategoryDropdownField extends ConsumerWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white : AppColors.textLight,
+                  color: hasSelection
+                      ? (isDark ? Colors.white : AppColors.textLight)
+                      : AppColors.textTertiary,
                 ),
               ),
             ),
@@ -103,7 +115,7 @@ class CategoryDropdownField extends ConsumerWidget {
 }
 
 class _CategoryPickerSheet extends ConsumerStatefulWidget {
-  final Category selectedCategory;
+  final Category? selectedCategory;
   final String? customCategoryId;
   final TransactionType type;
   final void Function(Category category, String? customCategoryId) onChanged;
