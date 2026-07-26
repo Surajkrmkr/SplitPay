@@ -73,7 +73,17 @@ class GroupExpenseModel {
 
   double shareForUser(String userId) {
     final participant = participants.where((p) => p.userId == userId).firstOrNull;
-    return participant?.share ?? 0.0;
+    if (participant != null) {
+      if (participant.share > 0) return participant.share;
+      if (participant.percentage != null && participant.percentage! > 0) {
+        return (amount * participant.percentage! / 100);
+      }
+    }
+    if (splitType == 'EQUAL' && participants.isNotEmpty) {
+      final hasUser = participants.any((p) => p.userId == userId);
+      if (hasUser) return amount / participants.length;
+    }
+    return 0.0;
   }
 
   GroupExpenseModel copyWithAppIcon(String? appIcon) => GroupExpenseModel(

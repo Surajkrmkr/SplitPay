@@ -316,3 +316,52 @@ export async function notifyGroupExpenseDeleted(opts: {
   }
 }
 
+/**
+ * Notify group members when an expense is updated.
+ */
+export async function notifyGroupExpenseUpdated(opts: {
+  groupId: string;
+  groupName: string;
+  actorId: string;
+  actorName: string;
+  actorAvatar: string | null;
+  expenseTitle: string;
+  amount: number;
+  recipientUserIds: string[];
+  currency?: string;
+  changes?: string[];
+}): Promise<void> {
+  const { groupId, groupName, actorId, actorName, actorAvatar, expenseTitle, amount, recipientUserIds, changes } = opts;
+  const currency = opts.currency ?? '₹';
+  const title = groupName;
+  const changeDetail = changes && changes.length > 0 ? ` (${changes.join(', ')})` : '';
+  const body = `${actorName} edited "${expenseTitle}" (${currency}${amount})${changeDetail}`;
+
+  const recipientIds = recipientUserIds.filter((id) => id !== actorId);
+  if (recipientIds.length === 0) return;
+
+  const tokens = await notificationsRepository.getUserFcmTokensFor(recipientIds);
+
+  await notificationsRepository.createNotifications(
+    recipientIds.map((userId) => ({
+      userId,
+      type: 'GROUP_ACTIVITY' as const,
+      title,
+      body,
+      groupId,
+      actorName,
+      actorAvatar: actorAvatar ?? undefined,
+      data: { type: 'GROUP_ACTIVITY', groupId },
+    }))
+  );
+
+  if (tokens.length > 0) {
+    sendPushNotification({
+      tokens,
+      title,
+      body,
+      data: { type: 'GROUP_ACTIVITY', groupId, actorName },
+    }).catch(() => {});
+  }
+}
+

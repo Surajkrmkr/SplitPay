@@ -139,7 +139,7 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
         'userId': uid,
         'userName': member.name,
         'userAvatar': member.avatar,
-        if (_splitType != 'PERCENTAGE') 'share': share,
+        'share': share,
         if (percentage != null) 'percentage': percentage,
       };
     }).toList();
@@ -911,7 +911,11 @@ class ParticipantRow extends StatelessWidget {
                 height: 36,
                 child: TextField(
                   controller: percentController,
-                  inputFormatters: [LengthLimitingTextInputFormatter(20)],
+                  inputFormatters: [
+                    LengthLimitingTextInputFormatter(20),
+                    FilteringTextInputFormatter.allow(
+                        RegExp(r'^\d*\.?\d{0,2}')),
+                  ],
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   onChanged: (_) => onChanged(),
@@ -942,7 +946,11 @@ class ParticipantRow extends StatelessWidget {
                 height: 36,
                 child: TextField(
                   controller: exactController,
-                  inputFormatters: [LengthLimitingTextInputFormatter(20)],
+                  inputFormatters: [
+                    LengthLimitingTextInputFormatter(20),
+                    FilteringTextInputFormatter.allow(
+                        RegExp(r'^\d*\.?\d{0,2}')),
+                  ],
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   onChanged: (_) => onChanged(),

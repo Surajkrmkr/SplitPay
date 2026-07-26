@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/currency_formatter.dart';
 import '../../../../data/models/balance_model.dart';
 import '../../../../providers/auth_provider.dart';
 import '../../../../providers/settings_provider.dart';
@@ -101,7 +102,7 @@ class BalanceTile extends ConsumerWidget {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                '$currency${balance.amount.toStringAsFixed(0)}',
+                                CurrencyFormatter.formatAmountWithCommas(balance.amount, symbol: currency),
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 15,

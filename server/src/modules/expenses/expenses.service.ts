@@ -161,6 +161,13 @@ export async function updateExpense(
   const isMember = await groupsRepository.isMember(expense.groupId, userId);
   if (!isMember) throw new ForbiddenError('You are not a member of this group');
 
+  const changes: string[] = [];
+  if (input.paidById && input.paidById !== expense.paidById) changes.push('Paid by');
+  if (input.date && new Date(input.date).getTime() !== new Date(expense.date).getTime()) changes.push('Date/Time');
+  if (input.splitType && input.splitType !== expense.splitType) changes.push('Split type');
+  if (input.title && input.title !== expense.title) changes.push('Title');
+  if (input.amount !== undefined && Number(input.amount) !== Number(expense.amount)) changes.push('Amount');
+
   const { date, participants, ...rest } = input;
   const updated = await expensesRepository.updateExpense(expenseId, {
     ...rest,
@@ -176,13 +183,33 @@ export async function updateExpense(
       : {}),
   });
 
+  const group = await groupsRepository.findGroupById(expense.groupId);
+
   await activityRepository.createActivity({
     groupId: expense.groupId,
     userId,
     type: 'EXPENSE_UPDATED',
     expenseId,
-    metadata: { title: updated.title, amount: Number(updated.amount) },
+    metadata: { title: updated.title, amount: Number(updated.amount), changes },
   });
+
+  if (group) {
+    const actor = group.members.find((m) => m.userId === userId)?.user;
+    const recipientUserIds = group.members.map((m) => m.userId);
+    notificationsService
+      .notifyGroupExpenseUpdated({
+        groupId: expense.groupId,
+        groupName: group.name,
+        actorId: userId,
+        actorName: actor?.name ?? 'Someone',
+        actorAvatar: actor?.avatar ?? null,
+        expenseTitle: updated.title,
+        amount: Number(updated.amount),
+        recipientUserIds,
+        changes,
+      })
+      .catch(() => {});
+  }
 
   return updated;
 }

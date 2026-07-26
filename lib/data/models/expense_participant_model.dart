@@ -15,11 +15,13 @@ class ExpenseParticipantModel {
 
   factory ExpenseParticipantModel.fromJson(Map<String, dynamic> json) {
     final user = json['user'] as Map<String, dynamic>?;
+    final shareRaw = json['share'];
+    final shareVal = shareRaw != null ? double.parse(shareRaw.toString()) : 0.0;
     return ExpenseParticipantModel(
-      userId: json['userId'] as String,
-      userName: (user?['name'] ?? json['userName']) as String,
+      userId: (user?['id'] ?? json['userId'] ?? '') as String,
+      userName: (user?['name'] ?? json['userName'] ?? 'Member') as String,
       userAvatar: (user?['avatar'] ?? json['userAvatar']) as String?,
-      share: double.parse(json['share'].toString()),
+      share: shareVal,
       percentage: json['percentage'] != null
           ? double.parse(json['percentage'].toString())
           : null,

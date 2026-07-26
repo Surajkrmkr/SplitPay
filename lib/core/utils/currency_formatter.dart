@@ -19,9 +19,17 @@ class CurrencyFormatter {
     return '$symbol${formatter.format(amount)}';
   }
 
-  static String formatAmountWithCommas(double amount, {String symbol = ''}) {
-    final formatter = NumberFormat('#,##,##0', 'en_IN');
-    final formatted = formatter.format(amount.abs());
+  static String formatAmountWithCommas(
+    double amount, {
+    String symbol = '',
+    int decimalDigits = 2,
+  }) {
+    final absAmount = amount.abs();
+    final pattern = decimalDigits > 0
+        ? '#,##,##0.${'0' * decimalDigits}'
+        : '#,##,##0';
+    final formatter = NumberFormat(pattern, 'en_IN');
+    final formatted = formatter.format(absAmount);
     final sign = amount < 0 ? '-' : '';
     return symbol.isEmpty ? '$sign$formatted' : '$sign$symbol$formatted';
   }

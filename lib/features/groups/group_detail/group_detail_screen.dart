@@ -556,7 +556,30 @@ class _BalancesTab extends ConsumerWidget {
         ),
       ),
       data: (summary) {
+        final settlementsAsync = ref.watch(groupSettlementsProvider(groupId));
+        final hasSettlements = settlementsAsync.valueOrNull?.isNotEmpty ?? false;
+
         if (summary.balances.isEmpty) {
+          if (hasSettlements || settlementsAsync.isLoading) {
+            return RefreshIndicator(
+              color: AppColors.primary,
+              onRefresh: () async {
+                ref.invalidate(groupDetailProvider(groupId));
+                ref.invalidate(groupBalancesProvider(groupId));
+                ref.invalidate(groupSettlementsProvider(groupId));
+              },
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.only(top: 12, bottom: 100),
+                children: [
+                  _BalanceSummaryCard(summary: summary, isDark: isDark),
+                  const SizedBox(height: 16),
+                  _SettlementsSection(groupId: groupId, isDark: isDark),
+                ],
+              ),
+            );
+          }
+
           return RefreshIndicator(
             color: AppColors.primary,
             onRefresh: () async {
@@ -2014,23 +2037,39 @@ class _ActivityTile extends StatelessWidget {
 // Total Tab — total spend + your share, charted by month
 // ─────────────────────────────────────────────────────
 
-class _TotalTab extends ConsumerWidget {
+class _TotalTab extends ConsumerStatefulWidget {
   final String groupId;
   const _TotalTab({required this.groupId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_TotalTab> createState() => _TotalTabState();
+}
+
+class _TotalTabState extends ConsumerState<_TotalTab> {
+  static const List<Color> _userColors = [
+    AppColors.primary,
+    Color(0xFF3B82F6),
+    Color(0xFFF59E0B),
+    Color(0xFFEC4899),
+    Color(0xFF8B5CF6),
+    Color(0xFF14B8A6),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currency = ref.watch(currencyProvider);
     final currentUserId = ref.watch(currentUserProvider)?.id ?? 'user_1';
-    final expensesAsync = ref.watch(groupExpensesProvider(groupId));
+
+    final groupAsync = ref.watch(groupDetailProvider(widget.groupId));
+    final expensesAsync = ref.watch(groupExpensesProvider(widget.groupId));
 
     return expensesAsync.when(
       loading: () => const Center(
           child: CircularProgressIndicator(color: AppColors.primary)),
       error: (e, _) => RefreshIndicator(
         color: AppColors.primary,
-        onRefresh: () async => ref.invalidate(groupExpensesProvider(groupId)),
+        onRefresh: () async => ref.invalidate(groupExpensesProvider(widget.groupId)),
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
@@ -2046,7 +2085,7 @@ class _TotalTab extends ConsumerWidget {
         if (expenses.isEmpty) {
           return RefreshIndicator(
             color: AppColors.primary,
-            onRefresh: () async => ref.invalidate(groupExpensesProvider(groupId)),
+            onRefresh: () async => ref.invalidate(groupExpensesProvider(widget.groupId)),
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               children: const [
@@ -2060,24 +2099,26 @@ class _TotalTab extends ConsumerWidget {
           );
         }
 
+        final members = groupAsync.valueOrNull?.members ?? [];
         final totalSpent = expenses.fold<double>(0, (sum, e) => sum + e.amount);
-        final yourShare = expenses.fold<double>(
-            0, (sum, e) => sum + e.shareForUser(currentUserId));
-        final otherSpent = (totalSpent - yourShare).clamp(0.0, double.infinity);
 
-        // Bucket by month, chronological, most recent 6 months with data.
-        final byMonth = <DateTime, double>{};
+        // Bucket expenses by month
+        final totalByMonth = <DateTime, double>{};
+        final memberPaidByMonth = <DateTime, Map<String, double>>{};
         for (final e in expenses) {
           final key = DateTime(e.date.year, e.date.month);
-          byMonth[key] = (byMonth[key] ?? 0) + e.amount;
+          totalByMonth[key] = (totalByMonth[key] ?? 0) + e.amount;
+          final pMap = memberPaidByMonth.putIfAbsent(key, () => {});
+          pMap[e.paidById] = (pMap[e.paidById] ?? 0) + e.amount;
         }
-        final months = byMonth.keys.toList()..sort();
+
+        final months = totalByMonth.keys.toList()..sort();
         final recentMonths =
             months.length > 6 ? months.sublist(months.length - 6) : months;
         final maxVal = recentMonths
-            .map((m) => byMonth[m]!)
+            .map((m) => totalByMonth[m]!)
             .fold<double>(0, (a, b) => a > b ? a : b);
-        final chartMax = maxVal == 0 ? 100.0 : maxVal * 1.25;
+        final chartMax = maxVal == 0 ? 100.0 : maxVal * 1.35;
 
         final bgColor = isDark ? AppColors.darkCard : AppColors.lightSurface;
         final borderColor =
@@ -2086,180 +2127,400 @@ class _TotalTab extends ConsumerWidget {
 
         return RefreshIndicator(
           color: AppColors.primary,
-          onRefresh: () async => ref.invalidate(groupExpensesProvider(groupId)),
+          onRefresh: () async {
+            ref.invalidate(groupExpensesProvider(widget.groupId));
+            ref.invalidate(groupDetailProvider(widget.groupId));
+          },
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: _StatChip(
-                      label: 'Total Spent',
-                      value: CurrencyFormatter.formatAmountWithCommas(totalSpent, symbol: currency),
-                      color: AppColors.secondary,
-                      icon: Icons.groups_rounded,
-                      isDark: isDark,
-                    ),
+              // Clean Header Card: Total Group Expense
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.primary.withValues(alpha: 0.15),
+                      AppColors.secondary.withValues(alpha: 0.05),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _StatChip(
-                      label: 'Your Share',
-                      value: CurrencyFormatter.formatAmountWithCommas(yourShare, symbol: currency),
-                      color: AppColors.primary,
-                      icon: Icons.person_rounded,
-                      isDark: isDark,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.25), width: 1.5),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.account_balance_wallet_rounded, color: AppColors.primary, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Total Group Expense',
+                              style: TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                            ),
+                            Text(
+                              CurrencyFormatter.formatAmountWithCommas(totalSpent, symbol: currency),
+                              style: const TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.primary,
+                                height: 1.1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _StatChip(
-                      label: 'Other Spent',
-                      value: CurrencyFormatter.formatAmountWithCommas(otherSpent, symbol: currency),
-                      color: const Color(0xFF8B5CF6),
-                      icon: Icons.people_outline_rounded,
-                      isDark: isDark,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: bgColor,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: borderColor, width: 0.5),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Monthly Spend',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? Colors.white : AppColors.textLight,
-                    ),
+              const SizedBox(height: 20),
+
+              // Member Spend & Share Summary Section
+              if (members.isNotEmpty) ...[
+                Text(
+                  'Member Breakdown',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white : AppColors.textLight,
                   ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    height: 180,
-                    child: BarChart(
-                      BarChartData(
-                        maxY: chartMax,
-                        minY: 0,
-                        barGroups: recentMonths.asMap().entries.map((entry) {
-                          final i = entry.key;
-                          final month = entry.value;
-                          final val = byMonth[month]!;
-                          final isLatest = i == recentMonths.length - 1;
-                          return BarChartGroupData(
-                            x: i,
-                            barRods: [
-                              BarChartRodData(
-                                toY: val == 0 ? 0.5 : val,
-                                color: isLatest
-                                    ? AppColors.primary
-                                    : AppColors.secondary
-                                        .withValues(alpha: 0.6),
-                                width: 24,
-                                borderRadius: BorderRadius.circular(6),
-                                backDrawRodData: BackgroundBarChartRodData(
-                                  show: true,
-                                  toY: chartMax,
-                                  color: isDark
-                                      ? AppColors.darkElevated
-                                      : AppColors.lightCard,
+                ),
+                const SizedBox(height: 10),
+                ...members.map((m) {
+                  final isYou = m.userId == currentUserId;
+                  final paid = expenses.where((e) => e.paidById == m.userId).fold<double>(0, (s, e) => s + e.amount);
+                  final share = expenses.fold<double>(0, (s, e) => s + e.shareForUser(m.userId));
+                  final net = paid - share;
+                  final isNetPositive = net >= 0.01;
+                  final isNetNegative = net <= -0.01;
+
+                  final badgeColor = isNetPositive
+                      ? AppColors.income
+                      : isNetNegative
+                          ? AppColors.expense
+                          : AppColors.textTertiary;
+                  final netText = isNetPositive
+                      ? '+${CurrencyFormatter.formatAmountWithCommas(net, symbol: currency)}'
+                      : isNetNegative
+                          ? '-${CurrencyFormatter.formatAmountWithCommas(net.abs(), symbol: currency)}'
+                          : 'Settled';
+
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkCard : Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: borderColor, width: 0.5),
+                    ),
+                    child: Row(
+                      children: [
+                        AvatarWidget(name: m.name, imageUrl: m.avatar, size: 38),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                isYou ? '${m.name} (You)' : m.name,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark ? Colors.white : AppColors.textLight,
                                 ),
                               ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Paid: ${CurrencyFormatter.formatAmountWithCommas(paid, symbol: currency)}  •  Share: ${CurrencyFormatter.formatAmountWithCommas(share, symbol: currency)}',
+                                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                              ),
                             ],
-                          );
-                        }).toList(),
-                        titlesData: FlTitlesData(
-                          bottomTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              getTitlesWidget: (value, meta) {
-                                final i = value.toInt();
-                                if (i < 0 || i >= recentMonths.length) {
-                                  return const SizedBox.shrink();
-                                }
-                                final isLatest = i == recentMonths.length - 1;
-                                return Padding(
-                                  padding: const EdgeInsets.only(top: 8),
-                                  child: Text(
-                                    DateFormat('MMM').format(recentMonths[i]),
-                                    style: TextStyle(
-                                      color: isLatest
-                                          ? AppColors.primary
-                                          : AppColors.textTertiary,
-                                      fontSize: 11,
-                                      fontWeight: isLatest
-                                          ? FontWeight.w700
-                                          : FontWeight.w400,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: badgeColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: badgeColor.withValues(alpha: 0.3), width: 0.8),
+                          ),
+                          child: Text(
+                            netText,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: badgeColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+                const SizedBox(height: 20),
+              ],
+
+              // Monthly Spending Chart (Total + All Users' Spend)
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: borderColor, width: 0.5),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Monthly Spend Breakdown',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? Colors.white : AppColors.textLight,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Chart Legend (Total + Each Member Color)
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 6,
+                      children: [
+                        const _LegendBadge(color: AppColors.secondary, label: 'Total'),
+                        ...members.asMap().entries.map((entry) {
+                          final idx = entry.key;
+                          final m = entry.value;
+                          final color = _userColors[idx % _userColors.length];
+                          final label = m.userId == currentUserId ? 'You' : m.name.split(' ').first;
+                          return _LegendBadge(color: color, label: label);
+                        }),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Bar Chart
+                    SizedBox(
+                      height: 220,
+                      child: BarChart(
+                        BarChartData(
+                          maxY: chartMax,
+                          minY: 0,
+                          barGroups: recentMonths.asMap().entries.map((entry) {
+                            final i = entry.key;
+                            final month = entry.value;
+                            final monthTotal = totalByMonth[month] ?? 0;
+                            final monthPMap = memberPaidByMonth[month] ?? {};
+
+                            final rods = <BarChartRodData>[
+                              // Total Rod
+                              BarChartRodData(
+                                toY: monthTotal == 0 ? 0.5 : monthTotal,
+                                color: AppColors.secondary,
+                                width: 12,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ];
+
+                            // Per Member Rods
+                            for (int idx = 0; idx < members.length; idx++) {
+                              final m = members[idx];
+                              final paidAmount = monthPMap[m.userId] ?? 0;
+                              final color = _userColors[idx % _userColors.length];
+                              rods.add(
+                                BarChartRodData(
+                                  toY: paidAmount == 0 ? 0.5 : paidAmount,
+                                  color: color,
+                                  width: 12,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              );
+                            }
+
+                            return BarChartGroupData(
+                              x: i,
+                              barsSpace: 4,
+                              barRods: rods,
+                            );
+                          }).toList(),
+
+                          titlesData: FlTitlesData(
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                getTitlesWidget: (value, meta) {
+                                  final i = value.toInt();
+                                  if (i < 0 || i >= recentMonths.length) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  return Padding(
+                                    padding: const EdgeInsets.only(top: 8),
+                                    child: Text(
+                                      DateFormat('MMM').format(recentMonths[i]),
+                                      style: TextStyle(
+                                        color: isDark ? Colors.white70 : AppColors.textSecondary,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
+                                  );
+                                },
+                              ),
+                            ),
+                            leftTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                reservedSize: 42,
+                                getTitlesWidget: (value, meta) {
+                                  if (value == 0 || value == chartMax) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  return Text(
+                                    CurrencyFormatter.formatCompact(value, symbol: currency),
+                                    style: const TextStyle(
+                                      color: AppColors.textTertiary,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            topTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                reservedSize: 22,
+                                getTitlesWidget: (value, meta) {
+                                  final i = value.toInt();
+                                  if (i < 0 || i >= recentMonths.length) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  final month = recentMonths[i];
+                                  final monthTotal = totalByMonth[month] ?? 0;
+                                  if (monthTotal <= 0) return const SizedBox.shrink();
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 2),
+                                    child: Text(
+                                      CurrencyFormatter.formatCompact(monthTotal, symbol: currency),
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            rightTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                          ),
+                          gridData: FlGridData(
+                            show: true,
+                            drawVerticalLine: false,
+                            horizontalInterval: chartMax / 4,
+                            getDrawingHorizontalLine: (_) => FlLine(
+                              color: gridColor,
+                              strokeWidth: 0.5,
+                            ),
+                          ),
+                          borderData: FlBorderData(show: false),
+                          barTouchData: BarTouchData(
+                            touchTooltipData: BarTouchTooltipData(
+                              getTooltipColor: (_) =>
+                                  isDark ? AppColors.darkElevated : Colors.white,
+                              tooltipRoundedRadius: 8,
+                              getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                                if (rodIndex == 0) {
+                                  return BarTooltipItem(
+                                    'Total: ${CurrencyFormatter.formatAmountWithCommas(rod.toY, symbol: currency)}',
+                                    const TextStyle(
+                                      color: AppColors.secondary,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 12,
+                                    ),
+                                  );
+                                }
+                                final memberIdx = rodIndex - 1;
+                                final m = memberIdx < members.length ? members[memberIdx] : null;
+                                final name = m != null
+                                    ? (m.userId == currentUserId ? 'You' : m.name.split(' ').first)
+                                    : 'Member';
+                                final color = _userColors[memberIdx % _userColors.length];
+                                return BarTooltipItem(
+                                  '$name: ${CurrencyFormatter.formatAmountWithCommas(rod.toY, symbol: currency)}',
+                                  TextStyle(
+                                    color: color,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 12,
                                   ),
                                 );
                               },
                             ),
                           ),
-                          leftTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false),
-                          ),
-                          rightTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false),
-                          ),
-                          topTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false),
-                          ),
                         ),
-                        gridData: FlGridData(
-                          show: true,
-                          drawVerticalLine: false,
-                          horizontalInterval: chartMax / 4,
-                          getDrawingHorizontalLine: (_) => FlLine(
-                            color: gridColor,
-                            strokeWidth: 0.5,
-                          ),
-                        ),
-                        borderData: FlBorderData(show: false),
-                        barTouchData: BarTouchData(
-                          touchTooltipData: BarTouchTooltipData(
-                            getTooltipColor: (_) =>
-                                isDark ? AppColors.darkElevated : Colors.white,
-                            tooltipRoundedRadius: 8,
-                            getTooltipItem:
-                                (group, groupIndex, rod, rodIndex) =>
-                                    BarTooltipItem(
-                              '$currency${rod.toY.toStringAsFixed(0)}',
-                              const TextStyle(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        ),
+                        swapAnimationDuration: 600.ms,
+                        swapAnimationCurve: Curves.easeInOutCubic,
                       ),
-                      swapAnimationDuration: 600.ms,
-                      swapAnimationCurve: Curves.easeInOutCubic,
-                    ),
-                  ).animate().fadeIn(duration: 500.ms, delay: 100.ms),
-                ],
+                    ).animate().fadeIn(duration: 500.ms, delay: 100.ms),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            const AppAdBanner(
-              placement: AdPlacement.groupDetailsTotalBanner,
-              margin: EdgeInsets.zero,
-            ),
-          ],
+              const SizedBox(height: 16),
+              const AppAdBanner(
+                placement: AdPlacement.groupDetailsTotalBanner,
+                margin: EdgeInsets.zero,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _LegendBadge extends StatelessWidget {
+  final Color color;
+  final String label;
+  const _LegendBadge({required this.color, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
-      );
-    },
-  );
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.textTertiary),
+        ),
+      ],
+    );
   }
 }
 
@@ -2454,7 +2715,7 @@ class _SettlementTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '$currency${settlement.amount.toStringAsFixed(0)}',
+                CurrencyFormatter.formatAmountWithCommas(settlement.amount, symbol: currency),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
