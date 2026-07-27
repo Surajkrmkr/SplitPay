@@ -1,181 +1,57 @@
-# DimeFlow — Todo & Future Roadmap
+# SplitPay — Development Roadmap & TODO
 
-> Status key: `[ ]` Planned · `[~]` In progress · `[x]` Done · `[!]` Blocked
-
----
-
-## 🔴 Priority 1 — Core Completions (MVP polish)
-
-- [ ] **Edit transaction** — tap any tile to open pre-filled `AddTransactionSheet`
-- [ ] **Delete confirmation dialog** — confirm before dismissing a transaction (swipe shows dialog)
-- [ ] **Transaction detail screen** — full-screen view of a single transaction
-- [ ] **Input haptics** — `HapticFeedback.lightImpact()` on save, delete, tab change
-- [ ] **Error handling** — catch Hive write failures, show snackbar feedback
-- [ ] **Keyboard dismiss on tap outside** — wrap screens in `GestureDetector` with `FocusScope.unfocus()`
-- [ ] **Recurring transactions badge** — show a "recurring" icon on seeded subscription entries
+> Status Key: `[x]` Completed · `[~]` In Progress · `[ ]` Planned · `[!]` Blocked
 
 ---
 
-## 🟠 Priority 2 — Feature Additions
+## 🟢 Completed in v1.0.7+8
 
-### Budget Goals
-- [ ] `Budget` model — `category`, `limitAmount`, `period` (monthly/weekly)
-- [ ] Budget progress bar on home screen CategoryCard
-- [ ] Over-budget warning color (red) when spending > 90% of limit
-- [ ] Budget screen under Settings or Analytics
-
-### Export & Backup
-- [ ] CSV export using `csv` package — all transactions, date range selector
-- [ ] PDF export using `pdf` + `printing` packages — monthly statement layout
-- [ ] Share via native share sheet (`share_plus`)
-- [ ] Import from CSV (reverse parsing)
-
-### Recurring Transactions
-- [ ] `isRecurring` + `recurrenceInterval` fields on Transaction model
-- [ ] Auto-create next occurrence on app launch
-- [ ] Manage recurring list in Settings
-
-### Search & Filtering
-- [ ] Amount range filter (e.g. > $50)
-- [ ] Date range picker filter
-- [ ] Multi-category filter (select multiple categories)
-- [ ] Sort options — by amount, by date asc/desc
-
-### Notifications
-- [ ] Daily spending reminder using `flutter_local_notifications`
-- [ ] Budget limit alert when approaching 80% of budget
-- [ ] Monthly summary push notification on 1st of month
+- [x] **Group Expense Splitting** — Groups, equal/percentage/exact splits, member balances, activity feed
+- [x] **Debt Simplification Engine** — Minimal transaction matrix algorithm
+- [x] **UPI Payment Settlement** — Launch native GPay / PhonePe / Paytm / BHIM via `upi_intent`
+- [x] **Multi-Period Budgets** — Daily, Weekly, Monthly, Yearly budgets with category associations & threshold alerts
+- [x] **Smart OCR Receipt Scanner** — Google ML Kit Text Recognition for total & vendor extraction
+- [x] **SMS Parser Service** — Extract bank transaction alerts into autofilled transaction drafts
+- [x] **Firebase Authentication** — Google Sign-In, Email/Password, and Guest access
+- [x] **Node.js / Express Backend Server** — Prisma ORM + PostgreSQL REST API in `server/`
+- [x] **Biometric Security** — Face ID / Touch ID / Fingerprint lock using `local_auth`
+- [x] **CSV Data Import & Export** — Download & upload CSV backups using `file_picker` + `csv`
+- [x] **FCM Push Notifications** — Real-time group activity & settlement notifications
 
 ---
 
-## 🟡 Priority 3 — Analytics Enhancements
+## 🤖 Priority 1 — Upcoming AI & LLM Features (Context Ready)
 
-- [ ] **Income vs Expense bar chart** — side-by-side comparison per month
-- [ ] **Spending velocity** — "You're spending 23% faster than last month"
-- [ ] **Average transaction value** per category
-- [ ] **Calendar heatmap** — spending intensity by day (like GitHub contributions)
-- [ ] **Custom date range** selector for all charts
-- [ ] **Animate chart number changes** — when switching month/period, tween old → new values
-- [ ] **Export chart as image** — screenshot to gallery
+- [ ] **Multimodal Gemini Bill OCR Parser:**
+  - Send receipt photos to Gemini 1.5 Flash via Firebase AI Logic / REST API.
+  - Extract itemized product lists with quantities, individual prices, and tax breakdown.
+  - Auto-assign items to specific group participants in shared expenses.
 
----
+- [ ] **Natural Language Expense Ingestion:**
+  - Voice & Text prompt parser: *"I paid $42 for dinner with Piyush and Rahul at Olive Garden"*.
+  - Convert prompt into pre-filled `AddGroupExpenseSheet` with auto-matched participants and category.
 
-## 🔵 Priority 4 — UX Polish
+- [ ] **Smart Financial Advisory Assistant:**
+  - AI chat screen under Analytics providing spending velocity analysis (*"You're spending 28% faster on food this month"*).
+  - Intelligent budget recommendations based on past 3-month spending trends.
 
-- [ ] **Hero transitions** — category icon animates from tile to detail screen
-- [ ] **Pull-to-refresh** animation on home dashboard
-- [ ] **Skeleton shimmer** — show `ShimmerTransactionList` on first load instead of empty list
-- [ ] **Haptic patterns** — different patterns for save, delete, error
-- [ ] **Bottom sheet drag indicator** — improve drag feel with snap points
-- [ ] **Smooth theme transition** — cross-fade instead of instant switch
-- [ ] **Custom splash screen** — animated DimeFlow logo on launch
-- [ ] **App icon** — design and apply custom icon for iOS/Android
-- [ ] **Adaptive icon** — Android 8+ adaptive icon support
-- [ ] **iPad layout** — two-column layout on wider screens
-- [ ] **Landscape support** — currently portrait-only
+- [ ] **On-Device Anomaly & Duplicate Detection:**
+  - Highlight potential duplicate debits or unusually large transactions.
 
 ---
 
-## 🟢 Priority 5 — Monetization & Growth
+## 🟠 Priority 2 — Analytics & UX Polish
 
-### Ads (Placeholders Ready)
-- [ ] Integrate `google_mobile_ads` package
-- [ ] Wire `BannerAdPlaceholder` in home screen
-- [ ] Wire `NativeAdPlaceholder` in transaction list (every ~10 items)
-- [ ] Wire `RewardedAdButton` in Settings for premium unlock
-- [ ] Configure AdMob App ID in `AndroidManifest.xml` + `Info.plist`
-- [ ] Add GDPR consent form (`google_mobile_ads` User Messaging Platform)
-
-### Premium / IAP
-- [ ] `in_app_purchase` package setup
-- [ ] Premium feature: unlimited budgets, CSV export, no ads
-- [ ] Premium badge in profile card
-- [ ] Restore purchases support
-
-### App Store Readiness
-- [ ] Privacy policy URL (required for both stores)
-- [ ] App store screenshots (6.7", 6.1", iPad 12.9")
-- [ ] App Store description copy
-- [ ] Keywords research
-- [ ] `NSPrivacyAccessedAPITypes` — add required reason keys for iOS 17+
+- [ ] **Hero Transitions:** Animate category icons from transaction tiles to detail view.
+- [ ] **Income vs Expense Bar Chart:** Side-by-side bar chart comparison per month.
+- [ ] **Calendar Heatmap:** Contribution-style spending intensity grid.
+- [ ] **PDF Statement Generator:** Export monthly financial statements using `pdf` + `printing`.
+- [ ] **iPad / Tablet Layout:** Adaptive multi-column layout for large screens.
 
 ---
 
-## ⚫ Priority 6 — Advanced (Post-MVP)
+## 🔵 Priority 3 — Platform & Monetization
 
-### Cloud & Sync
-- [ ] Firebase Auth (anonymous + Google sign-in)
-- [ ] Firestore sync for transactions
-- [ ] Conflict resolution strategy (last-write-wins or merge)
-- [ ] Offline queue — sync pending writes when connectivity restored
-- [ ] Multi-device support
-
-### Security
-- [ ] Biometric / Face ID lock screen using `local_auth`
-- [ ] Auto-lock after configurable idle timeout
-- [ ] Data encryption at rest (Hive encrypted box)
-
-### Multi-Account
-- [ ] Account model — personal, business, joint
-- [ ] Account switcher in header
-- [ ] Per-account totals and analytics
-- [ ] Transfer between accounts
-
-### Widgets
-- [ ] iOS home screen widget — balance + today's spend
-- [ ] Android home screen widget
-- [ ] Lockscreen widget (iOS 16+)
-
-### AI Insights
-- [ ] On-device spending anomaly detection
-- [ ] "Unusual spend" badge on transaction
-- [ ] Monthly insight summary ("You spent 40% more on food this month")
-
----
-
-## 🐛 Known Issues & Tech Debt
-
-| Issue | File | Severity |
-|---|---|---|
-| `withOpacity` deprecated — use `.withValues(alpha:)` | Multiple files | Low — compiles fine, future API |
-| `activeColor` deprecated on Switch | `settings_screen.dart` | Low — using `activeThumbColor` already |
-| Category breakdown counts income categories | `transaction_provider.dart:categoryBreakdownProvider` | Minor — only expenses filtered in provider, correct |
-| No Hive migration strategy | `hive_service.dart` | Medium — box is named `_v1`, increment name for schema changes |
-| `google_fonts` downloads at runtime | `app_theme.dart` | Low — add fonts as bundled assets for offline first launch |
-| No pagination in transaction list | `transactions_screen.dart` | Low — fine for MVP, add `ListView.builder` pagination at ~1000+ items |
-
----
-
-## 📦 Package Upgrade Watchlist
-
-| Package | Current | Available | Notes |
-|---|---|---|---|
-| `flutter_riverpod` | 2.6.1 | 3.3.1 | v3 has breaking changes — migrate when stable |
-| `go_router` | 14.8.1 | 17.2.3 | Check route API changes before upgrading |
-| `fl_chart` | 0.68.0 | 1.2.0 | 1.x may have API changes — test charts |
-| `google_fonts` | 6.3.3 | 8.1.0 | Safe to upgrade |
-| `intl` | 0.19.0 | 0.20.2 | Safe to upgrade |
-
-Run `flutter pub outdated` to see full list.
-
----
-
-## 🗂 File Naming Conventions (for new features)
-
-```
-lib/
-  features/
-    <feature_name>/
-      <feature_name>_screen.dart     ← main screen widget
-      widgets/
-        <component_name>.dart        ← sub-widgets
-  data/
-    models/
-      <model_name>_model.dart
-    services/
-      <service_name>_service.dart
-  providers/
-    <feature>_provider.dart
-```
-
-All new Riverpod providers go in `lib/providers/`. Keep providers file-grouped by feature area, not one-class-per-file.
+- [ ] **Google Mobile Ads Integration:** Activate production AdMob IDs in ready `ad_placeholder.dart` slots.
+- [ ] **In-App Purchases (IAP):** Premium tier for unlimited groups, automated cloud sync, and advanced AI features.
+- [ ] **iOS & Android Widgets:** Home screen widget displaying current monthly balance and budget progress bars.

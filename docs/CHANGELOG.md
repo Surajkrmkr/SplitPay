@@ -1,67 +1,61 @@
-# DimeFlow — Changelog
+# SplitPay — Changelog
 
-All notable changes to this project are documented here.
-Format: [Semantic Versioning](https://semver.org/)
+All notable changes to this project are documented in this file.
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+---
+
+## [1.0.7+8] — 2026-07-26 — Major Features & Backend Release
+
+### 🚀 Added
+- **Group Expense Splitting & Debt Simplification:**
+  - Full Group management module (`lib/features/groups/`).
+  - Equal, Percentage, and Exact split modes.
+  - Automated debt simplification engine reducing $N$ member balances to minimal transactions.
+  - Group activity audit feed tracking edits, deletions, and settlements.
+  - Invite code and QR code scanner integration (`mobile_scanner`).
+
+- **UPI Debt Settlement Integration:**
+  - 1-tap debt settlement via native UPI apps (`upi_intent` package) including Google Pay, PhonePe, Paytm, and BHIM.
+  - Manual settlement recording for offline/cash payments.
+
+- **Multi-Period Budget Management:**
+  - Multi-period budget tracking system (`lib/features/budget/`) supporting Daily, Weekly, Monthly, and Yearly periods.
+  - Spent vs. remaining progress tracking with configurable alert thresholds (e.g. 80% warning color).
+  - Budget archiving and history search.
+
+- **Smart Bill Scanner (OCR) & SMS Parser:**
+  - On-device text recognition with Google ML Kit (`google_mlkit_text_recognition`).
+  - Automatic detection of total amounts and vendor names from receipt photos.
+  - SMS parser service extracting debits, credits, and merchant names from bank notifications.
+
+- **Authentication & Backend Integration:**
+  - Firebase Authentication with Google Sign-In and Email/Password (`firebase_auth`, `google_sign_in`).
+  - Node.js / Express REST API backend server with Prisma ORM and PostgreSQL database (`server/`).
+  - Firebase ID Token verification middleware and session refresh token rotation.
+
+- **Notifications & Biometrics:**
+  - Firebase Cloud Messaging (`firebase_messaging`) for push notifications on group activity.
+  - Scheduled daily local spending reminders (`flutter_local_notifications`).
+  - Biometric Face ID / Touch ID / Fingerprint app lock screen (`local_auth`).
+
+- **Data Import & Export:**
+  - CSV transaction exporter and reverse-parsing CSV importer (`csv`, `file_picker`).
 
 ---
 
 ## [1.0.0] — 2026-05-15 — MVP Release
 
 ### Added
-
-**Onboarding**
-- 3-page animated onboarding with page indicator dots
-- One-time display logic using `SharedPreferences`
-- Gradient backgrounds per page with emoji illustrations
-
-**Home Dashboard**
-- Time-aware greeting header with notification bell
-- Glassmorphism balance card with animated counter
-- Income / Expense mini stats on balance card
-- Top-4 category grid with animated progress bars
-- Recent transactions list (last 5)
-- Banner ad placeholder
-
-**Add Transaction**
-- Modal bottom sheet triggered from FAB
-- Income / Expense type toggle
-- 9 categories with icons and colors
-- Optional note field, date picker
-- Form validation + animated save button
-
-**Transaction History**
-- Filter tabs: All / Today / Week / Month
-- Live search by category or note
-- Grouped by date (Today / Yesterday / date)
-- Swipe-to-delete with red background
-- Empty state widget
-
-**Analytics**
-- Savings rate, avg/day, total transactions insight cards
-- Interactive pie chart by category (touch to expand + show badge)
-- Weekly spending bar chart (today highlighted)
-- 6-month trend line chart with gradient fill
-- Top spending category card
-
-**Settings / Profile**
-- Profile card with gradient
-- Dark / Light mode toggle (persisted to Hive)
-- Currency selector — USD, EUR, GBP, JPY, INR, CAD, AUD
-- Export / Backup placeholders
-- App version, Rate app, Privacy policy (placeholders)
-
-**Architecture**
-- Riverpod 2.x state management with `StateNotifier` + computed providers
-- Hive local database (no code generation, Map-based storage)
-- go_router with `StatefulShellRoute` (indexed tab stack)
-- flutter_animate staggered entrance animations throughout
-- Material 3 with full dark + light `ThemeData`
-- Plus Jakarta Sans typography via google_fonts
-- 15-item dummy data seed on first launch
-- Ad placeholder widgets ready for AdMob integration
-
----
-
-## [Unreleased]
-
-See [TODO.md](./TODO.md) for planned features and known issues.
+- **Onboarding & Home Dashboard:**
+  - 3-page animated onboarding walkthrough with `SharedPreferences` persistence.
+  - Time-aware greeting header, glassmorphism balance card, mini stats.
+- **Personal Transactions:**
+  - Add transaction modal bottom sheet.
+  - 9 default categories with icons and colors.
+  - History screen with filter tabs (All / Today / Week / Month), search, and swipe-to-delete.
+- **Analytics & Settings:**
+  - Interactive pie chart, weekly bar chart, 6-month trend line chart (`fl_chart`).
+  - Dark / Light theme toggle persisted to Hive storage.
+  - Currency selector (USD, EUR, GBP, JPY, INR, CAD, AUD).
