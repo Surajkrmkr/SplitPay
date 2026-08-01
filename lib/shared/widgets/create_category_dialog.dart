@@ -70,7 +70,7 @@ class _CreateCategoryDialogState extends ConsumerState<CreateCategoryDialog> {
           children: [
             TextField(
               controller: _nameController,
-              inputFormatters: [LengthLimitingTextInputFormatter(20)],
+              inputFormatters: [LengthLimitingTextInputFormatter(50)],
               autofocus: true,
               textCapitalization: TextCapitalization.words,
               decoration: InputDecoration(

@@ -506,7 +506,7 @@ class _AmountInput extends StatelessWidget {
             onChanged: onChanged,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: [
-              LengthLimitingTextInputFormatter(20),
+              LengthLimitingTextInputFormatter(50),
               FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
             ],
             autofocus: true,
@@ -558,7 +558,7 @@ class _NotePill extends StatelessWidget {
       ),
       child: TextField(
         controller: controller,
-        inputFormatters: [LengthLimitingTextInputFormatter(20)],
+        inputFormatters: [LengthLimitingTextInputFormatter(50)],
         textAlign: TextAlign.center,
         textCapitalization: TextCapitalization.sentences,
         style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),

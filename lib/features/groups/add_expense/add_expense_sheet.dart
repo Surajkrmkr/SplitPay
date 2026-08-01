@@ -480,7 +480,7 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
   }) {
     return TextField(
       controller: controller,
-      inputFormatters: [LengthLimitingTextInputFormatter(20)],
+      inputFormatters: [LengthLimitingTextInputFormatter(50)],
       maxLines: maxLines,
       onChanged: onChanged,
       style: TextStyle(
@@ -579,7 +579,7 @@ class AmountDisplay extends StatelessWidget {
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
                     inputFormatters: [
-                      LengthLimitingTextInputFormatter(20),
+                      LengthLimitingTextInputFormatter(50),
                       FilteringTextInputFormatter.allow(
                           RegExp(r'^\d+\.?\d{0,2}')),
                     ],
@@ -912,7 +912,7 @@ class ParticipantRow extends StatelessWidget {
                 child: TextField(
                   controller: percentController,
                   inputFormatters: [
-                    LengthLimitingTextInputFormatter(20),
+                    LengthLimitingTextInputFormatter(50),
                     FilteringTextInputFormatter.allow(
                         RegExp(r'^\d*\.?\d{0,2}')),
                   ],
@@ -947,7 +947,7 @@ class ParticipantRow extends StatelessWidget {
                 child: TextField(
                   controller: exactController,
                   inputFormatters: [
-                    LengthLimitingTextInputFormatter(20),
+                    LengthLimitingTextInputFormatter(50),
                     FilteringTextInputFormatter.allow(
                         RegExp(r'^\d*\.?\d{0,2}')),
                   ],

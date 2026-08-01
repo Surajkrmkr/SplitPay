@@ -203,7 +203,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
                     const SizedBox(height: 8),
                     TextField(
                       controller: _titleController,
-                      inputFormatters: [LengthLimitingTextInputFormatter(20)],
+                      inputFormatters: [LengthLimitingTextInputFormatter(50)],
                       textCapitalization: TextCapitalization.sentences,
                       onChanged: (_) => setState(() {}),
                       decoration: const InputDecoration(
@@ -371,7 +371,7 @@ class _AmountField extends StatelessWidget {
       onChanged: onChanged,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       inputFormatters: [
-        LengthLimitingTextInputFormatter(20),
+        LengthLimitingTextInputFormatter(50),
         FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
       ],
       style: const TextStyle(

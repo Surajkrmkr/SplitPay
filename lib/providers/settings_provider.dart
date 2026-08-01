@@ -59,11 +59,13 @@ class CustomCategoriesNotifier extends StateNotifier<List<CustomCategory>> {
     if (!await _tokenStorage.hasTokens()) return;
     try {
       final res = await _dio.get(ApiConstants.categories);
+      if (!mounted) return;
       final list = res.data['data'] as List<dynamic>;
       state = list
           .map((e) => CustomCategory.fromMap(e as Map<String, dynamic>))
           .toList();
     } catch (_) {
+      if (!mounted) return;
       state = [];
     }
   }
@@ -82,13 +84,16 @@ class CustomCategoriesNotifier extends StateNotifier<List<CustomCategory>> {
     final res = await _dio.post(ApiConstants.categories, data: cat.toMap());
     final created =
         CustomCategory.fromMap(res.data['data'] as Map<String, dynamic>);
-    state = [...state, created];
+    if (mounted) {
+      state = [...state, created];
+    }
     return created;
   }
 
   Future<void> remove(String id) async {
     try {
       await _dio.delete(ApiConstants.categoryById(id));
+      if (!mounted) return;
       state = state.where((c) => c.id != id).toList();
     } catch (_) {}
   }

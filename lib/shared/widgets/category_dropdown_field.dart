@@ -218,7 +218,7 @@ class _CategoryPickerSheetState extends ConsumerState<_CategoryPickerSheet> {
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
                 child: TextField(
                   controller: _searchController,
-                  inputFormatters: [LengthLimitingTextInputFormatter(20)],
+                  inputFormatters: [LengthLimitingTextInputFormatter(50)],
                   onChanged: (v) => setState(() => _query = v),
                   decoration: InputDecoration(
                     hintText: 'Search categories...',

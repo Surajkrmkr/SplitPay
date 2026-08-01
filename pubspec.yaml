@@ -79,7 +79,7 @@ dependencies:
   path_provider: ^2.1.4
 
   # UPI payments (India only)
-  upi_intent: ^1.0.1
+  upi_pro_sdk: ^0.1.0
   url_launcher: ^6.3.0
 
   # Icons

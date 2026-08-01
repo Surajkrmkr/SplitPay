@@ -384,7 +384,7 @@ class _StyledTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
-      inputFormatters: [LengthLimitingTextInputFormatter(20)],
+      inputFormatters: [LengthLimitingTextInputFormatter(50)],
       maxLines: maxLines,
       onChanged: onChanged,
       style: TextStyle(

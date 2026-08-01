@@ -71,13 +71,17 @@ class _SpButtonState extends State<SpButton> {
                           Icon(widget.icon, color: Colors.white, size: 20),
                           const SizedBox(width: 8),
                         ],
-                        Text(
-                          widget.label,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.3,
+                        Flexible(
+                          child: Text(
+                            widget.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.3,
+                            ),
                           ),
                         ),
                       ],

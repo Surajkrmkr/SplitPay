@@ -13,7 +13,6 @@ import '../../../providers/region_provider.dart';
 import '../../../providers/settings_provider.dart';
 import '../../../shared/widgets/avatar_widget.dart';
 import '../../../shared/widgets/sp_button.dart';
-import '../qr_scanner_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sheet state machine
@@ -39,9 +38,7 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
 
   // UPI form controllers
   late TextEditingController _amountCtrl;
-  late TextEditingController _upiIdCtrl;
   late TextEditingController _noteCtrl;
-  String? _upiIdError;
 
   // Installed UPI apps
   List<UpiApp> _upiApps = [];
@@ -51,6 +48,7 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
   UpiTxnResult? _txnResult;
   bool _manualSettling = false;
   bool _settled = false;
+  bool _isLaunchingApp = false;
 
   @override
   void initState() {
@@ -58,15 +56,9 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
     _amountCtrl = TextEditingController(
       text: widget.balance.amount.toStringAsFixed(2),
     );
-    _upiIdCtrl = TextEditingController();
-    _upiIdCtrl.addListener(_onUpiIdChanged);
     _noteCtrl = TextEditingController();
     // Load installed UPI apps up front so the method-picker can preview them.
     _loadInstalledApps();
-  }
-
-  void _onUpiIdChanged() {
-    if (mounted) setState(() {});
   }
 
   Future<void> _loadInstalledApps() async {
@@ -82,8 +74,6 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
   @override
   void dispose() {
     _amountCtrl.dispose();
-    _upiIdCtrl.removeListener(_onUpiIdChanged);
-    _upiIdCtrl.dispose();
     _noteCtrl.dispose();
     super.dispose();
   }
@@ -92,16 +82,32 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
 
   void _goToUpiForm() {
     setState(() => _view = _SheetView.upiForm);
-    // Apps were preloaded in initState; refresh in the background in case the
-    // user installed something while the sheet was open.
     if (_upiApps.isEmpty && !_loadingApps) {
       _loadInstalledApps();
     }
   }
 
-  void _goToAppPicker() {
+  Future<void> _startManualPayFlow() async {
     if (!_validateUpiForm()) return;
-    setState(() => _view = _SheetView.appPicker);
+    if (_upiApps.isEmpty) {
+      _showSnack('No installed UPI apps found on this device');
+      return;
+    }
+
+    final selectedApp = _upiApps.first;
+    setState(() {
+      _isLaunchingApp = true;
+      _view = _SheetView.processing;
+    });
+
+    ref.read(upiServiceProvider).openBareUpiApp(selectedApp);
+
+    await Future.delayed(const Duration(milliseconds: 1500));
+    if (mounted) {
+      setState(() {
+        _isLaunchingApp = false;
+      });
+    }
   }
 
   void _backToMethods() => setState(() => _view = _SheetView.methods);
@@ -110,7 +116,6 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
   // ── Validation ───────────────────────────────────────────────────────────────
 
   bool _validateUpiForm() {
-    final upiId = _upiIdCtrl.text.trim();
     final amount = double.tryParse(_amountCtrl.text.trim());
     if (amount == null || amount <= 0) {
       _showSnack('Enter a valid amount');
@@ -122,15 +127,38 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
       _showSnack('Amount cannot exceed what you owe');
       return false;
     }
-    if (!UpiService.isValidUpiId(upiId)) {
-      setState(() => _upiIdError = 'Enter a valid UPI ID (e.g. name@bank)');
-      return false;
-    }
-    setState(() => _upiIdError = null);
     return true;
   }
 
   // ── Payment ───────────────────────────────────────────────────────────────
+
+  Future<void> _recordSettlementDirect() async {
+    final amount =
+        double.tryParse(_amountCtrl.text.trim()) ?? widget.balance.amount;
+    setState(() => _manualSettling = true);
+    try {
+      await ref.read(paymentRepositoryProvider).settleViaUpi(
+            groupId: widget.groupId,
+            payeeId: widget.balance.toUserId,
+            amount: amount,
+            notes: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),
+          );
+      if (!mounted) return;
+      _invalidateProviders();
+      setState(() {
+        _settled = true;
+        _txnResult = const UpiTxnResult(
+          status: UpiTxnStatus.success,
+        );
+        _view = _SheetView.result;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      _showSnack('Failed to record settlement: $e');
+    } finally {
+      if (mounted) setState(() => _manualSettling = false);
+    }
+  }
 
   Future<void> _payWithApp(UpiApp app) async {
     final amount =
@@ -141,7 +169,7 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
           app: app,
           groupId: widget.groupId,
           payeeId: widget.balance.toUserId,
-          payeeUpiId: _upiIdCtrl.text.trim(),
+          payeeUpiId: '',
           payeeName: widget.balance.toUserName,
           amount: amount,
           note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),
@@ -258,21 +286,6 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
 
   // ── QR Scan ──────────────────────────────────────────────────────────────
 
-  Future<void> _openQrScanner() async {
-    final result = await Navigator.of(context).push<UpiQrData>(
-      MaterialPageRoute(
-        fullscreenDialog: true,
-        builder: (_) => const QrScannerScreen(),
-      ),
-    );
-    if (!mounted || result == null) return;
-    _upiIdCtrl.text = result.upiId;
-    if (result.amount != null && result.amount!.isNotEmpty) {
-      _amountCtrl.text = result.amount!;
-    }
-    setState(() => _upiIdError = null);
-  }
-
   // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
@@ -347,9 +360,7 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
                 ),
                 child: SpButton(
                   label: 'Continue to Pay',
-                  onTap: _loadingApps || _upiApps.isEmpty || _upiIdCtrl.text.trim().isEmpty
-                      ? null
-                      : _goToAppPicker,
+                  onTap: _startManualPayFlow,
                   icon: Icons.arrow_forward_rounded,
                 ),
               ),
@@ -359,6 +370,13 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
     );
   }
 
+  Future<void> _relaunchBareApp() async {
+    final selectedApp = _upiApps.isNotEmpty ? _upiApps.first : null;
+    if (selectedApp != null) {
+      ref.read(upiServiceProvider).openBareUpiApp(selectedApp);
+    }
+  }
+
   Widget _buildView(bool isDark) {
     return switch (_view) {
       _SheetView.methods => _MethodPickerView(
@@ -366,7 +384,7 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
           balance: widget.balance,
           isDark: isDark,
           showUpi: ref.watch(showUpiProvider),
-          onUpi: _goToUpiForm,
+          onUpi: _startManualPayFlow,
           onManual: _settleManually,
           isLoading: _manualSettling,
           amountCtrl: _amountCtrl,
@@ -378,14 +396,11 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
           balance: widget.balance,
           isDark: isDark,
           amountCtrl: _amountCtrl,
-          upiIdCtrl: _upiIdCtrl,
           noteCtrl: _noteCtrl,
-          upiIdError: _upiIdError,
           upiApps: _upiApps,
           loadingApps: _loadingApps,
           onBack: _backToMethods,
-          onPay: _goToAppPicker,
-          onScanQr: _openQrScanner,
+          onPay: _startManualPayFlow,
         ),
       _SheetView.appPicker => _AppPickerView(
           key: const ValueKey('appPicker'),
@@ -394,8 +409,15 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
           onBack: _backToUpiForm,
           onSelectApp: _payWithApp,
         ),
-      _SheetView.processing =>
-        const _ProcessingView(key: ValueKey('processing')),
+      _SheetView.processing => _ProcessingView(
+          key: const ValueKey('processing'),
+          isLaunching: _isLaunchingApp,
+          onRecordSettled: _recordSettlementDirect,
+          onRetryApp: _relaunchBareApp,
+          onCancel: _backToMethods,
+          onEditAmount: _backToMethods,
+          isDark: isDark,
+        ),
       _SheetView.result => _ResultView(
           key: const ValueKey('result'),
           txnResult: _txnResult,
@@ -511,12 +533,14 @@ class _MethodPickerView extends ConsumerWidget {
           _OptionCard(
             isDark: isDark,
             icon: Icons.account_balance_wallet_rounded,
-            iconColor: const Color(0xFF5B6EF5),
-            iconBg: const Color(0xFF5B6EF5),
+            iconColor: upiApps.isEmpty ? Colors.grey : const Color(0xFF5B6EF5),
+            iconBg: upiApps.isEmpty ? Colors.grey : const Color(0xFF5B6EF5),
             title: 'Pay via UPI',
-            subtitle: 'Instant · Secure · Free',
+            subtitle: upiApps.isEmpty
+                ? 'No UPI apps installed on this device'
+                : 'Instant · Secure · Free',
             trailing: _UpiAppPills(apps: upiApps),
-            onTap: onUpi,
+            onTap: upiApps.isEmpty ? null : onUpi,
           ).animate().fadeIn(duration: 250.ms).slideY(begin: 0.06),
           const SizedBox(height: 12),
         ],
@@ -553,28 +577,22 @@ class _UpiFormView extends ConsumerWidget {
   final BalanceModel balance;
   final bool isDark;
   final TextEditingController amountCtrl;
-  final TextEditingController upiIdCtrl;
   final TextEditingController noteCtrl;
-  final String? upiIdError;
   final List<UpiApp> upiApps;
   final bool loadingApps;
   final VoidCallback onBack;
   final VoidCallback onPay;
-  final VoidCallback onScanQr;
 
   const _UpiFormView({
     super.key,
     required this.balance,
     required this.isDark,
     required this.amountCtrl,
-    required this.upiIdCtrl,
     required this.noteCtrl,
-    required this.upiIdError,
     required this.upiApps,
     required this.loadingApps,
     required this.onBack,
     required this.onPay,
-    required this.onScanQr,
   });
 
   @override
@@ -648,65 +666,12 @@ class _UpiFormView extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
 
-        // UPI ID
-        _FieldLabel('UPI ID', isDark: isDark),
-        const SizedBox(height: 8),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: TextField(
-                controller: upiIdCtrl,
-                inputFormatters: [LengthLimitingTextInputFormatter(20)],
-                style: TextStyle(
-                    color: isDark ? Colors.white : AppColors.textLight,
-                    fontSize: 15),
-                decoration: InputDecoration(
-                  hintText: 'e.g. rahul@gpay',
-                  hintStyle: TextStyle(color: AppColors.textTertiary),
-                  errorText: upiIdError,
-                  filled: true,
-                  fillColor: isDark ? AppColors.darkCard : AppColors.lightCard,
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: upiIdError != null
-                          ? AppColors.expense
-                          : Colors.transparent,
-                    ),
-                  ),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            GestureDetector(
-              onTap: onScanQr,
-              child: Container(
-                height: 50,
-                width: 50,
-                decoration: BoxDecoration(
-                  gradient: AppColors.primaryGradient,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.qr_code_scanner_rounded,
-                    color: Colors.white, size: 22),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-
         // Note
         _FieldLabel('Note', isDark: isDark),
         const SizedBox(height: 8),
         TextField(
           controller: noteCtrl,
-          inputFormatters: [LengthLimitingTextInputFormatter(20)],
+          inputFormatters: [LengthLimitingTextInputFormatter(50)],
           style: TextStyle(
               color: isDark ? Colors.white : AppColors.textLight, fontSize: 14),
           decoration: InputDecoration(
@@ -844,24 +809,158 @@ class _AppPickerView extends StatelessWidget {
 // View 4 — Processing
 // ─────────────────────────────────────────────────────────────────────────────
 class _ProcessingView extends StatelessWidget {
-  const _ProcessingView({super.key});
+  final bool isLaunching;
+  final VoidCallback onRecordSettled;
+  final VoidCallback onRetryApp;
+  final VoidCallback onCancel;
+  final VoidCallback onEditAmount;
+  final bool isDark;
+
+  const _ProcessingView({
+    super.key,
+    required this.isLaunching,
+    required this.onRecordSettled,
+    required this.onRetryApp,
+    required this.onCancel,
+    required this.onEditAmount,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
+    if (isLaunching) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 36),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(
+                color: AppColors.primary, strokeWidth: 3),
+            const SizedBox(height: 24),
+            Text(
+              'Opening payment app…',
+              style: TextStyle(
+                fontSize: 17,
+                color: isDark ? Colors.white : AppColors.textLight,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 40),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const CircularProgressIndicator(
-              color: AppColors.primary, strokeWidth: 3),
-          const SizedBox(height: 24),
+          // Header with Back button
+          Row(
+            children: [
+              GestureDetector(
+                onTap: onCancel,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkCard : AppColors.lightCard,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.arrow_back_rounded,
+                      size: 18,
+                      color: isDark ? Colors.white : AppColors.textLight),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Payment Confirmation',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : AppColors.textLight,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.help_outline_rounded,
+                color: AppColors.primary, size: 36),
+          ),
+          const SizedBox(height: 16),
           Text(
-            'Opening payment app…',
+            'Did your payment complete?',
             style: TextStyle(
-              fontSize: 15,
+              fontSize: 19,
+              color: isDark ? Colors.white : AppColors.textLight,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Confirm if you finished the transaction in your UPI app.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13,
               color: AppColors.textSecondary,
-              fontWeight: FontWeight.w500,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 24),
+          // Option 1: Yes, Mark as Settled
+          SpButton(
+            label: 'Yes, Mark as Settled',
+            icon: Icons.check_circle_rounded,
+            onTap: onRecordSettled,
+          ),
+          const SizedBox(height: 10),
+          // Option 2: Re-open UPI App (Retry intent)
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 48),
+              side: BorderSide(
+                  color: AppColors.primary.withValues(alpha: 0.5)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
+            ),
+            onPressed: onRetryApp,
+            icon: const Icon(Icons.open_in_new_rounded,
+                size: 18, color: AppColors.primary),
+            label: const Text(
+              'Re-open UPI App',
+              style: TextStyle(
+                color: AppColors.primary,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          // Option 3: Settled custom / less amount
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 48),
+              side: BorderSide(
+                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
+            ),
+            onPressed: onEditAmount,
+            icon: Icon(Icons.edit_rounded,
+                size: 18,
+                color: isDark ? Colors.white70 : AppColors.textSecondary),
+            label: Text(
+              'Settled custom or partial amount',
+              style: TextStyle(
+                color: isDark ? Colors.white : AppColors.textLight,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -1344,7 +1443,9 @@ class _OptionCardState extends State<_OptionCard> {
               widget.onTap!();
             },
       onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedScale(
+      child: Opacity(
+        opacity: widget.onTap == null ? 0.55 : 1.0,
+        child: AnimatedScale(
         scale: _pressed ? 0.97 : 1.0,
         duration: const Duration(milliseconds: 80),
         child: AnimatedContainer(
@@ -1423,7 +1524,8 @@ class _OptionCardState extends State<_OptionCard> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }
 

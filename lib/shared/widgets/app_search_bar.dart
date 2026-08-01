@@ -38,7 +38,7 @@ class _AppSearchBarState extends State<AppSearchBar> {
       padding: widget.padding,
       child: TextField(
         controller: _controller,
-        inputFormatters: [LengthLimitingTextInputFormatter(20)],
+        inputFormatters: [LengthLimitingTextInputFormatter(50)],
         onChanged: widget.onChanged,
         decoration: InputDecoration(
           hintText: widget.hintText,

@@ -442,7 +442,7 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
   }) {
     return TextField(
       controller: controller,
-      inputFormatters: [LengthLimitingTextInputFormatter(20)],
+      inputFormatters: [LengthLimitingTextInputFormatter(50)],
       maxLines: maxLines,
       onChanged: onChanged,
       style: TextStyle(

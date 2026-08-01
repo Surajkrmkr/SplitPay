@@ -78,6 +78,25 @@ class PaymentRepository {
       settlementType: 'MANUAL',
     );
   }
+
+  /// Record a confirmed UPI settlement (e.g. after user redirects to UPI app).
+  Future<SettlementModel> settleViaUpi({
+    required String groupId,
+    required String payeeId,
+    required double amount,
+    String? notes,
+    String? transactionId,
+  }) async {
+    return _apiService.createSettlement(
+      groupId: groupId,
+      payeeId: payeeId,
+      amount: amount,
+      notes: notes,
+      paymentMethod: 'UPI',
+      settlementType: 'UPI',
+      transactionId: transactionId,
+    );
+  }
 }
 
 final paymentRepositoryProvider = Provider<PaymentRepository>((ref) {

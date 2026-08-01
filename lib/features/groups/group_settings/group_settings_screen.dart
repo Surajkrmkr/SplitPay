@@ -216,7 +216,7 @@ class _RenameGroupTile extends StatelessWidget {
                   children: [
                     TextField(
                       controller: nameController,
-                      inputFormatters: [LengthLimitingTextInputFormatter(20)],
+                      inputFormatters: [LengthLimitingTextInputFormatter(50)],
                       autofocus: true,
                       decoration: InputDecoration(
                         labelText: 'Group Name',
@@ -236,7 +236,7 @@ class _RenameGroupTile extends StatelessWidget {
                     const SizedBox(height: 14),
                     TextField(
                       controller: descController,
-                      inputFormatters: [LengthLimitingTextInputFormatter(20)],
+                      inputFormatters: [LengthLimitingTextInputFormatter(50)],
                       maxLines: 2,
                       decoration: InputDecoration(
                         labelText: 'Description (optional)',
