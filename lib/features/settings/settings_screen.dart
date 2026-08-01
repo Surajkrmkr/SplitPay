@@ -15,6 +15,7 @@ import '../../data/models/transaction_model.dart';
 import '../../shared/widgets/create_category_dialog.dart';
 import '../../core/services/update_service.dart';
 import 'import_data_screen.dart';
+import '../transactions/sms_import_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -79,6 +80,18 @@ class SettingsScreen extends ConsumerWidget {
                         onTap: () => Navigator.of(context).push(
                           MaterialPageRoute<void>(
                             builder: (_) => const ImportDataScreen(),
+                          ),
+                        ),
+                      ),
+                      _Divider(),
+                      _SettingsTile(
+                        icon: Icons.sms_rounded,
+                        iconColor: AppColors.primary,
+                        title: 'Sync SMS Transactions',
+                        subtitle: 'Auto-detect bank & UPI transactions from SMS',
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const SmsImportScreen(),
                           ),
                         ),
                       ),

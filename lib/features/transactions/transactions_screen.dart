@@ -11,6 +11,7 @@ import '../../data/models/transaction_model.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../shared/widgets/empty_state.dart';
+import 'sms_import_screen.dart';
 import 'widgets/edit_transaction_sheet.dart';
 import 'widgets/transaction_tile.dart';
 
@@ -131,6 +132,26 @@ class _Header extends ConsumerWidget {
                     ),
                   ),
               ],
+            ),
+          ),
+          const SizedBox(width: 4),
+          Tooltip(
+            message: 'Import from SMS',
+            child: IconButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const SmsImportScreen(),
+                ),
+              ),
+              icon: const Icon(Icons.sms_rounded, size: 20),
+              color: AppColors.primary,
+              style: IconButton.styleFrom(
+                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                padding: const EdgeInsets.all(8),
+              ),
             ),
           ),
           const SizedBox(width: 8),
