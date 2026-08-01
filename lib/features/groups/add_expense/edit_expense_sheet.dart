@@ -101,7 +101,7 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
   }
 
   double get _totalAmount =>
-      double.tryParse(_amountController.text.trim()) ?? 0;
+      double.tryParse(_amountController.text.replaceAll(',', '').trim()) ?? 0;
 
   double get _equalShare {
     final count = _selectedParticipantIds.length;

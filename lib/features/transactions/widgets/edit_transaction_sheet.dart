@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/category_app_icons.dart';
 import '../../../data/models/transaction_model.dart';
 import '../../../providers/settings_provider.dart';
@@ -33,7 +34,7 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
   bool _saving = false;
 
   bool get _isValid {
-    final amount = double.tryParse(_amountController.text.trim());
+    final amount = double.tryParse(_amountController.text.replaceAll(',', '').trim());
     return amount != null &&
         amount > 0 &&
         (_category != null || _customCategoryId != null);
@@ -63,7 +64,7 @@ class _EditTransactionSheetState extends ConsumerState<EditTransactionSheet> {
   }
 
   Future<void> _save() async {
-    final amount = double.tryParse(_amountController.text.trim());
+    final amount = double.tryParse(_amountController.text.replaceAll(',', '').trim());
     if (amount == null || amount <= 0) return;
     if (_category == null && _customCategoryId == null) return;
     setState(() => _saving = true);
@@ -445,7 +446,7 @@ class _AmountInput extends StatelessWidget {
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: [
               LengthLimitingTextInputFormatter(50),
-              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+              CurrencyInputFormatter(),
             ],
             textAlign: TextAlign.center,
             style: TextStyle(

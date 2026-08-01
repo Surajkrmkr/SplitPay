@@ -1,4 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/network/api_constants.dart';
+import '../../core/services/offline_sync_queue_service.dart';
+import '../../providers/connectivity_provider.dart';
 import '../models/settlement_model.dart';
 import '../services/group_api_service.dart';
 import '../services/upi_service.dart';
@@ -8,11 +12,12 @@ import '../services/upi_service.dart';
 class PaymentRepository {
   final UpiService _upiService;
   final GroupApiService _apiService;
+  final OfflineSyncQueueService? _queueService;
 
   // Guard against concurrent settlement calls for the same debt.
   final _inFlight = <String>{};
 
-  PaymentRepository(this._upiService, this._apiService);
+  PaymentRepository(this._upiService, this._apiService, [this._queueService]);
 
   /// Launch a UPI app and, on SUCCESS, automatically record a settlement.
   /// Returns [UpiTxnResult] so callers can render appropriate UI.
@@ -45,7 +50,7 @@ class PaymentRepository {
 
       SettlementModel? settlement;
       if (txn.status == UpiTxnStatus.success) {
-        settlement = await _apiService.createSettlement(
+        settlement = await _createOrQueueSettlement(
           groupId: groupId,
           payeeId: payeeId,
           amount: amount,
@@ -69,7 +74,7 @@ class PaymentRepository {
     required double amount,
     String? notes,
   }) async {
-    return _apiService.createSettlement(
+    return _createOrQueueSettlement(
       groupId: groupId,
       payeeId: payeeId,
       amount: amount,
@@ -87,7 +92,7 @@ class PaymentRepository {
     String? notes,
     String? transactionId,
   }) async {
-    return _apiService.createSettlement(
+    return _createOrQueueSettlement(
       groupId: groupId,
       payeeId: payeeId,
       amount: amount,
@@ -97,11 +102,70 @@ class PaymentRepository {
       transactionId: transactionId,
     );
   }
+
+  Future<SettlementModel> _createOrQueueSettlement({
+    required String groupId,
+    required String payeeId,
+    required double amount,
+    String? notes,
+    required String paymentMethod,
+    required String settlementType,
+    String? transactionId,
+  }) async {
+    try {
+      return await _apiService.createSettlement(
+        groupId: groupId,
+        payeeId: payeeId,
+        amount: amount,
+        notes: notes,
+        paymentMethod: paymentMethod,
+        settlementType: settlementType,
+        transactionId: transactionId,
+      );
+    } catch (e) {
+      final queueService = _queueService;
+      if (queueService != null) {
+        final actionId = 'sync_set_${DateTime.now().millisecondsSinceEpoch}';
+        await queueService.enqueue(
+          PendingSyncAction(
+            id: actionId,
+            endpoint: ApiConstants.settlements,
+            method: SyncHttpMethod.post,
+            body: {
+              'groupId': groupId,
+              'payeeId': payeeId,
+              'amount': amount,
+              if (notes != null) 'notes': notes,
+              'paymentMethod': paymentMethod,
+              'settlementType': settlementType,
+              if (transactionId != null) 'transactionId': transactionId,
+            },
+          ),
+        );
+      }
+      final now = DateTime.now();
+      return SettlementModel(
+        id: 'offline_${now.millisecondsSinceEpoch}',
+        groupId: groupId,
+        payerId: 'user_1',
+        payerName: 'You',
+        payeeId: payeeId,
+        payeeName: '',
+        amount: amount,
+        notes: notes,
+        settledAt: now,
+        paymentMethod: paymentMethod,
+        settlementType: settlementType,
+        transactionId: transactionId,
+      );
+    }
+  }
 }
 
 final paymentRepositoryProvider = Provider<PaymentRepository>((ref) {
   return PaymentRepository(
     ref.watch(upiServiceProvider),
     ref.watch(groupApiServiceProvider),
+    ref.watch(offlineSyncQueueServiceProvider),
   );
 });

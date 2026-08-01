@@ -1,7 +1,12 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/network/api_client.dart';
 import '../core/services/connectivity_service.dart';
+import '../core/services/offline_sync_manager.dart';
+import '../core/services/offline_sync_queue_service.dart';
+import 'group_provider.dart';
+import 'transaction_provider.dart';
 
 /// Provider for the singleton instance of ConnectivityService
 final connectivityServiceProvider = Provider<ConnectivityService>((ref) {
@@ -39,4 +44,32 @@ final connectionTypeLabelProvider = Provider<String>((ref) {
     loading: () => 'Checking...',
     error: (_, __) => 'Unknown',
   );
+});
+
+/// Offline sync queue service provider
+final offlineSyncQueueServiceProvider = Provider<OfflineSyncQueueService>((ref) {
+  return OfflineSyncQueueService();
+});
+
+/// Offline sync manager provider
+final offlineSyncManagerProvider = Provider<OfflineSyncManager>((ref) {
+  final manager = OfflineSyncManager(
+    ref.watch(offlineSyncQueueServiceProvider),
+    ref.watch(dioProvider),
+  );
+
+  // Auto-sync pending actions when device re-establishes connectivity
+  ref.listen<AsyncValue<List<ConnectivityResult>>>(connectivityStatusProvider, (previous, next) {
+    next.whenData((results) {
+      final isOffline = ref.read(connectivityServiceProvider).isOffline(results);
+      if (!isOffline) {
+        manager.syncPendingQueue(onSyncComplete: () {
+          ref.invalidate(groupsProvider);
+          ref.invalidate(transactionProvider);
+        });
+      }
+    });
+  });
+
+  return manager;
 });

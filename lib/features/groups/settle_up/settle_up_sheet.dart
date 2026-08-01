@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/currency_formatter.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../data/models/balance_model.dart';
 import '../../../data/repositories/payment_repository.dart';
@@ -116,7 +117,7 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
   // ── Validation ───────────────────────────────────────────────────────────────
 
   bool _validateUpiForm() {
-    final amount = double.tryParse(_amountCtrl.text.trim());
+    final amount = double.tryParse(_amountCtrl.text.replaceAll(',', '').trim());
     if (amount == null || amount <= 0) {
       _showSnack('Enter a valid amount');
       return false;
@@ -134,7 +135,7 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
 
   Future<void> _recordSettlementDirect() async {
     final amount =
-        double.tryParse(_amountCtrl.text.trim()) ?? widget.balance.amount;
+        double.tryParse(_amountCtrl.text.replaceAll(',', '').trim()) ?? widget.balance.amount;
     setState(() => _manualSettling = true);
     try {
       await ref.read(paymentRepositoryProvider).settleViaUpi(
@@ -162,7 +163,7 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
 
   Future<void> _payWithApp(UpiApp app) async {
     final amount =
-        double.tryParse(_amountCtrl.text.trim()) ?? widget.balance.amount;
+        double.tryParse(_amountCtrl.text.replaceAll(',', '').trim()) ?? widget.balance.amount;
     setState(() => _view = _SheetView.processing);
 
     final result = await ref.read(paymentRepositoryProvider).payViaUpi(
@@ -188,7 +189,7 @@ class _SettleUpSheetState extends ConsumerState<SettleUpSheet> {
   }
 
   Future<void> _settleManually() async {
-    final amount = double.tryParse(_amountCtrl.text.trim());
+    final amount = double.tryParse(_amountCtrl.text.replaceAll(',', '').trim());
     if (amount == null || amount <= 0) {
       _showSnack('Enter a valid amount');
       return;
@@ -641,7 +642,8 @@ class _UpiFormView extends ConsumerWidget {
           controller: amountCtrl,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           inputFormatters: [
-            FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))
+            LengthLimitingTextInputFormatter(50),
+            CurrencyInputFormatter(),
           ],
           style: TextStyle(
             fontSize: 28,

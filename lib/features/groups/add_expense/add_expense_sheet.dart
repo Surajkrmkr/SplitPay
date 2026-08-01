@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/currency_formatter.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../data/models/group_model.dart';
 import '../../../data/models/member_model.dart';
@@ -89,7 +90,7 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
   }
 
   double get _totalAmount =>
-      double.tryParse(_amountController.text.trim()) ?? 0;
+      double.tryParse(_amountController.text.replaceAll(',', '').trim()) ?? 0;
 
   double get _equalShare {
     final count = _selectedParticipantIds.length;
@@ -580,8 +581,7 @@ class AmountDisplay extends StatelessWidget {
                         const TextInputType.numberWithOptions(decimal: true),
                     inputFormatters: [
                       LengthLimitingTextInputFormatter(50),
-                      FilteringTextInputFormatter.allow(
-                          RegExp(r'^\d+\.?\d{0,2}')),
+                      CurrencyInputFormatter(),
                     ],
                     onChanged: onChanged,
                     textAlign: TextAlign.center,

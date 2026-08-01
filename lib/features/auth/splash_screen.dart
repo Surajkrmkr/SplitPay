@@ -65,6 +65,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     ref.listen<AsyncValue<AuthState>>(authProvider, (_, next) {
       next.whenData((state) {
         if (state.status != AuthStatus.initial &&
@@ -78,17 +80,23 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     });
 
     return Scaffold(
-      backgroundColor: AppColors.darkBg,
+      backgroundColor: isDark ? AppColors.darkBg : AppColors.lightBg,
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              AppColors.darkBg,
-              Color(0xFF0D1A14),
-              AppColors.darkBg,
-            ],
+            colors: isDark
+                ? const [
+                    AppColors.darkBg,
+                    Color(0xFF0D1A14),
+                    AppColors.darkBg,
+                  ]
+                : const [
+                    AppColors.lightBg,
+                    Color(0xFFE8F8F2),
+                    AppColors.lightBg,
+                  ],
           ),
         ),
         child: SafeArea(
@@ -121,10 +129,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                 const SizedBox(height: 28),
 
                 // App name
-                const Text(
+                Text(
                   'SplitPay',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: isDark ? Colors.white : AppColors.textLight,
                     fontSize: 36,
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.5,
@@ -199,6 +207,7 @@ class _BiometricUnlockPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       children: [
         // Pulsing rings + icon
@@ -280,10 +289,10 @@ class _BiometricUnlockPanel extends StatelessWidget {
 
         const SizedBox(height: 20),
 
-        const Text(
+        Text(
           'Verification Required',
           style: TextStyle(
-            color: Colors.white,
+            color: isDark ? Colors.white : AppColors.textLight,
             fontSize: 18,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.3,

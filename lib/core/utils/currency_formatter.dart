@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 class CurrencyFormatter {
@@ -56,5 +57,58 @@ class CurrencyFormatter {
     'CAD': 'CA\$',
     'AUD': 'A\$',
   };
+}
+
+/// A TextInputFormatter that formats numbers with commas as the user types
+/// (e.g. 1000 -> 1,000, 100000 -> 1,00,000).
+class CurrencyInputFormatter extends TextInputFormatter {
+  final bool isIndianFormat;
+
+  CurrencyInputFormatter({this.isIndianFormat = true});
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (newValue.text.isEmpty) {
+      return newValue;
+    }
+
+    final cleanText = newValue.text.replaceAll(',', '');
+
+    final parts = cleanText.split('.');
+    if (parts.length > 2) {
+      return oldValue;
+    }
+
+    if (parts.length == 2 && parts[1].length > 2) {
+      return oldValue;
+    }
+
+    final integerStr = parts[0];
+    final doubleVal = double.tryParse(integerStr);
+    if (integerStr.isNotEmpty && doubleVal == null) {
+      return oldValue;
+    }
+
+    String formattedInt = '';
+    if (integerStr.isNotEmpty && doubleVal != null) {
+      final formatter = NumberFormat(
+        isIndianFormat ? '#,##,##0' : '#,##0',
+        isIndianFormat ? 'en_IN' : 'en_US',
+      );
+      formattedInt = formatter.format(doubleVal);
+    }
+
+    final newText = parts.length == 2
+        ? '$formattedInt.${parts[1]}'
+        : formattedInt;
+
+    return TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: newText.length),
+    );
+  }
 }
 

@@ -24,8 +24,11 @@ import '../providers/auth_provider.dart';
 import '../providers/notification_provider.dart';
 import '../providers/settings_provider.dart';
 
+final rootNavigatorKey = GlobalKey<NavigatorState>();
+
 final appRouterProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/splash',
     debugLogDiagnostics: false,
     redirect: (context, routerState) {

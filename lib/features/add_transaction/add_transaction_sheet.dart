@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/constants/ad_constants.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/services/rate_app_service.dart';
+import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/category_app_icons.dart';
 import '../../data/models/transaction_model.dart';
 import '../../providers/transaction_provider.dart';
@@ -115,7 +117,10 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
               recurrence: _recurrence,
             ),
           );
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        Navigator.of(context).pop();
+        RateAppService.checkAndPromptRating();
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -507,7 +512,7 @@ class _AmountInput extends StatelessWidget {
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: [
               LengthLimitingTextInputFormatter(50),
-              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+              CurrencyInputFormatter(),
             ],
             autofocus: true,
             textAlign: TextAlign.center,
