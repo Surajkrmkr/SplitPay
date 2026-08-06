@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -134,27 +135,29 @@ class _Header extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(width: 4),
-          Tooltip(
-            message: 'Import from SMS',
-            child: IconButton(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const SmsImportScreen(),
+          if (Platform.isAndroid) ...[
+            const SizedBox(width: 4),
+            Tooltip(
+              message: 'Import from SMS',
+              child: IconButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const SmsImportScreen(),
+                  ),
                 ),
-              ),
-              icon: const Icon(Icons.sms_rounded, size: 20),
-              color: AppColors.primary,
-              style: IconButton.styleFrom(
-                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+                icon: const Icon(Icons.sms_rounded, size: 20),
+                color: AppColors.primary,
+                style: IconButton.styleFrom(
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  padding: const EdgeInsets.all(8),
                 ),
-                padding: const EdgeInsets.all(8),
               ),
             ),
-          ),
-          const SizedBox(width: 8),
+            const SizedBox(width: 8),
+          ],
         ],
       ),
     ).animate().fadeIn(duration: 400.ms);

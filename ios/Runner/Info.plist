@@ -61,9 +61,13 @@
 		</dict>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>Camera is needed to scan QR codes for joining groups.</string>
+	<string>SplitPay requires camera access to scan receipt bills and QR codes for group invites.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>SplitPay requires photo library access to select receipt images for quick expense tracking.</string>
 	<key>NSFaceIDUsageDescription</key>
-	<string>Use Face ID to securely unlock SplitPay</string>
+	<string>SplitPay uses Face ID to securely authenticate and unlock your financial data.</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>This identifier will be used to deliver personalized advertisements to you.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

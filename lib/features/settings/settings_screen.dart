@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -78,25 +79,31 @@ class SettingsScreen extends ConsumerWidget {
                         iconColor: AppColors.secondary,
                         title: 'Import Data',
                         subtitle: 'Import expenses from a CSV file',
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => const ImportDataScreen(),
+                        onTap: () => requireAuth(
+                          context,
+                          ref,
+                          () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => const ImportDataScreen(),
+                            ),
                           ),
                         ),
                       ),
                       _Divider(),
-                      _SettingsTile(
-                        icon: Icons.sms_rounded,
-                        iconColor: AppColors.primary,
-                        title: 'Sync SMS Transactions',
-                        subtitle: 'Auto-detect bank & UPI transactions from SMS',
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => const SmsImportScreen(),
+                      if (Platform.isAndroid) ...[
+                        _SettingsTile(
+                          icon: Icons.sms_rounded,
+                          iconColor: AppColors.primary,
+                          title: 'Sync SMS Transactions',
+                          subtitle: 'Auto-detect bank & UPI transactions from SMS',
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => const SmsImportScreen(),
+                            ),
                           ),
                         ),
-                      ),
-                      _Divider(),
+                        _Divider(),
+                      ],
                       _SettingsTile(
                         icon: Icons.upload_file_rounded,
                         iconColor: AppColors.secondary,
@@ -626,7 +633,11 @@ class _CategoriesTile extends StatelessWidget {
       iconColor: AppColors.secondary,
       title: 'Manage Categories',
       subtitle: 'Show or hide expense categories',
-      onTap: () => _showCategoryManager(context),
+      onTap: () => requireAuth(
+        context,
+        ref,
+        () => _showCategoryManager(context),
+      ),
     );
   }
 
