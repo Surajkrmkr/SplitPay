@@ -1,7 +1,5 @@
-import https from 'https';
 import { User } from '@prisma/client';
-import { env } from '../../configs/env';
-import { GoogleUser } from '../../types';
+import { admin } from '../../configs/firebase';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../../utils/jwt';
 import { UnauthorizedError, BadRequestError } from '../../utils/app-error';
 import * as authRepository from './auth.repository';
@@ -10,75 +8,73 @@ import * as usersRepository from '../users/users.repository';
 export interface AuthResult {
   accessToken: string;
   refreshToken: string;
-  user: Omit<User, 'googleId'>;
+  user: Omit<User, 'googleId' | 'firebaseUid'>;
 }
 
-function fetchGoogleTokenInfo(idToken: string): Promise<GoogleUser> {
-  return new Promise((resolve, reject) => {
-    const url = `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`;
+/**
+ * Verify a Firebase ID token (from any provider: Google, Apple, Email, etc.)
+ * using the Firebase Admin SDK and return normalised user fields.
+ */
+async function verifyFirebaseToken(idToken: string) {
+  try {
+    const decoded = await admin.auth().verifyIdToken(idToken);
 
-    https
-      .get(url, (res) => {
-        let data = '';
+    if (!decoded.email) {
+      throw new BadRequestError('Firebase account does not have an email address');
+    }
 
-        res.on('data', (chunk: Buffer) => {
-          data += chunk.toString();
-        });
-
-        res.on('end', () => {
-          try {
-            const parsed = JSON.parse(data) as Record<string, unknown>;
-
-            if (res.statusCode !== 200) {
-              reject(new UnauthorizedError('Invalid Google ID token'));
-              return;
-            }
-
-            resolve(parsed as unknown as GoogleUser);
-          } catch {
-            reject(new BadRequestError('Failed to parse Google token info response'));
-          }
-        });
-      })
-      .on('error', (err) => {
-        reject(new BadRequestError(`Failed to verify Google token: ${err.message}`));
-      });
-  });
+    return {
+      uid: decoded.uid,
+      email: decoded.email,
+      name: decoded.name ?? decoded.email.split('@')[0],
+      picture: decoded.picture,
+      email_verified: decoded.email_verified,
+      sign_in_provider: decoded.firebase?.sign_in_provider ?? 'unknown',
+    };
+  } catch (err) {
+    if (err instanceof BadRequestError) throw err;
+    throw new UnauthorizedError('Invalid Firebase ID token');
+  }
 }
 
+/**
+ * POST /auth/google
+ *
+ * Accepts a Firebase ID token from **any** Firebase sign-in provider
+ * (Google OAuth, Apple Sign-In, Email/Password, etc.) and exchanges it
+ * for a backend JWT access + refresh token pair.
+ */
 export async function googleLogin(idToken: string): Promise<AuthResult> {
-  // Verify with Google's token info endpoint
-  const googleUser = await fetchGoogleTokenInfo(idToken);
+  // Verify the Firebase ID token (works for Google, Apple, any provider)
+  const firebaseUser = await verifyFirebaseToken(idToken);
 
-  // Validate audience matches our client ID
-  if (googleUser.aud !== env.GOOGLE_CLIENT_ID) {
-    throw new UnauthorizedError('Google token audience mismatch');
-  }
-
-  if (!googleUser.email) {
-    throw new BadRequestError('Google account does not have an email address');
-  }
-
-  // Find or create user
-  let user = await authRepository.findUserByGoogleId(googleUser.sub);
+  // --- Look up existing user ---
+  // 1) Try by Firebase UID first (most reliable, provider-agnostic)
+  let user = await authRepository.findUserByFirebaseUid(firebaseUser.uid);
 
   if (!user) {
-    // Check if a user already exists with this email (link Google account to existing account)
-    const existingUser = await authRepository.findUserByEmail(googleUser.email);
+    // 2) Fallback: look up by email to link accounts created via other providers
+    const existingUser = await authRepository.findUserByEmail(firebaseUser.email);
 
     if (existingUser) {
-      // Link google account to existing user
+      // Link this Firebase UID to the existing account
       user = await authRepository.updateUser(existingUser.id, {
-        googleId: googleUser.sub,
-        avatar: existingUser.avatar ?? googleUser.picture,
+        firebaseUid: firebaseUser.uid,
+        avatar: existingUser.avatar ?? firebaseUser.picture,
+        // Populate googleId if signing in via Google and it's not already set
+        ...(firebaseUser.sign_in_provider === 'google.com' && !existingUser.googleId
+          ? { googleId: firebaseUser.uid }
+          : {}),
       });
     } else {
-      // Create brand new user
+      // 3) Brand new user
       user = await authRepository.createUser({
-        email: googleUser.email,
-        name: googleUser.name,
-        googleId: googleUser.sub,
-        avatar: googleUser.picture,
+        email: firebaseUser.email,
+        name: firebaseUser.name,
+        firebaseUid: firebaseUser.uid,
+        // Also populate googleId for Google sign-ins
+        ...(firebaseUser.sign_in_provider === 'google.com' ? { googleId: firebaseUser.uid } : {}),
+        avatar: firebaseUser.picture,
       });
     }
   }
@@ -98,17 +94,17 @@ export async function googleLogin(idToken: string): Promise<AuthResult> {
     expiresAt,
   });
 
-  // Clean up any expired sessions in the background (non-blocking)
+  // Clean up expired sessions in the background (non-blocking)
   authRepository.deleteExpiredSessions().catch(() => {
     // Non-critical — silently ignore
   });
 
-  const { googleId: _googleId, ...userWithoutGoogleId } = user;
+  const { googleId: _googleId, firebaseUid: _firebaseUid, ...userWithoutProviderIds } = user;
 
   return {
     accessToken,
     refreshToken,
-    user: userWithoutGoogleId,
+    user: userWithoutProviderIds,
   };
 }
 

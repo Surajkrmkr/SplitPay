@@ -13,6 +13,7 @@ import '../../shared/widgets/skeleton_loader.dart';
 import 'create_group/create_group_sheet.dart';
 import 'widgets/group_card.dart';
 import 'widgets/my_balance_summary.dart';
+import '../../shared/utils/guest_guard.dart';
 
 class GroupsScreen extends ConsumerWidget {
   const GroupsScreen({super.key});
@@ -65,7 +66,11 @@ class GroupsScreen extends ConsumerWidget {
                       ),
                       // Join with code button
                       GestureDetector(
-                        onTap: () => context.push('/groups/join'),
+                        onTap: () => requireAuth(
+                          context,
+                          ref,
+                          () => context.push('/groups/join'),
+                        ),
                         child: Container(
                           width: 44,
                           height: 44,
@@ -93,7 +98,11 @@ class GroupsScreen extends ConsumerWidget {
                       const SizedBox(width: 10),
                       // Create group button
                       GestureDetector(
-                        onTap: () => _openCreateSheet(context, ref),
+                        onTap: () => requireAuth(
+                          context,
+                          ref,
+                          () => _openCreateSheet(context, ref),
+                        ),
                         child: Container(
                           width: 44,
                           height: 44,
@@ -161,7 +170,11 @@ class GroupsScreen extends ConsumerWidget {
                         subtitle:
                             'Create a group to start splitting expenses with friends.',
                         actionLabel: '+ Create Group',
-                        onAction: () => _openCreateSheet(context, ref),
+                        onAction: () => requireAuth(
+                          context,
+                          ref,
+                          () => _openCreateSheet(context, ref),
+                        ),
                       ),
                     );
                   }

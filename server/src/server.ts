@@ -12,7 +12,7 @@ async function start(): Promise<void> {
   await prisma.$connect();
   logger.info('Database connection established');
 
-  server = app.listen(env.PORT, () => {
+  server = app.listen(env.PORT, '0.0.0.0', () => {
     logger.info(
       {
         port: env.PORT,

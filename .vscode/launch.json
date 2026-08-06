@@ -9,7 +9,15 @@
             "request": "launch",
             "type": "dart",
             "args": [
-                // "--dart-define=API_BASE_URL=http://192.168.1.78:3000/api/v1"
+                "--dart-define=API_BASE_URL=http://64.227.135.37:3000/api/v1"
+            ]
+        },
+        {
+            "name": "dimeflow (local dev)",
+            "request": "launch",
+            "type": "dart",
+            "args": [
+                "--dart-define=API_BASE_URL=https://x1vmwdss-3000.inc1.devtunnels.ms/api/v1"
             ]
         },
         {

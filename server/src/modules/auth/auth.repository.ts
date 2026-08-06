@@ -5,6 +5,7 @@ export interface CreateUserData {
   email: string;
   name: string;
   googleId?: string;
+  firebaseUid?: string;
   avatar?: string;
 }
 
@@ -12,6 +13,7 @@ export interface UpdateUserData {
   name?: string;
   avatar?: string;
   googleId?: string;
+  firebaseUid?: string;
 }
 
 export interface CreateSessionData {
@@ -22,6 +24,10 @@ export interface CreateSessionData {
 
 export async function findUserByGoogleId(googleId: string): Promise<User | null> {
   return prisma.user.findUnique({ where: { googleId } });
+}
+
+export async function findUserByFirebaseUid(firebaseUid: string): Promise<User | null> {
+  return prisma.user.findUnique({ where: { firebaseUid } });
 }
 
 export async function findUserByEmail(email: string): Promise<User | null> {

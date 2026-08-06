@@ -16,6 +16,7 @@ import '../../shared/widgets/create_category_dialog.dart';
 import '../../core/services/update_service.dart';
 import 'import_data_screen.dart';
 import '../transactions/sms_import_screen.dart';
+import '../../shared/utils/guest_guard.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -237,74 +238,116 @@ class _ProfileCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authProvider).valueOrNull;
+    final isGuest = authState?.isGuest == true;
     final user = ref.watch(currentUserProvider);
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-          width: isDark ? 0.5 : 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: isDark
-                ? Colors.black.withValues(alpha: 0.2)
-                : Colors.black.withValues(alpha: 0.05),
-            blurRadius: isDark ? 24 : 16,
-            offset: Offset(0, isDark ? 12 : 4),
+
+    return GestureDetector(
+      onTap: isGuest ? () => requireAuth(context, ref, () {}) : null,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkCard : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+            width: isDark ? 0.5 : 1,
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Avatar
-          ClipOval(
-            child: user?.avatar != null
-                ? Image.network(
-                    user!.avatar!,
-                    width: 60,
-                    height: 60,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
-                        _InitialsAvatar(name: user.name),
-                  )
-                : _InitialsAvatar(name: user?.name ?? '?'),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  user?.name ?? 'User',
-                  style: TextStyle(
-                    color: isDark ? Colors.white : AppColors.textLight,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 18,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  user?.email ?? '',
-                  style: TextStyle(
-                    color: isDark
-                        ? AppColors.primary.withValues(alpha: 0.8)
-                        : AppColors.textLightSecondary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+          boxShadow: [
+            BoxShadow(
+              color: isDark
+                  ? Colors.black.withValues(alpha: 0.2)
+                  : Colors.black.withValues(alpha: 0.05),
+              blurRadius: isDark ? 24 : 16,
+              offset: Offset(0, isDark ? 12 : 4),
             ),
-          ),
-        ],
+          ],
+        ),
+        child: Row(
+          children: [
+            // Avatar
+            if (isGuest)
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.person_outline_rounded,
+                  size: 32,
+                  color: AppColors.primary,
+                ),
+              )
+            else
+              ClipOval(
+                child: user?.avatar != null
+                    ? Image.network(
+                        user!.avatar!,
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            _InitialsAvatar(name: user.name),
+                      )
+                    : _InitialsAvatar(name: user?.name ?? '?'),
+              ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isGuest ? 'Guest User' : (user?.name ?? 'User'),
+                    style: TextStyle(
+                      color: isDark ? Colors.white : AppColors.textLight,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 18,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    isGuest
+                        ? 'Tap to sign in & sync data'
+                        : (user?.email ?? ''),
+                    style: TextStyle(
+                      color: isDark
+                          ? AppColors.primary.withValues(alpha: 0.8)
+                          : AppColors.textLightSecondary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            if (isGuest) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  'Sign In',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     ).animate(delay: 100.ms).fadeIn().slideY(begin: 0.1);
   }
@@ -1034,6 +1077,18 @@ class _LogoutTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isGuest = ref.watch(authProvider).valueOrNull?.isGuest == true;
+
+    if (isGuest) {
+      return _SettingsTile(
+        icon: Icons.login_rounded,
+        iconColor: AppColors.primary,
+        title: 'Sign In',
+        subtitle: 'Sign in to sync your data and access all features',
+        onTap: () => requireAuth(context, ref, () {}),
+      );
+    }
+
     return _SettingsTile(
       icon: Icons.logout_rounded,
       iconColor: AppColors.expense,

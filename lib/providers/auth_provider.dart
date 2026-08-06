@@ -18,7 +18,7 @@ import 'notification_provider.dart';
 import 'group_provider.dart';
 import 'settings_provider.dart';
 
-enum AuthStatus { initial, loading, authenticated, unauthenticated, error }
+enum AuthStatus { initial, loading, authenticated, guest, unauthenticated, error }
 
 class AuthState {
   final AuthStatus status;
@@ -46,6 +46,7 @@ class AuthState {
   }
 
   bool get isAuthenticated => status == AuthStatus.authenticated;
+  bool get isGuest => status == AuthStatus.guest;
   bool get isLoading =>
       status == AuthStatus.loading || status == AuthStatus.initial;
 }
@@ -90,6 +91,12 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       await tokenStorage.clearTokens();
       return const AuthState(status: AuthStatus.unauthenticated);
     }
+  }
+
+  /// iOS only — lets users skip sign-in and browse the app.
+  /// All actions that require a backend will prompt sign-in at that point.
+  void continueAsGuest() {
+    state = const AsyncValue.data(AuthState(status: AuthStatus.guest));
   }
 
   Future<void> signInWithGoogle() async {

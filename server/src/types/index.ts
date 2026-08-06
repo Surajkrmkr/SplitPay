@@ -7,14 +7,20 @@ export interface AuthenticatedRequest extends Request {
   };
 }
 
-export interface GoogleUser {
-  sub: string;
+/** Normalized user info extracted from a verified Firebase ID token (any provider). */
+export interface FirebaseTokenUser {
+  uid: string;
   email: string;
   name: string;
   picture?: string;
   email_verified?: boolean;
-  aud: string;
+  firebase: {
+    sign_in_provider: string;
+  };
 }
+
+/** @deprecated Use FirebaseTokenUser */
+export type GoogleUser = FirebaseTokenUser;
 
 export interface PaginationQuery {
   page?: number;

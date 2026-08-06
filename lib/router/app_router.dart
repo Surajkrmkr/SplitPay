@@ -47,6 +47,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         if (authValue?.isAuthenticated == true) {
           return onboardingDone ? '/home' : '/onboarding';
         }
+        // Guest who tapped login from a prompt — send back to home
+        if (authValue?.isGuest == true) return '/home';
         return null;
       }
 
@@ -59,7 +61,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       // Protected shell routes: guard against unauthenticated / still-loading.
       if (authAsync.isLoading || authValue == null) return '/splash';
-      if (!authValue.isAuthenticated) return '/login';
+      // Guests are allowed to browse all shell routes; only truly unauthenticated
+      // users get redirected to /login.
+      if (!authValue.isAuthenticated && !authValue.isGuest) return '/login';
 
       return null;
     },

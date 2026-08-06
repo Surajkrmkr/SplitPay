@@ -13,6 +13,7 @@ import 'add_budget_sheet.dart';
 import 'widgets/budget_card.dart';
 import 'widgets/budget_period_filter.dart';
 import 'widgets/budget_summary_header.dart';
+import '../../shared/utils/guest_guard.dart';
 
 class BudgetScreen extends ConsumerWidget {
   const BudgetScreen({super.key});
@@ -49,7 +50,7 @@ class BudgetScreen extends ConsumerWidget {
                   const SizedBox(height: 16),
 
                   // ── Header ──
-                  _Header(onAdd: () => _openAddSheet(context)),
+                  _Header(onAdd: () => requireAuth(context, ref, () => _openAddSheet(context))),
 
                   const SizedBox(height: 20),
 
@@ -97,7 +98,7 @@ class BudgetScreen extends ConsumerWidget {
                 child: _EmptyBudgets(
                   isArchived: showArchived,
                   hasArchivedBudgets: hasArchivedBudgets,
-                  onAdd: () => _openAddSheet(context),
+                  onAdd: () => requireAuth(context, ref, () => _openAddSheet(context)),
                   onViewArchived: () => ref
                       .read(showArchivedBudgetsProvider.notifier)
                       .state = true,

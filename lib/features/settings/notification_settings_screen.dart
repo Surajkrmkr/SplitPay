@@ -9,6 +9,7 @@ import '../../data/models/transaction_model.dart';
 import '../../providers/reminder_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../add_transaction/add_transaction_sheet.dart';
+import '../../shared/utils/guest_guard.dart';
 
 void _openAddTransactionSheet(BuildContext context) {
   showModalBottomSheet(
@@ -61,7 +62,11 @@ class NotificationSettingsScreen extends ConsumerWidget {
                           ),
                         ),
                         GestureDetector(
-                          onTap: () => _openAddTransactionSheet(context),
+                          onTap: () => requireAuth(
+                            context,
+                            ref,
+                            () => _openAddTransactionSheet(context),
+                          ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -340,7 +345,11 @@ class _RecurringTransactionsList extends ConsumerWidget {
               ),
               const SizedBox(height: 20),
               FilledButton.icon(
-                onPressed: () => _openAddTransactionSheet(context),
+                onPressed: () => requireAuth(
+                  context,
+                  ref,
+                  () => _openAddTransactionSheet(context),
+                ),
                 icon: const Icon(Icons.add_rounded, size: 18),
                 label: const Text('Add Transaction'),
                 style: FilledButton.styleFrom(
