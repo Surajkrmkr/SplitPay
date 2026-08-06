@@ -145,10 +145,11 @@ class CustomCategory {
 
   // Public flat list of icon data — used by the category icon picker in Settings.
   static List<IconData> get icons =>
-      _iconEntries.map((e) => e.iconData).toList();
+      _iconEntries.map((e) => e.iconData.data).toList();
 
   // Returns the FA IconData for this category.
-  IconData get icon => _iconEntries[iconIndex % _iconEntries.length].iconData;
+  IconData get icon =>
+      _iconEntries[iconIndex % _iconEntries.length].iconData.data;
 
   // Returns the label hint for this icon.
   String get iconLabel => _iconEntries[iconIndex % _iconEntries.length].label;
@@ -170,7 +171,7 @@ class CustomCategory {
 }
 
 class _CategoryIcon {
-  final IconData iconData;
+  final FaIconData iconData;
   final String label;
   const _CategoryIcon(this.iconData, this.label);
 }

@@ -85,13 +85,15 @@ dependencies:
   url_launcher: ^6.3.0
 
   # Icons
-  font_awesome_flutter: ^10.7.0
+  font_awesome_flutter: ^11.0.0
 
   cupertino_icons: ^1.0.8
   flutter_launcher_icons: ^0.14.4
 
   # Native iOS Liquid Glass tab bar (requires Xcode 26 beta to build for iOS)
   cupertino_native: ^0.1.1
+  sign_in_with_apple: ^8.1.0
+  crypto: ^3.0.7
 
 dev_dependencies:
   flutter_test:

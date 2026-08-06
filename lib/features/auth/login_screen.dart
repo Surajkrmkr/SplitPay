@@ -1,10 +1,14 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/errors/app_exception.dart';
 import '../../providers/auth_provider.dart';
+
+import '../../core/services/app_logger.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -21,11 +25,47 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() => _loading = true);
     try {
       await ref.read(authProvider.notifier).signInWithGoogle();
+      if (!mounted) return;
       final state = ref.read(authProvider).valueOrNull;
-      if (state?.status == AuthStatus.error && mounted) {
+      if (state?.status == AuthStatus.error) {
         _showError(state?.error ?? 'Sign in failed');
       }
     } catch (e) {
+      if (mounted) _showError(friendlyErrorMessage(e));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _signInWithApple() async {
+    HapticFeedback.mediumImpact();
+    setState(() => _loading = true);
+    try {
+      AppLogger.instance.i('User initiated Apple Sign In button press', tag: 'Auth');
+      await ref.read(authProvider.notifier).signInWithApple();
+      if (!mounted) return;
+      final state = ref.read(authProvider).valueOrNull;
+      if (state?.status == AuthStatus.error) {
+        AppLogger.instance.e('Apple Sign In finished with state error: ${state?.error}', tag: 'Auth');
+        _showError(state?.error ?? 'Sign in failed');
+      }
+    } on SignInWithAppleAuthorizationException catch (e, stack) {
+      if (e.code == AuthorizationErrorCode.canceled) {
+        AppLogger.instance.i('Apple Sign In cancelled by user', tag: 'Auth');
+        return;
+      }
+      AppLogger.instance.e(
+        'SignInWithAppleAuthorizationException [code=${e.code}]: ${e.message}',
+        tag: 'Auth',
+        extra: stack.toString(),
+      );
+      if (mounted) _showError(e.message);
+    } catch (e, stack) {
+      AppLogger.instance.e(
+        'Unexpected Apple Sign In error: $e',
+        tag: 'Auth',
+        extra: stack.toString(),
+      );
       if (mounted) _showError(friendlyErrorMessage(e));
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -179,6 +219,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           isLoading: isLoading,
                           onTap: isLoading ? null : _signIn,
                         ),
+
+                        if (Platform.isIOS) ...[
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            height: 54,
+                            child: SignInWithAppleButton(
+                              onPressed: isLoading ? () {} : _signInWithApple,
+                              style: SignInWithAppleButtonStyle.white,
+                              borderRadius: const BorderRadius.all(
+                                Radius.circular(14),
+                              ),
+                            ),
+                          ),
+                        ],
 
                         const Spacer(),
 

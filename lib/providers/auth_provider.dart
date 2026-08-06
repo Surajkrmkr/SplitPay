@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/services/app_logger.dart';
 import '../core/errors/app_exception.dart';
 import '../core/network/api_client.dart';
 import '../core/network/api_constants.dart';
@@ -171,6 +172,76 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       );
     }
   }
+
+  Future<void> signInWithApple() async {
+    try {
+      AppLogger.instance.i('signInWithApple initiated in AuthNotifier', tag: 'Auth');
+      final firebaseAuth = ref.read(firebaseAuthServiceProvider);
+      final tokenStorage = ref.read(tokenStorageProvider);
+      final dio = ref.read(dioProvider);
+
+      final credential = await firebaseAuth.signInWithApple();
+      if (credential == null || credential.user == null) {
+        AppLogger.instance.w('signInWithApple returned null credential or user', tag: 'Auth');
+        state = AsyncValue.data(
+          const AuthState(status: AuthStatus.unauthenticated),
+        );
+        return;
+      }
+
+      final firebaseUser = credential.user!;
+      final idToken = await firebaseUser.getIdToken();
+
+      AuthUserModel user = AuthUserModel.fromFirebaseUser(firebaseUser);
+
+      if (idToken != null) {
+        try {
+          // Attempt backend exchange if available
+          final res = await dio.post(
+            ApiConstants.authGoogle,
+            data: {'idToken': idToken},
+          );
+
+          final accessToken = res.data['data']?['accessToken'] as String?;
+          final refreshToken = res.data['data']?['refreshToken'] as String?;
+          final userData = res.data['data']?['user'] as Map<String, dynamic>?;
+
+          if (accessToken != null && refreshToken != null) {
+            await tokenStorage.saveTokens(
+              access: accessToken,
+              refresh: refreshToken,
+            );
+          }
+
+          if (userData != null) {
+            user = AuthUserModel.fromJson(userData);
+          }
+        } on DioException catch (e) {
+          AppLogger.instance.i('Backend token exchange bypassed for Apple Auth (using Firebase session): $e', tag: 'Auth');
+        }
+      }
+
+      AppLogger.instance.i('Apple Sign In authenticated successfully: ${user.email} (${user.id})', tag: 'Auth');
+      state = AsyncValue.data(
+        AuthState(status: AuthStatus.authenticated, user: user),
+      );
+      _invalidateUserScopedProviders();
+      await _registerFcmToken(user.id);
+    } catch (e, stack) {
+      AppLogger.instance.e(
+        'signInWithApple failed in AuthNotifier: $e',
+        tag: 'Auth',
+        extra: stack.toString(),
+      );
+      state = AsyncValue.data(
+        AuthState(
+          status: AuthStatus.error,
+          error: friendlyErrorMessage(e),
+        ),
+      );
+    }
+  }
+
 
   Future<void> signOut() async {
     state = const AsyncValue.loading();
