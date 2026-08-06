@@ -33,6 +33,35 @@ async function verifyFirebaseToken(idToken: string) {
     };
   } catch (err) {
     if (err instanceof BadRequestError) throw err;
+
+    // Fallback for raw Google OAuth2 ID tokens (iss: accounts.google.com)
+    try {
+      const res = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
+      if (res.ok) {
+        const payload = (await res.json()) as {
+          sub?: string;
+          email?: string;
+          name?: string;
+          picture?: string;
+          email_verified?: string | boolean;
+        };
+
+        if (payload.email && payload.sub) {
+          return {
+            uid: `google:${payload.sub}`,
+            email: payload.email,
+            name: payload.name ?? payload.email.split('@')[0],
+            picture: payload.picture,
+            email_verified: payload.email_verified === true || payload.email_verified === 'true',
+            sign_in_provider: 'google.com',
+          };
+        }
+      }
+    } catch {
+      // Ignore fallback error
+    }
+
+    console.error('Firebase token verification error:', err);
     throw new UnauthorizedError('Invalid Firebase ID token');
   }
 }

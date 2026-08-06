@@ -56,11 +56,12 @@ class FirebaseAuthService {
         idToken: googleAuth.idToken,
       );
 
-      // Maintain Firebase session (needed for Firebase features)
-      await FirebaseAuth.instance.signInWithCredential(credential);
+      final userCredential =
+          await FirebaseAuth.instance.signInWithCredential(credential);
 
-      // Return the Google OAuth2 ID token — its `aud` matches GOOGLE_CLIENT_ID
-      return googleAuth.idToken;
+      // Return the Firebase ID token so the backend can verify it via Firebase Admin SDK
+      final firebaseIdToken = await userCredential.user?.getIdToken();
+      return firebaseIdToken ?? googleAuth.idToken;
     } catch (e) {
       rethrow;
     }
