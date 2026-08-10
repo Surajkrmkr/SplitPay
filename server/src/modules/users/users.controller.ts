@@ -16,6 +16,20 @@ export async function getMe(
   }
 }
 
+export async function updateMe(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const user = await usersService.updateMe(req.user.userId, req.body);
+    sendSuccess(res, user, 'User profile updated');
+  } catch (err) {
+    next(err);
+  }
+}
+
+
 export async function searchUsers(
   req: AuthenticatedRequest,
   res: Response,

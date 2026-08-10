@@ -2,18 +2,20 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../debug/debug_log_screen.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/transaction_provider.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../data/services/biometric_service.dart';
-import '../../data/models/custom_category.dart';
-import '../../data/models/transaction_model.dart';
-import '../../shared/widgets/create_category_dialog.dart';
+import '../../data/models/auth_user_model.dart';
 import '../../core/services/update_service.dart';
 import 'import_data_screen.dart';
 import '../transactions/sms_import_screen.dart';
@@ -90,35 +92,28 @@ class SettingsScreen extends ConsumerWidget {
                         ),
                       ),
                       _Divider(),
+                      _SettingsTile(
+                        icon: Icons.upload_file_rounded,
+                        iconColor: AppColors.secondary,
+                        title: 'Export Data',
+                        subtitle: 'Export last 2 months as CSV',
+                        onTap: () => _exportData(context, ref),
+                      ),
                       if (Platform.isAndroid) ...[
+                        _Divider(),
                         _SettingsTile(
                           icon: Icons.sms_rounded,
                           iconColor: AppColors.primary,
                           title: 'Sync SMS Transactions',
-                          subtitle: 'Auto-detect bank & UPI transactions from SMS',
+                          subtitle:
+                              'Auto-detect bank & UPI transactions from SMS',
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute<void>(
                               builder: (_) => const SmsImportScreen(),
                             ),
                           ),
                         ),
-                        _Divider(),
                       ],
-                      _SettingsTile(
-                        icon: Icons.upload_file_rounded,
-                        iconColor: AppColors.secondary,
-                        title: 'Export Data',
-                        subtitle: 'Export as CSV (coming soon)',
-                        onTap: () => _showComingSoon(context),
-                      ),
-                      _Divider(),
-                      _SettingsTile(
-                        icon: Icons.backup_rounded,
-                        iconColor: AppColors.warning,
-                        title: 'Backup',
-                        subtitle: 'Cloud backup (coming soon)',
-                        onTap: () => _showComingSoon(context),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -220,6 +215,151 @@ void _showComingSoon(BuildContext context) {
       content: Text('Coming soon!'),
       duration: Duration(seconds: 2),
     ),
+  );
+}
+
+Future<void> _exportData(BuildContext context, WidgetRef ref) async {
+  final scaffoldMessenger = ScaffoldMessenger.of(context);
+  try {
+    final now = DateTime.now();
+    final cutoffDate = DateTime(now.year, now.month - 2, now.day);
+    final allTxs = ref.read(transactionProvider);
+
+    final filteredTxs = allTxs
+        .where((tx) => !tx.date.isBefore(cutoffDate))
+        .toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+
+    if (filteredTxs.isEmpty) {
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(
+          content: Text('No transactions found in the last 2 months.'),
+        ),
+      );
+      return;
+    }
+
+    final buffer = StringBuffer();
+    buffer.writeln('Date,Type,Category,Amount,Note,Recurrence');
+    for (final tx in filteredTxs) {
+      final dateStr = DateFormat('yyyy-MM-dd HH:mm').format(tx.date);
+      final typeStr = tx.type.name;
+      final catStr = tx.customCategoryId != null ? 'Custom' : tx.category.name;
+      final amountStr = tx.amount.toStringAsFixed(2);
+      final noteStr = '"${(tx.note ?? '').replaceAll('"', '""')}"';
+      final recurrenceStr = tx.recurrence.name;
+      buffer.writeln(
+          '$dateStr,$typeStr,$catStr,$amountStr,$noteStr,$recurrenceStr');
+    }
+
+    final tempDir = await getTemporaryDirectory();
+    final filePath =
+        '${tempDir.path}/splitpay_export_${DateFormat('yyyyMMdd').format(now)}.csv';
+    final file = File(filePath);
+    await file.writeAsString(buffer.toString());
+
+    await Share.shareXFiles(
+      [XFile(file.path)],
+      text: 'SplitPay Transactions Export (Last 2 Months)',
+    );
+  } catch (e) {
+    scaffoldMessenger.showSnackBar(
+      SnackBar(content: Text('Failed to export data: $e')),
+    );
+  }
+}
+
+void _showEditNameDialog(
+    BuildContext context, WidgetRef ref, AuthUserModel user) {
+  final nameParts = user.name.trim().split(RegExp(r'\s+'));
+  final firstNameInitial = nameParts.isNotEmpty ? nameParts.first : '';
+  final lastNameInitial =
+      nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
+
+  final firstNameController = TextEditingController(text: firstNameInitial);
+  final lastNameController = TextEditingController(text: lastNameInitial);
+
+  showDialog(
+    context: context,
+    builder: (ctx) {
+      bool isSaving = false;
+      return StatefulBuilder(
+        builder: (ctx, setState) {
+          final isDark = Theme.of(ctx).brightness == Brightness.dark;
+          return AlertDialog(
+            title: const Text('Edit Profile Name',
+                style: TextStyle(fontWeight: FontWeight.w700)),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: firstNameController,
+                    autofocus: true,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: InputDecoration(
+                      labelText: 'First Name',
+                      filled: true,
+                      fillColor:
+                          isDark ? AppColors.darkCard : AppColors.lightCard,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: lastNameController,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: InputDecoration(
+                      labelText: 'Last Name',
+                      filled: true,
+                      fillColor:
+                          isDark ? AppColors.darkCard : AppColors.lightCard,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: isSaving ? null : () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                style:
+                    FilledButton.styleFrom(backgroundColor: AppColors.primary),
+                onPressed: isSaving
+                    ? null
+                    : () async {
+                        setState(() => isSaving = true);
+                        final fn = firstNameController.text.trim();
+                        final ln = lastNameController.text.trim();
+                        await ref.read(authProvider.notifier).updateProfile(
+                              firstName: fn,
+                              lastName: ln,
+                            );
+                        if (ctx.mounted) Navigator.pop(ctx);
+                      },
+                child: isSaving
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Text('Save'),
+              ),
+            ],
+          );
+        },
+      );
+    },
   );
 }
 
@@ -351,6 +491,16 @@ class _ProfileCard extends ConsumerWidget {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
+              ),
+            ] else if (user != null) ...[
+              IconButton(
+                icon: const Icon(
+                  Icons.edit_outlined,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+                onPressed: () => _showEditNameDialog(context, ref, user),
+                tooltip: 'Edit Profile Name',
               ),
             ],
           ],
@@ -632,255 +782,11 @@ class _CategoriesTile extends StatelessWidget {
       icon: Icons.category_rounded,
       iconColor: AppColors.secondary,
       title: 'Manage Categories',
-      subtitle: 'Show or hide expense categories',
+      subtitle: 'Customize, edit, and manage categories',
       onTap: () => requireAuth(
         context,
         ref,
-        () => _showCategoryManager(context),
-      ),
-    );
-  }
-
-  void _showCategoryManager(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    showModalBottomSheet(
-      context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => DraggableScrollableSheet(
-        initialChildSize: 0.65,
-        maxChildSize: 0.9,
-        minChildSize: 0.4,
-        expand: false,
-        builder: (_, scrollController) => _CategoryManagerSheet(
-            isDark: isDark, scrollController: scrollController),
-      ),
-    );
-  }
-}
-
-class _CategoryManagerSheet extends ConsumerWidget {
-  final bool isDark;
-  final ScrollController scrollController;
-
-  const _CategoryManagerSheet({
-    required this.isDark,
-    required this.scrollController,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final hidden = ref.watch(hiddenCategoriesProvider);
-    final customCats = ref.watch(customCategoriesProvider);
-
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: Column(
-        children: [
-          const SizedBox(height: 12),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppColors.textTertiary.withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 16, 16, 4),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.secondary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.category_rounded,
-                      color: AppColors.secondary, size: 20),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Manage Categories',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                      ),
-                      Text(
-                        'Toggle visibility · create or delete custom ones',
-                        style: TextStyle(
-                            fontSize: 12, color: AppColors.textSecondary),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      gradient: AppColors.primaryGradient,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.add_rounded,
-                        color: Colors.white, size: 20),
-                  ),
-                  onPressed: () => _showCreateDialog(context, ref),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            height: 0.5,
-            margin: const EdgeInsets.only(top: 8),
-            color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-          ),
-          Expanded(
-            child: ListView(
-              controller: scrollController,
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewPadding.bottom + 16,
-              ),
-              children: [
-                // Built-in categories (toggle visibility)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 4),
-                  child: Text(
-                    'BUILT-IN',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.2,
-                      color: AppColors.textTertiary,
-                    ),
-                  ),
-                ),
-                ...Category.values.map((cat) {
-                  final isVisible = !hidden.contains(cat.name);
-                  return ListTile(
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 24, vertical: 2),
-                    leading: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: cat.color
-                            .withValues(alpha: isVisible ? 0.15 : 0.06),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(cat.icon,
-                          color: isVisible ? cat.color : AppColors.textTertiary,
-                          size: 20),
-                    ),
-                    title: Text(
-                      cat.label,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                        color: isVisible
-                            ? (isDark ? Colors.white : AppColors.textLight)
-                            : AppColors.textTertiary,
-                      ),
-                    ),
-                    trailing: cat == Category.other
-                        ? Icon(Icons.lock_outline_rounded,
-                            color: AppColors.textTertiary, size: 18)
-                        : Switch(
-                            value: isVisible,
-                            onChanged: (_) => ref
-                                .read(hiddenCategoriesProvider.notifier)
-                                .toggle(cat),
-                            activeThumbColor: cat.color,
-                            activeTrackColor: cat.color.withValues(alpha: 0.35),
-                          ),
-                  );
-                }),
-
-                // Custom categories (create / delete)
-                if (customCats.isNotEmpty) ...[
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 4),
-                    child: Text(
-                      'CUSTOM',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.2,
-                        color: AppColors.textTertiary,
-                      ),
-                    ),
-                  ),
-                  ...customCats.map((cat) => ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 2),
-                        leading: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: cat.color.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(cat.icon, color: cat.color, size: 20),
-                        ),
-                        title: Text(
-                          cat.label,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                            color: isDark ? Colors.white : AppColors.textLight,
-                          ),
-                        ),
-                        trailing: IconButton(
-                          icon: Icon(Icons.delete_outline_rounded,
-                              color: AppColors.expense, size: 20),
-                          onPressed: () => _confirmDelete(context, ref, cat),
-                        ),
-                      )),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showCreateDialog(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (ctx) => const CreateCategoryDialog(),
-    );
-  }
-
-  void _confirmDelete(BuildContext context, WidgetRef ref, CustomCategory cat) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Category'),
-        content: Text(
-            'Delete "${cat.label}"? This won\'t affect existing transactions.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              ref.read(customCategoriesProvider.notifier).remove(cat.id);
-              Navigator.pop(ctx);
-            },
-            child: Text('Delete', style: TextStyle(color: AppColors.expense)),
-          ),
-        ],
+        () => context.push('/settings/categories'),
       ),
     );
   }
@@ -908,9 +814,8 @@ class _SettingsTile extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bool comingSoon = subtitle.toLowerCase().contains('coming soon');
 
-    final effectiveIconColor = comingSoon
-        ? AppColors.textTertiary.withValues(alpha: 0.5)
-        : iconColor;
+    final effectiveIconColor =
+        comingSoon ? AppColors.textTertiary.withValues(alpha: 0.5) : iconColor;
     final effectiveBgColor = comingSoon
         ? AppColors.textTertiary.withValues(alpha: 0.08)
         : iconColor.withValues(alpha: 0.12);

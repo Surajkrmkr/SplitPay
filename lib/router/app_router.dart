@@ -18,6 +18,7 @@ import '../features/budget/budget_detail_screen.dart';
 import '../data/models/notification_model.dart';
 import '../features/notifications/notifications_screen.dart';
 import '../features/settings/notification_settings_screen.dart';
+import '../features/settings/category_management_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../features/main_shell/main_shell.dart';
 import '../providers/auth_provider.dart';
@@ -123,6 +124,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/settings/notifications',
         pageBuilder: (context, state) =>
             _detailPage(context, state, const NotificationSettingsScreen()),
+      ),
+      GoRoute(
+        path: '/settings/categories',
+        pageBuilder: (context, state) =>
+            _detailPage(context, state, const CategoryManagementScreen()),
       ),
       GoRoute(
         path: '/groups/join',

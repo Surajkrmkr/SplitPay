@@ -6,13 +6,31 @@ class CustomCategory {
   final String label;
   final int iconIndex;
   final int colorIndex;
+  final List<String> suggestedApps;
 
   const CustomCategory({
     required this.id,
     required this.label,
     required this.iconIndex,
     required this.colorIndex,
+    this.suggestedApps = const [],
   });
+
+  CustomCategory copyWith({
+    String? id,
+    String? label,
+    int? iconIndex,
+    int? colorIndex,
+    List<String>? suggestedApps,
+  }) {
+    return CustomCategory(
+      id: id ?? this.id,
+      label: label ?? this.label,
+      iconIndex: iconIndex ?? this.iconIndex,
+      colorIndex: colorIndex ?? this.colorIndex,
+      suggestedApps: suggestedApps ?? this.suggestedApps,
+    );
+  }
 
   // 80 icons organised by spend category.
   // Uses IconData so the picker can render them with Icon() or FaIcon().
@@ -160,6 +178,7 @@ class CustomCategory {
         'label': label,
         'colorValue': colorIndex,
         'iconCodePoint': iconIndex,
+        'suggestedApps': suggestedApps,
       };
 
   factory CustomCategory.fromMap(Map map) => CustomCategory(
@@ -167,6 +186,10 @@ class CustomCategory {
         label: map['label'] as String,
         colorIndex: map['colorValue'] as int,
         iconIndex: map['iconCodePoint'] as int,
+        suggestedApps: (map['suggestedApps'] as List<dynamic>?)
+                ?.map((e) => e as String)
+                .toList() ??
+            const [],
       );
 }
 

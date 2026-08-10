@@ -4,22 +4,23 @@ import '../../core/constants/app_colors.dart';
 import '../../core/utils/category_app_icons.dart';
 import '../../data/models/transaction_model.dart';
 
-/// Horizontal carousel of brand-icon suggestions for the given [category].
+import '../../data/models/custom_category.dart';
+
+/// Horizontal carousel of brand-icon suggestions for the given [category] or [customCategory].
 ///
-/// - Hidden entirely when the category has no suggested icons (keeps the form
-///   clean for Salary/Bills/Other).
+/// - Hidden entirely when the category has no suggested icons.
 /// - Tap an icon to select it; tap the selected icon again to clear.
-/// - The selected value is the asset filename (e.g. `Swiggy.png`), which is
-///   what's persisted on the transaction / expense.
 class AppIconPicker extends StatelessWidget {
-  final Category category;
+  final Category? category;
+  final CustomCategory? customCategory;
   final String? selected;
   final ValueChanged<String?> onSelected;
   final bool isDark;
 
   const AppIconPicker({
     super.key,
-    required this.category,
+    this.category,
+    this.customCategory,
     required this.selected,
     required this.onSelected,
     required this.isDark,
@@ -27,7 +28,9 @@ class AppIconPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final icons = CategoryAppIcons.iconsFor(category);
+    final icons = customCategory != null
+        ? customCategory!.suggestedApps
+        : (category != null ? CategoryAppIcons.iconsFor(category) : const <String>[]);
     if (icons.isEmpty) return const SizedBox.shrink();
 
     return Column(

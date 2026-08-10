@@ -5,6 +5,7 @@ export interface CreateCategoryData {
   label: string;
   colorValue: number;
   iconCodePoint: number;
+  suggestedApps?: string[];
 }
 
 export async function createCategory(data: CreateCategoryData) {
@@ -22,7 +23,10 @@ export async function findById(id: string, userId: string) {
   return prisma.userCategory.findFirst({ where: { id, userId, deletedAt: null } });
 }
 
-export async function updateCategory(id: string, data: { label?: string; colorValue?: number; iconCodePoint?: number }) {
+export async function updateCategory(
+  id: string,
+  data: { label?: string; colorValue?: number; iconCodePoint?: number; suggestedApps?: string[] }
+) {
   return prisma.userCategory.update({ where: { id }, data });
 }
 

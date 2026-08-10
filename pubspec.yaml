@@ -75,6 +75,9 @@ dependencies:
   share_plus: ^10.0.3
   image_picker: ^1.1.2
 
+  # Home screen widgets
+  home_widget: ^0.9.3
+
   # Data import (CSV) — used by Settings > Import Data
   file_picker: ^8.1.2
   csv: ^6.0.0

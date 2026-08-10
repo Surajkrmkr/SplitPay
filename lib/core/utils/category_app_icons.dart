@@ -1,4 +1,5 @@
 import '../../data/models/transaction_model.dart';
+import '../../data/models/custom_category.dart';
 
 /// Maps each [Category] to the asset filenames inside `assets/app_icons/`
 /// that are suggested when the user picks that category.
@@ -10,6 +11,63 @@ class CategoryAppIcons {
 
   /// Returns the full asset path Flutter expects for a filename.
   static String pathFor(String fileName) => '$assetDir$fileName';
+
+  static const List<String> allAvailableAppIcons = [
+    'Amazon.png',
+    'Amazon fresh.png',
+    'Amazon now.png',
+    'Apple music.png',
+    'Apple tv.png',
+    'Bigbasket.png',
+    'Bistro.png',
+    'Blinkit.png',
+    'Bonkers corner.png',
+    'BookMyShow.png',
+    'Crunchy roll.png',
+    'Cult.png',
+    'Dazzl.png',
+    'District.png',
+    'Dmart ready.png',
+    'First club.png',
+    'Flipkart.png',
+    'Flipkart minutes.png',
+    'Goibibo.png',
+    'IRCTC.png',
+    'Instamart.png',
+    'Jio hotstar.png',
+    'Jio mart.png',
+    'Licious.png',
+    'MX player.png',
+    'Magicpin.png',
+    'MakeMyTrip.png',
+    'Meesho.png',
+    'Myntra.png',
+    'Namma yatri.png',
+    'Netflix.png',
+    'Nykaa.png',
+    'Ola.png',
+    'Prime video.png',
+    'Pronto.png',
+    'Rapido.png',
+    'Savana.png',
+    'Snabbit.png',
+    'Sony liv.png',
+    'Soul store.png',
+    'Spotify.png',
+    'Star.png',
+    'Swiggy.png',
+    'Swish.png',
+    'Toing.png',
+    'Uber.png',
+    'Urban company.png',
+    'Vishal mart.png',
+    'Yes madam.png',
+    'Youtube.png',
+    'Zee5.png',
+    'Zepto.png',
+    'Zepto cafe.png',
+    'Zomato.png',
+  ];
 
   static const Map<Category, List<String>> _byCategory = {
     Category.food: [
@@ -96,6 +154,9 @@ class CategoryAppIcons {
 
   static List<String> iconsFor(Category? category) =>
       category == null ? const [] : (_byCategory[category] ?? const []);
+
+  static List<String> iconsForCustom(CustomCategory? customCategory) =>
+      customCategory?.suggestedApps ?? const [];
 
   /// Tries to guess a category from an app-icon filename. Used as a fallback
   /// when an old expense/transaction has an appIcon set but no category yet.

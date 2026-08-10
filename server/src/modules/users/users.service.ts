@@ -1,5 +1,6 @@
 import { User } from '@prisma/client';
 import { NotFoundError } from '../../utils/app-error';
+import { UpdateProfileInput } from '../../validations/user.validation';
 import * as usersRepository from './users.repository';
 
 export type SafeUser = Omit<User, 'googleId'>;
@@ -19,7 +20,30 @@ export async function getMe(userId: string): Promise<SafeUser> {
   return omitGoogleId(user);
 }
 
+export async function updateMe(userId: string, input: UpdateProfileInput): Promise<SafeUser> {
+  const existing = await usersRepository.findById(userId);
+  if (!existing) {
+    throw new NotFoundError('User not found');
+  }
+
+  let newName: string | undefined;
+  if (input.firstName !== undefined || input.lastName !== undefined) {
+    const fn = input.firstName ?? '';
+    const ln = input.lastName ?? '';
+    newName = `${fn} ${ln}`.trim();
+  } else if (input.name !== undefined) {
+    newName = input.name.trim();
+  }
+
+  const updated = await usersRepository.updateUser(userId, {
+    ...(newName ? { name: newName } : {}),
+  });
+
+  return omitGoogleId(updated);
+}
+
 export async function search(query: string, currentUserId: string): Promise<SafeUser[]> {
   const users = await usersRepository.searchUsers(query, currentUserId);
   return users.map(omitGoogleId);
 }
+

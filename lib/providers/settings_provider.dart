@@ -90,6 +90,24 @@ class CustomCategoriesNotifier extends StateNotifier<List<CustomCategory>> {
     return created;
   }
 
+  Future<void> update(CustomCategory cat) async {
+    try {
+      final res = await _dio.put(
+        ApiConstants.categoryById(cat.id),
+        data: cat.toMap(),
+      );
+      final updated =
+          CustomCategory.fromMap(res.data['data'] as Map<String, dynamic>);
+      if (mounted) {
+        state = state.map((c) => c.id == cat.id ? updated : c).toList();
+      }
+    } catch (_) {
+      if (mounted) {
+        state = state.map((c) => c.id == cat.id ? cat : c).toList();
+      }
+    }
+  }
+
   Future<void> remove(String id) async {
     try {
       await _dio.delete(ApiConstants.categoryById(id));

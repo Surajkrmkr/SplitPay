@@ -8,6 +8,7 @@ export async function createCategory(userId: string, input: CreateCategoryInput)
     label: input.label,
     colorValue: input.colorValue,
     iconCodePoint: input.iconCodePoint,
+    suggestedApps: input.suggestedApps ?? [],
   });
 }
 
@@ -24,6 +25,7 @@ export async function updateCategory(userId: string, id: string, input: UpdateCa
     ...(input.label ? { label: input.label } : {}),
     ...(input.colorValue !== undefined ? { colorValue: input.colorValue } : {}),
     ...(input.iconCodePoint !== undefined ? { iconCodePoint: input.iconCodePoint } : {}),
+    ...(input.suggestedApps !== undefined ? { suggestedApps: input.suggestedApps } : {}),
   });
 }
 

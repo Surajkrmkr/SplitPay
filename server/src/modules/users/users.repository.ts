@@ -22,3 +22,11 @@ export async function searchUsers(query: string, excludeUserId?: string): Promis
     orderBy: { name: 'asc' },
   });
 }
+
+export async function updateUser(id: string, data: { name?: string; avatar?: string }): Promise<User> {
+  return prisma.user.update({
+    where: { id },
+    data,
+  });
+}
+

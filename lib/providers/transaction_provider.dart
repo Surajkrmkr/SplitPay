@@ -2,9 +2,11 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/storage/token_storage.dart';
+import '../core/services/home_widget_service.dart';
 import '../data/models/transaction_model.dart';
 import '../data/repositories/transaction_repository.dart';
 import '../data/services/transaction_api_service.dart' show ImportResult;
+import 'settings_provider.dart' show currencyProvider;
 
 final transactionProvider =
     StateNotifierProvider<TransactionNotifier, List<Transaction>>(
@@ -184,12 +186,31 @@ final previousMonthIncomeProvider = Provider<double>((ref) {
 });
 
 final recentTransactionsProvider = Provider<List<Transaction>>((ref) {
+  ref.watch(homeWidgetSyncProvider);
   final pending = ref.watch(pendingDeletesProvider);
   return ref
       .watch(transactionProvider)
       .where((t) => !pending.contains(t.id))
       .take(5)
       .toList();
+});
+
+final homeWidgetSyncProvider = Provider<void>((ref) {
+  final balance = ref.watch(balanceProvider);
+  final income = ref.watch(totalIncomeProvider);
+  final expense = ref.watch(totalExpenseProvider);
+  final currency = ref.watch(currencyProvider);
+  final txs = ref.watch(transactionProvider);
+  final pending = ref.watch(pendingDeletesProvider);
+  final recents = txs.where((t) => !pending.contains(t.id)).take(5).toList();
+
+  HomeWidgetService.updateWidgetData(
+    balance: balance,
+    totalIncome: income,
+    totalExpense: expense,
+    currency: currency,
+    recentTransactions: recents,
+  );
 });
 
 // Keyed by the transaction's effective category — customCategoryId if set,

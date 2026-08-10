@@ -249,6 +249,39 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     }
   }
 
+  Future<void> updateProfile({required String firstName, required String lastName}) async {
+    final current = state.valueOrNull;
+    if (current == null || current.user == null) return;
+
+    final dio = ref.read(dioProvider);
+    final fullName = '$firstName $lastName'.trim();
+
+    try {
+      final res = await dio.patch(
+        ApiConstants.usersMe,
+        data: {
+          'firstName': firstName,
+          'lastName': lastName,
+        },
+      );
+      final updatedUserData = res.data['data'] as Map<String, dynamic>?;
+      final updatedUser = updatedUserData != null
+          ? AuthUserModel.fromJson(updatedUserData)
+          : current.user!.copyWith(name: fullName.isEmpty ? current.user!.name : fullName);
+
+      state = AsyncValue.data(
+        current.copyWith(user: updatedUser),
+      );
+    } catch (_) {
+      // Fallback for offline / guest mode
+      final updatedUser = current.user!.copyWith(
+        name: fullName.isEmpty ? current.user!.name : fullName,
+      );
+      state = AsyncValue.data(
+        current.copyWith(user: updatedUser),
+      );
+    }
+  }
 
   Future<void> signOut() async {
     state = const AsyncValue.loading();

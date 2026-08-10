@@ -10,6 +10,7 @@ import '../../core/services/rate_app_service.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/category_app_icons.dart';
 import '../../data/models/transaction_model.dart';
+import '../../data/models/custom_category.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../shared/widgets/app_ad_banner.dart';
@@ -198,6 +199,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
     showModalBottomSheet(
       context: context,
       useRootNavigator: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _RecurrencePickerSheet(
         selected: _recurrence,
@@ -230,6 +232,15 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
     // Flexible (not Expanded) lets the middle shrink-to-fit when there's
     // room, so the sheet still hugs short content instead of always maxing
     // out its height budget.
+    final customCategories = ref.watch(customCategoriesProvider);
+    CustomCategory? customCat;
+    for (final c in customCategories) {
+      if (c.id == _customCategoryId) {
+        customCat = c;
+        break;
+      }
+    }
+
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
       child: ConstrainedBox(
@@ -314,12 +325,15 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                         ),
                         const SizedBox(height: 20),
                         _NotePill(controller: _noteController),
-                        if (_category != null &&
-                            CategoryAppIcons.iconsFor(_category)
-                                .isNotEmpty) ...[
+                        if ((_category != null &&
+                                CategoryAppIcons.iconsFor(_category)
+                                    .isNotEmpty) ||
+                            (customCat != null &&
+                                customCat.suggestedApps.isNotEmpty)) ...[
                           const SizedBox(height: 20),
                           AppIconPicker(
-                            category: _category!,
+                            category: _category,
+                            customCategory: customCat,
                             selected: _appIcon,
                             onSelected: (v) => setState(() => _appIcon = v),
                             isDark: isDark,

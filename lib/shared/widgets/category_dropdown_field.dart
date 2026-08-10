@@ -291,10 +291,7 @@ class _CategoryPickerSheetState extends ConsumerState<_CategoryPickerSheet> {
   }
 
   Future<void> _createCustomCategory(BuildContext context) async {
-    final created = await showDialog<CustomCategory>(
-      context: context,
-      builder: (_) => const CreateCategoryDialog(),
-    );
+    final created = await showCreateCategoryBottomSheet(context);
     if (created == null) return;
     widget.onChanged(Category.other, created.id);
     if (context.mounted) Navigator.of(context).pop();

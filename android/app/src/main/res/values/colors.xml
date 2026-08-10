@@ -1,4 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="notification_color">#00D09C</color>
+    <color name="widget_bg">#1A1D23</color>
+    <color name="widget_card_bg">#22262E</color>
+    <color name="widget_border">#2D323E</color>
+    <color name="widget_primary">#00D09C</color>
+    <color name="widget_expense">#FF6B6B</color>
+    <color name="widget_text_primary">#FFFFFF</color>
+    <color name="widget_text_secondary">#8B93A7</color>
+    <color name="widget_divider">#2A2D3A</color>
 </resources>
+
