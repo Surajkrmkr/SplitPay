@@ -2384,7 +2384,7 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
                             final rods = <BarChartRodData>[
                               // Total Rod
                               BarChartRodData(
-                                toY: monthTotal == 0 ? 0.5 : monthTotal,
+                                toY: monthTotal,
                                 color: AppColors.secondary,
                                 width: 12,
                                 borderRadius: BorderRadius.circular(4),
@@ -2398,7 +2398,7 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
                               final color = _userColors[idx % _userColors.length];
                               rods.add(
                                 BarChartRodData(
-                                  toY: paidAmount == 0 ? 0.5 : paidAmount,
+                                  toY: paidAmount,
                                   color: color,
                                   width: 12,
                                   borderRadius: BorderRadius.circular(4),
