@@ -191,7 +191,7 @@ class BudgetDetailScreen extends ConsumerWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => _BudgetMenu(budget: budget, ref: ref),
+      builder: (_) => _BudgetMenu(budget: budget, ref: ref, parentContext: context),
     );
   }
 }
@@ -825,8 +825,13 @@ class _EditBar extends StatelessWidget {
 class _BudgetMenu extends ConsumerWidget {
   final Budget budget;
   final WidgetRef ref;
+  final BuildContext parentContext;
 
-  const _BudgetMenu({required this.budget, required this.ref});
+  const _BudgetMenu({
+    required this.budget,
+    required this.ref,
+    required this.parentContext,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -861,7 +866,7 @@ class _BudgetMenu extends ConsumerWidget {
                   await notifier.unarchive(budget.id);
                 } else {
                   await notifier.archive(budget.id);
-                  if (context.mounted) Navigator.of(context).pop();
+                  if (parentContext.mounted) Navigator.of(parentContext).pop();
                 }
               },
             ),
@@ -872,11 +877,11 @@ class _BudgetMenu extends ConsumerWidget {
               color: AppColors.expense,
               isDark: isDark,
               onTap: () async {
-                Navigator.of(context).pop();
                 final confirmed = await _confirmDelete(context);
                 if (confirmed == true) {
-                  await ref.read(budgetProvider.notifier).delete(budget.id);
                   if (context.mounted) Navigator.of(context).pop();
+                  await ref.read(budgetProvider.notifier).delete(budget.id);
+                  if (parentContext.mounted) Navigator.of(parentContext).pop();
                 }
               },
             ),
@@ -889,17 +894,17 @@ class _BudgetMenu extends ConsumerWidget {
 
   Future<bool?> _confirmDelete(BuildContext context) => showDialog<bool>(
         context: context,
-        builder: (_) => AlertDialog(
+        builder: (dialogContext) => AlertDialog(
           title: const Text('Delete Budget'),
           content: Text(
               'Are you sure you want to delete "${budget.title}"? This cannot be undone.'),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context, false),
+              onPressed: () => Navigator.pop(dialogContext, false),
               child: const Text('Cancel'),
             ),
             FilledButton(
-              onPressed: () => Navigator.pop(context, true),
+              onPressed: () => Navigator.pop(dialogContext, true),
               style: FilledButton.styleFrom(backgroundColor: AppColors.expense),
               child: const Text('Delete'),
             ),

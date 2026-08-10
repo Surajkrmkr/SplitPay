@@ -75,7 +75,7 @@ class WeeklyBarChart extends ConsumerWidget {
                     barsSpace: 4,
                     barRods: [
                       BarChartRodData(
-                        toY: incomeVal == 0 ? 0.5 : incomeVal,
+                        toY: incomeVal,
                         color: AppColors.income.withValues(alpha: alpha),
                         width: 10,
                         borderRadius: BorderRadius.circular(4),
@@ -88,7 +88,7 @@ class WeeklyBarChart extends ConsumerWidget {
                         ),
                       ),
                       BarChartRodData(
-                        toY: expenseVal == 0 ? 0.5 : expenseVal,
+                        toY: expenseVal,
                         color: AppColors.expense.withValues(alpha: alpha),
                         width: 10,
                         borderRadius: BorderRadius.circular(4),

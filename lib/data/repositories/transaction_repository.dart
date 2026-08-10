@@ -8,8 +8,16 @@ class TransactionRepository {
   TransactionRepository(this._api);
 
   Future<List<Transaction>> getAll() async {
-    final serverTxs = await _api.getTransactions(limit: 100);
-    return serverTxs.map((s) => s.toApiTransaction()).toList();
+    final allTxs = <ServerTransaction>[];
+    int page = 1;
+    const limit = 100;
+    while (page <= 50) {
+      final pageTxs = await _api.getTransactions(page: page, limit: limit);
+      allTxs.addAll(pageTxs);
+      if (pageTxs.length < limit) break;
+      page++;
+    }
+    return allTxs.map((s) => s.toApiTransaction()).toList();
   }
 
   Future<void> create(Transaction tx) async {
