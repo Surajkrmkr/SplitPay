@@ -14,6 +14,7 @@ class BudgetSummaryHeader extends ConsumerWidget {
     final summary = ref.watch(budgetSummaryProvider);
     final currency = ref.watch(currencyProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
 
     if (summary.activeBudgets == 0) return const SizedBox.shrink();
 
@@ -25,7 +26,7 @@ class BudgetSummaryHeader extends ConsumerWidget {
         ? AppColors.expense
         : overallProgress >= 0.8
             ? AppColors.warning
-            : AppColors.income;
+            : primary;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -55,9 +56,9 @@ class BudgetSummaryHeader extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Total Budget',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
                         fontWeight: FontWeight.w500,
@@ -83,7 +84,7 @@ class BudgetSummaryHeader extends ConsumerWidget {
                 children: [
                   _StatusBadge(
                     label: '${summary.activeBudgets} active',
-                    color: AppColors.income,
+                    color: primary,
                     icon: Icons.check_circle_rounded,
                   ),
                   if (summary.overspentBudgets > 0) ...[
@@ -138,7 +139,7 @@ class BudgetSummaryHeader extends ConsumerWidget {
                   value: CurrencyFormatter.format(
                       summary.totalRemaining,
                       symbol: currency),
-                  color: AppColors.income,
+                  color: primary,
                 ),
               ),
               _VerticalDivider(),

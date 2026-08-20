@@ -59,17 +59,30 @@ class AppTheme {
     );
   }
 
-  static ThemeData get darkTheme {
+  static ThemeData get darkTheme =>
+      buildDarkTheme(AppThemePreset.emerald, AppBackgroundStyle.standard);
+  static ThemeData get lightTheme =>
+      buildLightTheme(AppThemePreset.emerald, AppBackgroundStyle.standard);
+
+  static ThemeData buildDarkTheme([
+    AppThemePreset preset = AppThemePreset.emerald,
+    AppBackgroundStyle bgStyle = AppBackgroundStyle.standard,
+  ]) {
     final base = ThemeData.dark(useMaterial3: true);
+    final primary = preset.primaryColor;
+    final scaffoldBg = bgStyle.darkBg(AppColors.darkBg);
+    final cardBg = bgStyle.darkCard(AppColors.darkCard);
+    final surfaceBg = bgStyle.darkSurface(AppColors.darkSurface);
+
     return base.copyWith(
-      scaffoldBackgroundColor: AppColors.darkBg,
-      colorScheme: const ColorScheme.dark(
+      scaffoldBackgroundColor: scaffoldBg,
+      colorScheme: ColorScheme.dark(
         brightness: Brightness.dark,
-        primary: AppColors.primary,
+        primary: primary,
         onPrimary: Colors.white,
         secondary: AppColors.secondary,
         onSecondary: Colors.white,
-        surface: AppColors.darkSurface,
+        surface: surfaceBg,
         onSurface: AppColors.textPrimary,
         error: AppColors.expense,
         onError: Colors.white,
@@ -80,7 +93,7 @@ class AppTheme {
         displayColor: AppColors.textPrimary,
       ),
       appBarTheme: AppBarTheme(
-        backgroundColor: AppColors.darkBg,
+        backgroundColor: scaffoldBg,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
@@ -95,7 +108,7 @@ class AppTheme {
         ),
       ),
       cardTheme: CardThemeData(
-        color: AppColors.darkCard,
+        color: cardBg,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -109,7 +122,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.darkSurface,
+        fillColor: surfaceBg,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
@@ -122,7 +135,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+          borderSide: BorderSide(color: primary, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -131,34 +144,34 @@ class AppTheme {
         hintStyle: const TextStyle(color: AppColors.textTertiary),
         labelStyle: const TextStyle(color: AppColors.textSecondary),
       ),
-      bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: AppColors.darkSurface,
-        modalBackgroundColor: AppColors.darkSurface,
-        shape: RoundedRectangleBorder(
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: surfaceBg,
+        modalBackgroundColor: surfaceBg,
+        shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
       ),
-      floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: AppColors.primary,
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: primary,
         foregroundColor: Colors.white,
         elevation: 4,
-        shape: StadiumBorder(),
+        shape: const StadiumBorder(),
       ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return AppColors.primary;
+          if (states.contains(WidgetState.selected)) return primary;
           return AppColors.textTertiary;
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return AppColors.primary.withOpacity(0.3);
+            return primary.withValues(alpha: 0.3);
           }
           return AppColors.darkBorder;
         }),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: AppColors.darkSurface,
-        selectedColor: AppColors.primary.withOpacity(0.2),
+        backgroundColor: surfaceBg,
+        selectedColor: primary.withValues(alpha: 0.2),
         labelStyle: const TextStyle(color: AppColors.textSecondary),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
@@ -172,7 +185,7 @@ class AppTheme {
           fontSize: 13.5,
           fontWeight: FontWeight.w500,
         ),
-        actionTextColor: AppColors.primary,
+        actionTextColor: primary,
         behavior: SnackBarBehavior.floating,
         elevation: 6,
         insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -184,17 +197,25 @@ class AppTheme {
     );
   }
 
-  static ThemeData get lightTheme {
+  static ThemeData buildLightTheme([
+    AppThemePreset preset = AppThemePreset.emerald,
+    AppBackgroundStyle bgStyle = AppBackgroundStyle.standard,
+  ]) {
     final base = ThemeData.light(useMaterial3: true);
+    final primary = preset.primaryDarkColor;
+    final scaffoldBg = bgStyle.lightBg(AppColors.lightBg);
+    final cardBg = bgStyle.lightCard(AppColors.lightCard);
+    final surfaceBg = bgStyle.lightSurface(AppColors.lightSurface);
+
     return base.copyWith(
-      scaffoldBackgroundColor: AppColors.lightBg,
-      colorScheme: const ColorScheme.light(
+      scaffoldBackgroundColor: scaffoldBg,
+      colorScheme: ColorScheme.light(
         brightness: Brightness.light,
-        primary: AppColors.primaryDark,
+        primary: primary,
         onPrimary: Colors.white,
         secondary: AppColors.secondary,
         onSecondary: Colors.white,
-        surface: AppColors.lightSurface,
+        surface: surfaceBg,
         onSurface: AppColors.textLight,
         error: AppColors.expense,
         onError: Colors.white,
@@ -205,7 +226,7 @@ class AppTheme {
         displayColor: AppColors.textLight,
       ),
       appBarTheme: AppBarTheme(
-        backgroundColor: AppColors.lightBg,
+        backgroundColor: scaffoldBg,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
@@ -220,7 +241,7 @@ class AppTheme {
         ),
       ),
       cardTheme: CardThemeData(
-        color: AppColors.lightSurface,
+        color: surfaceBg,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -235,7 +256,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.lightCard,
+        fillColor: cardBg,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
@@ -248,23 +269,22 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide:
-              const BorderSide(color: AppColors.primaryDark, width: 1.5),
+          borderSide: BorderSide(color: primary, width: 1.5),
         ),
         hintStyle: const TextStyle(color: AppColors.textLightSecondary),
       ),
-      bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: AppColors.lightSurface,
-        modalBackgroundColor: AppColors.lightSurface,
-        shape: RoundedRectangleBorder(
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: surfaceBg,
+        modalBackgroundColor: surfaceBg,
+        shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
       ),
-      floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: AppColors.primaryDark,
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: primary,
         foregroundColor: Colors.white,
         elevation: 4,
-        shape: StadiumBorder(),
+        shape: const StadiumBorder(),
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: AppColors.textLight,
@@ -273,7 +293,7 @@ class AppTheme {
           fontSize: 13.5,
           fontWeight: FontWeight.w500,
         ),
-        actionTextColor: AppColors.primaryLight,
+        actionTextColor: preset.primaryLightColor,
         behavior: SnackBarBehavior.floating,
         elevation: 6,
         insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

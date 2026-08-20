@@ -20,6 +20,7 @@ class GreetingHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
     final user = ref.watch(currentUserProvider);
     final firstName = user?.name.split(' ').first ?? 'there';
 
@@ -56,7 +57,7 @@ class GreetingHeader extends ConsumerWidget {
                     Text(
                       '✦',
                       style: TextStyle(
-                        color: AppColors.primary,
+                        color: primary,
                         fontSize: 18,
                       ),
                     ),
@@ -116,8 +117,11 @@ class _NotificationBellState extends ConsumerState<NotificationBell>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
     final unread = ref.watch(unreadCountProvider);
-    final bgColor = isDark ? AppColors.darkCard : AppColors.lightCard;
+    final bgColor = isDark
+        ? (Theme.of(context).cardTheme.color ?? AppColors.darkCard)
+        : AppColors.lightCard;
     final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
 
     return GestureDetector(
@@ -145,7 +149,7 @@ class _NotificationBellState extends ConsumerState<NotificationBell>
                     ? Icons.notifications_rounded
                     : Icons.notifications_outlined,
                 color: unread > 0
-                    ? AppColors.primary
+                    ? primary
                     : (isDark
                         ? AppColors.textSecondary
                         : AppColors.textLightSecondary),

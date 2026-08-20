@@ -46,6 +46,9 @@ class _Header extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activeCount = ref.watch(activeFilterCountProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final cardBg = Theme.of(context).cardTheme.color ?? AppColors.darkCard;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 12, 0),
@@ -72,15 +75,15 @@ class _Header extends ConsumerWidget {
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: activeCount > 0
-                        ? AppColors.primary.withValues(alpha: 0.12)
-                        : (Theme.of(context).brightness == Brightness.dark
-                            ? AppColors.darkCard
+                        ? primary.withValues(alpha: 0.12)
+                        : (isDark
+                            ? cardBg
                             : AppColors.lightCard),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: activeCount > 0
-                          ? AppColors.primary
-                          : (Theme.of(context).brightness == Brightness.dark
+                          ? primary
+                          : (isDark
                               ? AppColors.darkBorder
                               : AppColors.lightBorder),
                       width: activeCount > 0 ? 1.0 : 0.5,
@@ -93,7 +96,7 @@ class _Header extends ConsumerWidget {
                         Icons.tune_rounded,
                         size: 16,
                         color: activeCount > 0
-                            ? AppColors.primary
+                            ? primary
                             : AppColors.textSecondary,
                       ),
                       const SizedBox(width: 5),
@@ -103,7 +106,7 @@ class _Header extends ConsumerWidget {
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: activeCount > 0
-                              ? AppColors.primary
+                              ? primary
                               : AppColors.textSecondary,
                         ),
                       ),
@@ -117,8 +120,8 @@ class _Header extends ConsumerWidget {
                     child: Container(
                       width: 18,
                       height: 18,
-                      decoration: const BoxDecoration(
-                        color: AppColors.primary,
+                      decoration: BoxDecoration(
+                        color: primary,
                         shape: BoxShape.circle,
                       ),
                       alignment: Alignment.center,
@@ -146,9 +149,9 @@ class _Header extends ConsumerWidget {
                   ),
                 ),
                 icon: const Icon(Icons.sms_rounded, size: 20),
-                color: AppColors.primary,
+                color: primary,
                 style: IconButton.styleFrom(
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                  backgroundColor: primary.withValues(alpha: 0.1),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -223,6 +226,8 @@ class _PeriodChips extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(filterProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final cardBg = Theme.of(context).cardTheme.color ?? AppColors.darkCard;
 
     return SizedBox(
       height: 48,
@@ -242,14 +247,14 @@ class _PeriodChips extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? AppColors.primary
+                    ? primary
                     : isDark
-                        ? AppColors.darkCard
+                        ? cardBg
                         : AppColors.lightCard,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: isSelected
-                      ? AppColors.primary
+                      ? primary
                       : isDark
                           ? AppColors.darkBorder
                           : AppColors.lightBorder,
@@ -453,6 +458,9 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final cardBg = Theme.of(context).cardTheme.color ?? AppColors.darkSurface;
+
     final sliderCeil = ref.watch(maxTransactionAmountProvider);
     final currency = ref.watch(currencyProvider);
     final customCats = ref.watch(customCategoriesProvider);
@@ -472,7 +480,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
       builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
-            color: isDark ? AppColors.darkSurface : Colors.white,
+            color: isDark ? cardBg : Colors.white,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
@@ -545,6 +553,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                               selected: _sort == s,
                               onTap: () => setState(() => _sort = s),
                               isDark: isDark,
+                              color: primary,
                             ),
                         ],
                       ),
@@ -560,7 +569,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                             (
                               TransactionTypeFilter.all,
                               'All',
-                              AppColors.primary
+                              primary,
                             ),
                             (
                               TransactionTypeFilter.income,
@@ -640,9 +649,9 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                             min: 0,
                             max: sliderCeil,
                             divisions: 20,
-                            activeColor: AppColors.primary,
+                            activeColor: primary,
                             inactiveColor:
-                                AppColors.primary.withValues(alpha: 0.15),
+                                primary.withValues(alpha: 0.15),
                             onChanged: (v) {
                               setState(() {
                                 _sliderMin = v.start;
@@ -683,7 +692,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                   height: 52,
                   child: FilledButton(
                     style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: primary,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16)),
                     ),
@@ -737,18 +746,21 @@ class _ChoiceChip extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
   final bool isDark;
-  final Color color;
+  final Color? color;
 
   const _ChoiceChip({
     required this.label,
     required this.selected,
     required this.onTap,
     required this.isDark,
-    this.color = AppColors.primary,
+    this.color,
   });
 
   @override
   Widget build(BuildContext context) {
+    final effectiveColor = color ?? Theme.of(context).colorScheme.primary;
+    final cardBg = Theme.of(context).cardTheme.color ?? AppColors.darkCard;
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -756,14 +768,14 @@ class _ChoiceChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: selected
-              ? color.withValues(alpha: 0.12)
+              ? effectiveColor.withValues(alpha: 0.12)
               : isDark
-                  ? AppColors.darkCard
+                  ? cardBg
                   : const Color(0xFFF4F4F6),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: selected
-                ? color
+                ? effectiveColor
                 : isDark
                     ? AppColors.darkBorder
                     : AppColors.lightBorder,

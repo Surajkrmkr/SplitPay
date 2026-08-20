@@ -28,6 +28,7 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
   late final TextEditingController _amountController;
   late final TextEditingController _titleController;
   late final TextEditingController _noteController;
+  final FocusNode _amountFocusNode = FocusNode();
 
   late TabController _splitTabController;
 
@@ -90,6 +91,7 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
     _amountController.dispose();
     _titleController.dispose();
     _noteController.dispose();
+    _amountFocusNode.dispose();
     _splitTabController.dispose();
     for (final c in _percentControllers.values) {
       c.dispose();
@@ -250,6 +252,7 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
                   children: [
                     AmountDisplay(
                       controller: _amountController,
+                      focusNode: _amountFocusNode,
                       isDark: isDark,
                       currency: currency,
                       onChanged: (_) => setState(() {}),
@@ -311,7 +314,12 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
                           Tab(text: 'Exact'),
                         ],
                         indicator: BoxDecoration(
-                          gradient: AppColors.primaryGradient,
+                          gradient: LinearGradient(
+                            colors: [
+                              Theme.of(context).colorScheme.primary,
+                              Theme.of(context).colorScheme.primary.withValues(alpha: 0.85),
+                            ],
+                          ),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         indicatorSize: TabBarIndicatorSize.tab,

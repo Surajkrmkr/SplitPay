@@ -31,23 +31,6 @@ class ExpenseTile extends ConsumerStatefulWidget {
 class _ExpenseTileState extends ConsumerState<ExpenseTile> {
   bool _expanded = false;
 
-  // Stable color palette so each member keeps the same color across the bar
-  // and the list — index-based so it's predictable.
-  static const _memberPalette = [
-    AppColors.primary,
-    AppColors.secondary,
-    AppColors.catFood,
-    AppColors.catTravel,
-    AppColors.catEntertainment,
-    AppColors.catShopping,
-    AppColors.catHealth,
-    AppColors.catSubscription,
-    AppColors.catBills,
-    AppColors.warning,
-  ];
-
-  Color _colorForIndex(int i) => _memberPalette[i % _memberPalette.length];
-
   static IconData _iconFor(String title) {
     final t = title.toLowerCase();
     if (t.contains('food') || t.contains('lunch') || t.contains('dinner') ||
@@ -154,6 +137,9 @@ class _ExpenseTileState extends ConsumerState<ExpenseTile> {
   Widget build(BuildContext context) {
     final expense = widget.expense;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final cardBg = Theme.of(context).cardTheme.color ?? AppColors.darkCard;
+
     final currentUserId = ref.watch(currentUserProvider)?.id ?? '';
     final currency = ref.watch(currencyProvider);
 
@@ -165,7 +151,7 @@ class _ExpenseTileState extends ConsumerState<ExpenseTile> {
     final Color statusColor;
     if (isPaidByMe) {
       statusLabel = 'you paid';
-      statusColor = AppColors.income;
+      statusColor = primary;
     } else if (myShare > 0) {
       statusLabel = 'owe ${CurrencyFormatter.formatAmountWithCommas(myShare, symbol: currency)}';
       statusColor = AppColors.expense;
@@ -173,6 +159,20 @@ class _ExpenseTileState extends ConsumerState<ExpenseTile> {
       statusLabel = 'not involved';
       statusColor = AppColors.textTertiary;
     }
+
+    final memberPalette = [
+      primary,
+      AppColors.secondary,
+      AppColors.catFood,
+      AppColors.catTravel,
+      AppColors.catEntertainment,
+      AppColors.catShopping,
+      AppColors.catHealth,
+      AppColors.catSubscription,
+      AppColors.catBills,
+      AppColors.warning,
+    ];
+    Color colorForIndex(int i) => memberPalette[i % memberPalette.length];
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
@@ -183,7 +183,7 @@ class _ExpenseTileState extends ConsumerState<ExpenseTile> {
           borderRadius: BorderRadius.circular(16),
           child: Ink(
             decoration: BoxDecoration(
-              color: isDark ? AppColors.darkCard : Colors.white,
+              color: isDark ? cardBg : Colors.white,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
@@ -210,15 +210,11 @@ class _ExpenseTileState extends ConsumerState<ExpenseTile> {
                             width: 40,
                             height: 40,
                             child: expense.appIcon != null
-                                // Match the AppIconPicker tile treatment: a
-                                // card-colored container with a subtle border
-                                // and `BoxFit.contain` so the brand icon reads
-                                // the same here as in the picker.
                                 ? Container(
                                     padding: const EdgeInsets.all(3),
                                     decoration: BoxDecoration(
                                       color: isDark
-                                          ? AppColors.darkCard
+                                          ? cardBg
                                           : AppColors.lightCard,
                                       borderRadius: BorderRadius.circular(10),
                                       border: Border.all(
@@ -270,7 +266,6 @@ class _ExpenseTileState extends ConsumerState<ExpenseTile> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 const SizedBox(height: 6),
-                                // Payer row — avatar + name reads at a glance
                                 Row(
                                   children: [
                                     AvatarWidget(
@@ -295,7 +290,7 @@ class _ExpenseTileState extends ConsumerState<ExpenseTile> {
                                               style: TextStyle(
                                                 fontWeight: FontWeight.w600,
                                                 color: isPaidByMe
-                                                    ? AppColors.primary
+                                                    ? primary
                                                     : (isDark
                                                         ? Colors.white
                                                         : AppColors.textLight),
@@ -309,12 +304,9 @@ class _ExpenseTileState extends ConsumerState<ExpenseTile> {
                                   ],
                                 ),
                                 const SizedBox(height: 4),
-                                // Meta row — date + split type. Chip is
-                                // Flexible so it ellipsises before overflowing
-                                // when the date label is long.
                                 Row(
                                   children: [
-                                    Icon(Icons.calendar_today_rounded,
+                                    const Icon(Icons.calendar_today_rounded,
                                         size: 10,
                                         color: AppColors.textTertiary),
                                     const SizedBox(width: 3),
@@ -381,9 +373,9 @@ class _ExpenseTileState extends ConsumerState<ExpenseTile> {
                         ),
                         if (widget.onEdit != null || widget.onDelete != null)
                           PopupMenuButton<String>(
-                            icon: Icon(Icons.more_vert_rounded,
+                            icon: const Icon(Icons.more_vert_rounded,
                                 color: AppColors.textTertiary, size: 18),
-                            color: isDark ? AppColors.darkCard : Colors.white,
+                            color: isDark ? cardBg : Colors.white,
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12)),
                             onSelected: (val) {
@@ -429,7 +421,7 @@ class _ExpenseTileState extends ConsumerState<ExpenseTile> {
                       currentUserId: currentUserId,
                       currency: currency,
                       isDark: isDark,
-                      colorForIndex: _colorForIndex,
+                      colorForIndex: colorForIndex,
                     ),
                   ),
                 ],
@@ -466,26 +458,27 @@ class _SplitTypeChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.1),
+        color: primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 10, color: AppColors.primary),
+          Icon(icon, size: 10, color: primary),
           const SizedBox(width: 3),
           Flexible(
             child: Text(
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
-                color: AppColors.primary,
+                color: primary,
               ),
             ),
           ),
@@ -532,7 +525,6 @@ class _SplitBreakdown extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 10),
-          // Stacked bar — each segment proportional to that member's share
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
             child: SizedBox(
@@ -605,7 +597,6 @@ class _MemberRow extends StatelessWidget {
 
     return Row(
       children: [
-        // Color swatch matches the stacked bar
         Container(
           width: 4,
           height: 28,

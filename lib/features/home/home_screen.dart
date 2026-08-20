@@ -37,7 +37,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           children: [
             Expanded(
               child: RefreshIndicator(
-                color: AppColors.primary,
+                color: Theme.of(context).colorScheme.primary,
                 onRefresh: () =>
                     ref.read(transactionProvider.notifier).syncAndReload(),
                 child: CustomScrollView(
@@ -91,13 +91,15 @@ class _SplitBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.primary.withValues(alpha: 0.15),
+            primary.withValues(alpha: 0.15),
             AppColors.secondary.withValues(alpha: 0.08),
           ],
           begin: Alignment.topLeft,
@@ -105,7 +107,7 @@ class _SplitBanner extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.25),
+          color: primary.withValues(alpha: 0.25),
         ),
       ),
       child: Row(
@@ -114,12 +116,12 @@ class _SplitBanner extends StatelessWidget {
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.15),
+              color: primary.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.group_rounded,
-              color: AppColors.primary,
+              color: primary,
               size: 26,
             ),
           ),
@@ -154,7 +156,7 @@ class _SplitBanner extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
-                color: AppColors.primary,
+                color: primary,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Text(

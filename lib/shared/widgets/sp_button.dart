@@ -30,6 +30,7 @@ class _SpButtonState extends State<SpButton> {
   @override
   Widget build(BuildContext context) {
     final isDisabled = widget.onTap == null || widget.isLoading;
+    final primary = Theme.of(context).colorScheme.primary;
 
     return GestureDetector(
       onTapDown: isDisabled ? null : (_) => setState(() => _pressed = true),
@@ -50,7 +51,11 @@ class _SpButtonState extends State<SpButton> {
             decoration: BoxDecoration(
               gradient: isDisabled
                   ? null
-                  : AppColors.primaryGradient,
+                  : LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [primary, primary.withValues(alpha: 0.85)],
+                    ),
               color: isDisabled ? AppColors.darkBorder : null,
               borderRadius: BorderRadius.circular(14),
             ),

@@ -339,7 +339,12 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
                           Tab(text: 'Exact'),
                         ],
                         indicator: BoxDecoration(
-                          gradient: AppColors.primaryGradient,
+                          gradient: LinearGradient(
+                            colors: [
+                              Theme.of(context).colorScheme.primary,
+                              Theme.of(context).colorScheme.primary.withValues(alpha: 0.85),
+                            ],
+                          ),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         indicatorSize: TabBarIndicatorSize.tab,
@@ -507,7 +512,7 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -518,30 +523,29 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
 
 class AmountDisplay extends StatelessWidget {
   final TextEditingController controller;
-  final FocusNode? focusNode;
-  final bool isDark;
+  final FocusNode focusNode;
   final String currency;
-  final ValueChanged<String> onChanged;
+  final bool isDark;
   final bool autofocus;
+  final ValueChanged<String>? onChanged;
 
   const AmountDisplay({
     super.key,
     required this.controller,
-    this.focusNode,
-    required this.isDark,
+    required this.focusNode,
     required this.currency,
-    required this.onChanged,
-    this.autofocus = false,
+    required this.isDark,
+    this.autofocus = true,
+    this.onChanged,
   });
 
   @override
   Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
     return GestureDetector(
-      onTap: focusNode != null
-          ? () => FocusScope.of(context).requestFocus(focusNode)
-          : null,
+      onTap: () => focusNode.requestFocus(),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
         decoration: BoxDecoration(
           color: isDark ? AppColors.darkCard : AppColors.lightCard,
           borderRadius: BorderRadius.circular(20),
@@ -552,24 +556,27 @@ class AmountDisplay extends StatelessWidget {
         child: Column(
           children: [
             Text(
-              'Total Amount',
+              'AMOUNT',
               style: TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary,
-                letterSpacing: 0.5,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: isDark
+                    ? AppColors.textSecondary
+                    : AppColors.textLightSecondary,
+                letterSpacing: 1.2,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
                   currency,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.primary,
+                    color: primary,
                   ),
                 ),
                 IntrinsicWidth(

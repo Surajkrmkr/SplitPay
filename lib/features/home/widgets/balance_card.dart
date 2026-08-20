@@ -33,11 +33,13 @@ class BalanceCard extends ConsumerWidget {
     final selectedMonth = ref.watch(selectedMonthProvider);
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final cardBg = Theme.of(context).cardTheme.color ?? AppColors.darkCard;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : Colors.white,
+        color: isDark ? cardBg : Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
@@ -73,7 +75,7 @@ class BalanceCard extends ConsumerWidget {
                           'Total Balance',
                           style: TextStyle(
                             color: isDark
-                                ? AppColors.primary.withValues(alpha: 0.8)
+                                ? primary.withValues(alpha: 0.8)
                                 : AppColors.textLightSecondary,
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
@@ -186,15 +188,13 @@ class _MonthSelector extends ConsumerWidget {
     notifier.state = DateTime(cur.year, cur.month + delta);
   }
 
-  bool _canGoForward() {
-    final now = DateTime.now();
-    return selectedMonth.year < now.year ||
-        (selectedMonth.year == now.year && selectedMonth.month < now.month);
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final canForward = _canGoForward();
+    final primary = Theme.of(context).colorScheme.primary;
+    final now = DateTime.now();
+    final canForward = selectedMonth.year < now.year ||
+        (selectedMonth.year == now.year && selectedMonth.month < now.month);
+
     final label = _isCurrent
         ? 'This Month'
         : DateFormat('MMM yyyy').format(selectedMonth);
@@ -202,7 +202,7 @@ class _MonthSelector extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.15),
+        color: primary.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -211,10 +211,10 @@ class _MonthSelector extends ConsumerWidget {
           InkResponse(
             radius: 16,
             onTap: () => _shift(ref, -1),
-            child: const Padding(
-              padding: EdgeInsets.all(4),
+            child: Padding(
+              padding: const EdgeInsets.all(4),
               child: Icon(Icons.chevron_left_rounded,
-                  size: 16, color: AppColors.primary),
+                  size: 16, color: primary),
             ),
           ),
           GestureDetector(
@@ -223,8 +223,8 @@ class _MonthSelector extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Text(
                 label,
-                style: const TextStyle(
-                  color: AppColors.primary,
+                style: TextStyle(
+                  color: primary,
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                 ),
@@ -240,8 +240,8 @@ class _MonthSelector extends ConsumerWidget {
                 Icons.chevron_right_rounded,
                 size: 16,
                 color: canForward
-                    ? AppColors.primary
-                    : AppColors.primary.withValues(alpha: 0.3),
+                    ? primary
+                    : primary.withValues(alpha: 0.3),
               ),
             ),
           ),
@@ -261,7 +261,7 @@ class _MonthSelector extends ConsumerWidget {
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
           colorScheme:
-              Theme.of(ctx).colorScheme.copyWith(primary: AppColors.primary),
+              Theme.of(ctx).colorScheme.copyWith(primary: Theme.of(ctx).colorScheme.primary),
         ),
         child: child!,
       ),

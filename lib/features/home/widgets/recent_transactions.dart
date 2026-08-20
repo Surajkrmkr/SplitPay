@@ -71,7 +71,7 @@ class RecentTransactions extends ConsumerWidget {
                 child: Text(
                   'See all',
                   style: TextStyle(
-                    color: AppColors.primary,
+                    color: Theme.of(context).colorScheme.primary,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -131,8 +131,11 @@ class _TransactionItem extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final customCats = ref.watch(customCategoriesProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final cardBg = Theme.of(context).cardTheme.color ?? AppColors.darkCard;
+
     final isExpense = transaction.type == TransactionType.expense;
-    final amountColor = isExpense ? AppColors.expense : AppColors.income;
+    final amountColor = isExpense ? AppColors.expense : primary;
     final amountPrefix = isExpense ? '-' : '+';
 
     CustomCategory? customCat;
@@ -165,7 +168,7 @@ class _TransactionItem extends ConsumerWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.darkCard : AppColors.lightSurface,
+          color: isDark ? cardBg : AppColors.lightSurface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isDark ? AppColors.darkBorder : AppColors.lightBorder,

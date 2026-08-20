@@ -25,6 +25,15 @@ router.patch(
     usersController.updateMe(req as AuthenticatedRequest, res, next)
 );
 
+/**
+ * DELETE /users/me
+ * Delete current user's account permanently
+ */
+router.delete('/me', (req: Request, res: Response, next: NextFunction) =>
+  usersController.deleteMe(req as AuthenticatedRequest, res, next)
+);
+
+
 
 /**
  * GET /users/search?q=query

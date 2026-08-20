@@ -20,6 +20,8 @@ class BudgetFilterChips extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(budgetPeriodFilterProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final cardBg = Theme.of(context).cardTheme.color ?? AppColors.darkCard;
 
     return SizedBox(
       height: 36,
@@ -45,14 +47,14 @@ class BudgetFilterChips extends ConsumerWidget {
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? AppColors.primary
+                    ? primary
                     : isDark
-                        ? AppColors.darkCard
+                        ? cardBg
                         : AppColors.lightCard,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: isSelected
-                      ? AppColors.primary
+                      ? primary
                       : isDark
                           ? AppColors.darkBorder
                           : AppColors.lightBorder,

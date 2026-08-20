@@ -92,6 +92,7 @@ class _BillScanButtonState extends ConsumerState<BillScanButton> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return showModalBottomSheet<ImageSource>(
       context: context,
+      useRootNavigator: true,
       backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),

@@ -35,7 +35,9 @@ class AnalyticsMini extends ConsumerWidget {
       ..sort((a, b) => b.value.compareTo(a.value));
     final top = sorted.take(4).toList();
 
-    final bgColor = isDark ? AppColors.darkCard : AppColors.lightSurface;
+    final bgColor = isDark
+        ? (Theme.of(context).cardTheme.color ?? AppColors.darkCard)
+        : AppColors.lightSurface;
     final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
 
     return Container(
@@ -242,7 +244,9 @@ class _MiniBarChart extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: isToday ? FontWeight.w700 : FontWeight.w400,
-                    color: isToday ? AppColors.primary : AppColors.textTertiary,
+                    color: isToday
+                        ? Theme.of(context).colorScheme.primary
+                        : AppColors.textTertiary,
                   ),
                 ),
               ],

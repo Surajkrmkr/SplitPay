@@ -43,3 +43,17 @@ export async function searchUsers(
     next(err);
   }
 }
+
+export async function deleteMe(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    await usersService.deleteMe(req.user.userId);
+    sendSuccess(res, null, 'Account deleted successfully');
+  } catch (err) {
+    next(err);
+  }
+}
+

@@ -24,6 +24,9 @@ class GroupCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final cardBg = Theme.of(context).cardTheme.color ?? AppColors.darkCard;
+
     final currency = ref.watch(currencyProvider);
     final balancesAsync = ref.watch(groupBalancesProvider(group.id));
 
@@ -33,7 +36,7 @@ class GroupCard extends ConsumerWidget {
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.darkCard : Colors.white,
+          color: isDark ? cardBg : Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
@@ -55,7 +58,7 @@ class GroupCard extends ConsumerWidget {
               imageUrl: group.avatar,
               name: group.name,
               size: 52,
-              backgroundColor: AppColors.secondary.withValues(alpha: 0.8),
+              backgroundColor: primary.withValues(alpha: 0.8),
             ),
             const SizedBox(width: 14),
 
@@ -87,7 +90,7 @@ class GroupCard extends ConsumerWidget {
                   const SizedBox(height: 6),
                   Text(
                     'Updated ${_timeAgo(group.updatedAt)}',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 11,
                       color: AppColors.textTertiary,
                     ),
@@ -134,6 +137,7 @@ class _BalanceChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
     final net = lent - owed;
     final isSettled = net.abs() < 0.01;
     final isPositive = net > 0;
@@ -141,7 +145,7 @@ class _BalanceChip extends StatelessWidget {
     final color = isSettled
         ? AppColors.textTertiary
         : isPositive
-            ? AppColors.income
+            ? primary
             : AppColors.expense;
 
     final label = isSettled

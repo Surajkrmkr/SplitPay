@@ -14,12 +14,13 @@ void main() {
 
     test('initial expense count is null or zero', () {
       final count = PreferencesService.get<int>('user_personal_expense_count');
-      expect(count, isNull);
+      expect(count, equals(null));
     });
 
     test('has_rated flag prevents double prompting', () async {
       await PreferencesService.set('user_has_rated_app', true);
-      expect(PreferencesService.get<bool>('user_has_rated_app'), isTrue);
+      final hasRated = PreferencesService.get<bool>('user_has_rated_app');
+      expect(hasRated, isTrue);
     });
   });
 }

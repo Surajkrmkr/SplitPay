@@ -24,6 +24,9 @@ class BalanceTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final cardBg = Theme.of(context).cardTheme.color ?? AppColors.darkCard;
+
     final currentUserId = ref.watch(currentUserProvider)?.id ?? 'user_1';
     final currency = ref.watch(currencyProvider);
     final isYouOwing = balance.fromUserId == currentUserId;
@@ -33,7 +36,7 @@ class BalanceTile extends ConsumerWidget {
     final accentColor = isYouOwing
         ? AppColors.expense
         : isYouReceiving
-            ? AppColors.income
+            ? primary
             : AppColors.textSecondary;
 
     return GestureDetector(
@@ -41,7 +44,7 @@ class BalanceTile extends ConsumerWidget {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.darkCard : Colors.white,
+          color: isDark ? cardBg : Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isInvolved
@@ -110,7 +113,7 @@ class BalanceTile extends ConsumerWidget {
                                   color: accentColor,
                                 ),
                               ),
-                              Text(
+                              const Text(
                                 'owes',
                                 style: TextStyle(
                                   fontSize: 10,
@@ -140,7 +143,9 @@ class BalanceTile extends ConsumerWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(vertical: 9),
                         decoration: BoxDecoration(
-                          gradient: AppColors.primaryGradient,
+                          gradient: LinearGradient(
+                            colors: [primary, primary.withValues(alpha: 0.85)],
+                          ),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Text(

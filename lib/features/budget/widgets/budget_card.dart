@@ -28,12 +28,15 @@ class BudgetCard extends ConsumerWidget {
     final currency = ref.watch(currencyProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    final primary = Theme.of(context).colorScheme.primary;
+    final cardBg = Theme.of(context).cardTheme.color ?? AppColors.darkCard;
+
     final remaining = (budget.amount - spent).clamp(0.0, double.infinity);
     final overspent = spent > budget.amount ? spent - budget.amount : 0.0;
     final pct = (progress * 100).clamp(0.0, 999.0);
 
     final statusColor = switch (status) {
-      BudgetStatus.safe => AppColors.income,
+      BudgetStatus.safe => primary,
       BudgetStatus.warning => AppColors.warning,
       BudgetStatus.exceeded => AppColors.expense,
     };
@@ -46,7 +49,7 @@ class BudgetCard extends ConsumerWidget {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 20),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.darkCard : AppColors.lightSurface,
+          color: isDark ? cardBg : AppColors.lightSurface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isDark ? AppColors.darkBorder : AppColors.lightBorder,

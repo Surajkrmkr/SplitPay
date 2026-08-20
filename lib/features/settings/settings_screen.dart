@@ -48,7 +48,7 @@ class SettingsScreen extends ConsumerWidget {
                   const SizedBox(height: 12),
                   _SettingsGroup(
                     children: [
-                      _ThemeTile(isDark: isDark, ref: ref),
+                      _ThemeTile(ref: ref),
                       _Divider(),
                       _CurrencyTile(currency: currency, ref: ref),
                       _Divider(),
@@ -194,6 +194,7 @@ class SettingsScreen extends ConsumerWidget {
                   _SettingsGroup(
                     children: [
                       _LogoutTile(ref: ref),
+                      _DeleteAccountTile(ref: ref),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -388,6 +389,8 @@ class _ProfileCard extends ConsumerWidget {
     final authState = ref.watch(authProvider).valueOrNull;
     final isGuest = authState?.isGuest == true;
     final user = ref.watch(currentUserProvider);
+    final primary = Theme.of(context).colorScheme.primary;
+    final cardBg = Theme.of(context).cardTheme.color ?? AppColors.darkCard;
 
     return GestureDetector(
       onTap: isGuest ? () => requireAuth(context, ref, () {}) : null,
@@ -395,7 +398,7 @@ class _ProfileCard extends ConsumerWidget {
         margin: const EdgeInsets.symmetric(horizontal: 20),
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.darkCard : Colors.white,
+          color: isDark ? cardBg : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
@@ -419,13 +422,13 @@ class _ProfileCard extends ConsumerWidget {
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.15),
+                  color: primary.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.person_outline_rounded,
                   size: 32,
-                  color: AppColors.primary,
+                  color: primary,
                 ),
               )
             else
@@ -447,40 +450,31 @@ class _ProfileCard extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    isGuest ? 'Guest User' : (user?.name ?? 'User'),
-                    style: TextStyle(
-                      color: isDark ? Colors.white : AppColors.textLight,
-                      fontWeight: FontWeight.w700,
+                    user?.name ?? (isGuest ? 'Guest User' : 'Loading...'),
+                    style: const TextStyle(
                       fontSize: 18,
+                      fontWeight: FontWeight.w700,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     isGuest
-                        ? 'Tap to sign in & sync data'
-                        : (user?.email ?? ''),
-                    style: TextStyle(
-                      color: isDark
-                          ? AppColors.primary.withValues(alpha: 0.8)
-                          : AppColors.textLightSecondary,
+                        ? 'Tap to sign in and sync your data'
+                        : user?.email ?? '',
+                    style: const TextStyle(
                       fontSize: 13,
-                      fontWeight: FontWeight.w500,
+                      color: AppColors.textSecondary,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
             if (isGuest) ...[
-              const SizedBox(width: 8),
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: AppColors.primary,
+                  color: primary,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Text(
@@ -494,9 +488,9 @@ class _ProfileCard extends ConsumerWidget {
               ),
             ] else if (user != null) ...[
               IconButton(
-                icon: const Icon(
+                icon: Icon(
                   Icons.edit_outlined,
-                  color: AppColors.primary,
+                  color: primary,
                   size: 20,
                 ),
                 onPressed: () => _showEditNameDialog(context, ref, user),
@@ -516,17 +510,22 @@ class _InitialsAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
     final initials = name
         .trim()
         .split(' ')
         .take(2)
-        .map((w) => w.isNotEmpty ? w[0].toUpperCase() : '')
+        .map((e) => e.isNotEmpty ? e[0].toUpperCase() : '')
         .join();
     return Container(
       width: 60,
       height: 60,
-      decoration: const BoxDecoration(
-        gradient: AppColors.primaryGradient,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [primary, primary.withValues(alpha: 0.85)],
+        ),
         shape: BoxShape.circle,
       ),
       child: Center(
@@ -552,10 +551,10 @@ class _SectionLabel extends StatelessWidget {
       child: Text(
         label.toUpperCase(),
         style: const TextStyle(
-          color: AppColors.textTertiary,
           fontSize: 11,
           fontWeight: FontWeight.w700,
-          letterSpacing: 1.2,
+          color: AppColors.textSecondary,
+          letterSpacing: 0.8,
         ),
       ),
     );
@@ -570,10 +569,12 @@ class _SettingsGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = Theme.of(context).cardTheme.color ?? AppColors.darkCard;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : AppColors.lightSurface,
+        color: isDark ? cardBg : AppColors.lightSurface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
@@ -585,29 +586,465 @@ class _SettingsGroup extends StatelessWidget {
   }
 }
 
+void _showThemeSelectorSheet(BuildContext context, WidgetRef ref) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    useRootNavigator: true,
+    backgroundColor: Colors.transparent,
+    builder: (ctx) => const _ThemeSelectorBottomSheet(),
+  );
+}
+
 class _ThemeTile extends StatelessWidget {
-  final bool isDark;
   final WidgetRef ref;
 
-  const _ThemeTile({required this.isDark, required this.ref});
+  const _ThemeTile({required this.ref});
 
   @override
   Widget build(BuildContext context) {
+    final themeState = ref.watch(themeProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final modeLabel = themeState.mode == ThemeMode.system
+        ? 'System'
+        : (isDark ? 'Dark' : 'Light');
+
     return _SettingsTile(
-      icon: isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-      iconColor: isDark ? AppColors.secondary : AppColors.warning,
-      title: 'Appearance',
-      subtitle: isDark ? 'Dark mode' : 'Light mode',
-      trailing: Switch(
-        value: isDark,
-        onChanged: (_) => ref.read(themeModeProvider.notifier).toggle(),
-        activeThumbColor: AppColors.primary,
-        activeTrackColor: AppColors.primary.withValues(alpha: 0.4),
-      ),
-      onTap: () => ref.read(themeModeProvider.notifier).toggle(),
+      icon: isDark ? Icons.dark_mode_rounded : Icons.palette_rounded,
+      iconColor: themeState.preset.primaryColor,
+      title: 'Appearance & Theme',
+      subtitle: '${themeState.preset.displayName} • $modeLabel',
+      badgeTag: 'BETA',
+      onTap: () => _showThemeSelectorSheet(context, ref),
     );
   }
 }
+
+class _ThemeSelectorBottomSheet extends ConsumerWidget {
+  const _ThemeSelectorBottomSheet();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeState = ref.watch(themeProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final surfaceColor = isDark
+        ? (Theme.of(context).cardTheme.color ?? AppColors.darkSurface)
+        : AppColors.lightSurface;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: surfaceColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Handle
+          Center(
+            child: Container(
+              width: 38,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.textTertiary.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Header Title
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    'Theme & Appearance',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? Colors.white : AppColors.textLight,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withValues(alpha: 0.3),
+                        width: 0.5,
+                      ),
+                    ),
+                    child: Text(
+                      'BETA',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: Theme.of(context).colorScheme.primary,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              IconButton(
+                icon: const Icon(Icons.close_rounded, size: 20),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Section 1: Mode Selector (System, Light, Dark)
+          const Text(
+            'THEME MODE',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textSecondary,
+              letterSpacing: 0.8,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              _ModeChip(
+                label: 'System',
+                icon: Icons.brightness_auto_rounded,
+                isSelected: themeState.mode == ThemeMode.system,
+                onTap: () => ref
+                    .read(themeProvider.notifier)
+                    .setMode(ThemeMode.system),
+              ),
+              const SizedBox(width: 8),
+              _ModeChip(
+                label: 'Light',
+                icon: Icons.light_mode_rounded,
+                isSelected: themeState.mode == ThemeMode.light,
+                onTap: () => ref
+                    .read(themeProvider.notifier)
+                    .setMode(ThemeMode.light),
+              ),
+              const SizedBox(width: 8),
+              _ModeChip(
+                label: 'Dark',
+                icon: Icons.dark_mode_rounded,
+                isSelected: themeState.mode == ThemeMode.dark,
+                onTap: () => ref
+                    .read(themeProvider.notifier)
+                    .setMode(ThemeMode.dark),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // Section 2: Accent Color Presets
+          const Text(
+            'ACCENT COLOR',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textSecondary,
+              letterSpacing: 0.8,
+            ),
+          ),
+          const SizedBox(height: 12),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: AppThemePreset.values.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+              childAspectRatio: 2.2,
+            ),
+            itemBuilder: (context, index) {
+              final preset = AppThemePreset.values[index];
+              final isSelected = themeState.preset == preset;
+              return GestureDetector(
+                onTap: () =>
+                    ref.read(themeProvider.notifier).setPreset(preset),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkCard : AppColors.lightCard,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected
+                          ? preset.primaryColor
+                          : (isDark
+                              ? AppColors.darkBorder
+                              : AppColors.lightBorder),
+                      width: isSelected ? 2 : 0.8,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 18,
+                        height: 18,
+                        decoration: BoxDecoration(
+                          color: preset.primaryColor,
+                          shape: BoxShape.circle,
+                        ),
+                        child: isSelected
+                            ? const Icon(Icons.check,
+                                size: 12, color: Colors.white)
+                            : null,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          preset.displayName,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                            color: isDark ? Colors.white : AppColors.textLight,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 24),
+
+          // Section 3: Background Tint / Style
+          const Text(
+            'BACKGROUND STYLE',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textSecondary,
+              letterSpacing: 0.8,
+            ),
+          ),
+          const SizedBox(height: 10),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: AppBackgroundStyle.values.map((bg) {
+                final isSelected = themeState.bgStyle == bg;
+                final previewColor = isDark
+                    ? bg.darkBg(AppColors.darkBg)
+                    : bg.lightBg(AppColors.lightBg);
+
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: GestureDetector(
+                    onTap: () =>
+                        ref.read(themeProvider.notifier).setBgStyle(bg),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkCard : AppColors.lightCard,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isSelected
+                              ? themeState.preset.primaryColor
+                              : (isDark
+                                  ? AppColors.darkBorder
+                                  : AppColors.lightBorder),
+                          width: isSelected ? 1.8 : 0.8,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 14,
+                            height: 14,
+                            decoration: BoxDecoration(
+                              color: previewColor,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isDark
+                                    ? Colors.white38
+                                    : Colors.black26,
+                                width: 0.8,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            bg.displayName,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: isDark ? Colors.white : AppColors.textLight,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Section 4: Live Theme Preview Card
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkCard : AppColors.lightCard,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                width: 0.6,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: themeState.preset.primaryColor
+                        .withValues(alpha: 0.18),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.palette_rounded,
+                    color: themeState.preset.primaryColor,
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${themeState.preset.displayName} Accent',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'Active theme preview card',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: themeState.preset.primaryColor,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text(
+                    'Applied',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+}
+
+class _ModeChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _ModeChip({
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppColors.primary.withValues(alpha: 0.15)
+                : (isDark ? AppColors.darkCard : AppColors.lightCard),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected
+                  ? AppColors.primary
+                  : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+              width: isSelected ? 1.8 : 0.8,
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color: isSelected ? AppColors.primary : AppColors.textSecondary,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected
+                      ? AppColors.primary
+                      : (isDark ? Colors.white : AppColors.textLight),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 
 class _CurrencyTile extends StatelessWidget {
   final String currency;
@@ -635,6 +1072,9 @@ class _CurrencyTile extends StatelessWidget {
 
   void _showCurrencyPicker(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final cardBg = Theme.of(context).cardTheme.color ?? AppColors.darkCard;
+
     showModalBottomSheet(
       context: context,
       useRootNavigator: true,
@@ -647,7 +1087,7 @@ class _CurrencyTile extends StatelessWidget {
         expand: false,
         builder: (_, scrollController) => Container(
           decoration: BoxDecoration(
-            color: isDark ? AppColors.darkSurface : Colors.white,
+            color: isDark ? cardBg : Colors.white,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
@@ -670,11 +1110,11 @@ class _CurrencyTile extends StatelessWidget {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: AppColors.income.withValues(alpha: 0.12),
+                        color: primary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.attach_money_rounded,
-                          color: AppColors.income, size: 20),
+                      child: Icon(Icons.attach_money_rounded,
+                          color: primary, size: 20),
                     ),
                     const SizedBox(width: 14),
                     Text(
@@ -706,15 +1146,15 @@ class _CurrencyTile extends StatelessWidget {
                         height: 44,
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? AppColors.primary.withValues(alpha: 0.15)
+                              ? primary.withValues(alpha: 0.15)
                               : (isDark
-                                  ? AppColors.darkCard
+                                  ? cardBg
                                   : AppColors.lightCard),
                           borderRadius: BorderRadius.circular(12),
                           border: isSelected
                               ? Border.all(
                                   color:
-                                      AppColors.primary.withValues(alpha: 0.3))
+                                      primary.withValues(alpha: 0.3))
                               : null,
                         ),
                         child: Center(
@@ -724,7 +1164,7 @@ class _CurrencyTile extends StatelessWidget {
                               fontSize: 20,
                               fontWeight: FontWeight.w700,
                               color: isSelected
-                                  ? AppColors.primary
+                                  ? primary
                                   : isDark
                                       ? Colors.white
                                       : AppColors.textLight,
@@ -737,7 +1177,7 @@ class _CurrencyTile extends StatelessWidget {
                         style: TextStyle(
                           fontWeight:
                               isSelected ? FontWeight.w700 : FontWeight.w500,
-                          color: isSelected ? AppColors.primary : null,
+                          color: isSelected ? primary : null,
                           fontSize: 15,
                         ),
                       ),
@@ -747,11 +1187,11 @@ class _CurrencyTile extends StatelessWidget {
                               height: 28,
                               decoration: BoxDecoration(
                                 color:
-                                    AppColors.primary.withValues(alpha: 0.12),
+                                    primary.withValues(alpha: 0.12),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.check_rounded,
-                                  color: AppColors.primary, size: 16),
+                              child: Icon(Icons.check_rounded,
+                                  color: primary, size: 16),
                             )
                           : null,
                       onTap: () {
@@ -797,6 +1237,7 @@ class _SettingsTile extends StatelessWidget {
   final Color iconColor;
   final String title;
   final String subtitle;
+  final String? badgeTag;
   final Widget? trailing;
   final VoidCallback? onTap;
 
@@ -805,6 +1246,7 @@ class _SettingsTile extends StatelessWidget {
     required this.iconColor,
     required this.title,
     required this.subtitle,
+    this.badgeTag,
     this.trailing,
     this.onTap,
   });
@@ -862,6 +1304,8 @@ class _SettingsTile extends StatelessWidget {
               )
             : const SizedBox.shrink());
 
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -885,9 +1329,37 @@ class _SettingsTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: titleStyle,
+                    Row(
+                      children: [
+                        Text(
+                          title,
+                          style: titleStyle,
+                        ),
+                        if (badgeTag != null) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: primaryColor.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: primaryColor.withValues(alpha: 0.3),
+                                width: 0.5,
+                              ),
+                            ),
+                            child: Text(
+                              badgeTag!,
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: primaryColor,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     Text(
                       subtitle,
@@ -1039,7 +1511,63 @@ class _LogoutTile extends StatelessWidget {
   }
 }
 
+class _DeleteAccountTile extends StatelessWidget {
+  final WidgetRef ref;
+  const _DeleteAccountTile({required this.ref});
+
+  @override
+  Widget build(BuildContext context) {
+    final isGuest = ref.watch(authProvider).valueOrNull?.isGuest == true;
+    if (isGuest) return const SizedBox.shrink();
+
+    return _SettingsTile(
+      icon: Icons.delete_forever_rounded,
+      iconColor: AppColors.expense,
+      title: 'Delete Account',
+      subtitle: 'Permanently delete your account and all associated data',
+      onTap: () async {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Delete Account'),
+            content: const Text(
+              'Are you sure you want to delete your account? All your personal transactions, budgets, custom categories, and group split history will be permanently deleted. This action cannot be undone.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: Text(
+                  'Delete Account',
+                  style: TextStyle(color: AppColors.expense, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        );
+        if (confirmed == true && context.mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (ctx) => const Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+          await ref.read(authProvider.notifier).deleteAccount();
+          if (context.mounted) {
+            Navigator.of(context, rootNavigator: true).pop();
+          }
+        }
+      },
+    );
+  }
+}
+
 // ── Notifications nav tile ────────────────────────────────────────────────────
+
 
 class _NotificationsTile extends StatelessWidget {
   @override

@@ -1,6 +1,7 @@
 import { User } from '@prisma/client';
 import { NotFoundError } from '../../utils/app-error';
 import { UpdateProfileInput } from '../../validations/user.validation';
+import { admin } from '../../configs/firebase';
 import * as usersRepository from './users.repository';
 
 export type SafeUser = Omit<User, 'googleId'>;
@@ -46,4 +47,24 @@ export async function search(query: string, currentUserId: string): Promise<Safe
   const users = await usersRepository.searchUsers(query, currentUserId);
   return users.map(omitGoogleId);
 }
+
+export async function deleteMe(userId: string): Promise<void> {
+  const user = await usersRepository.findById(userId);
+  if (!user) {
+    throw new NotFoundError('User not found');
+  }
+
+  // Delete user record and related data from database
+  await usersRepository.deleteUser(userId);
+
+  // Best effort delete from Firebase Auth if firebaseUid exists
+  if (user.firebaseUid) {
+    try {
+      await admin.auth().deleteUser(user.firebaseUid);
+    } catch (err) {
+      console.warn(`Failed to delete Firebase user ${user.firebaseUid}:`, err);
+    }
+  }
+}
+
 

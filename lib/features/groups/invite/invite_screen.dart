@@ -439,6 +439,7 @@ class _GenerateTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(
           24, 24, 24, MediaQuery.of(context).viewPadding.bottom + 24),
@@ -453,10 +454,10 @@ class _GenerateTab extends StatelessWidget {
           const SizedBox(height: 28),
           if (loadingExisting) ...[
             const SizedBox(height: 60),
-            const Center(
+            Center(
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: AppColors.primary,
+                color: primary,
               ),
             ),
           ] else if (generatedCode != null) ...[
@@ -466,7 +467,7 @@ class _GenerateTab extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    AppColors.primary.withValues(alpha: 0.1),
+                    primary.withValues(alpha: 0.1),
                     AppColors.secondary.withValues(alpha: 0.05)
                   ],
                   begin: Alignment.topLeft,
@@ -474,24 +475,24 @@ class _GenerateTab extends StatelessWidget {
                 ),
                 borderRadius: BorderRadius.circular(20),
                 border:
-                    Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                    Border.all(color: primary.withValues(alpha: 0.3)),
               ),
               child: Column(
                 children: [
                   Text(
                     generatedCode!,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 38,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 8,
-                      color: AppColors.primary,
+                      color: primary,
                     ),
                   ),
                   if (expiresAt != null) ...[
                     const SizedBox(height: 6),
                     Text(
                       'Expires ${_formatExpiry(expiresAt!)}',
-                      style: TextStyle(
+                      style: const TextStyle(
                           fontSize: 12, color: AppColors.textSecondary),
                     ),
                   ],
@@ -504,7 +505,7 @@ class _GenerateTab extends StatelessWidget {
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.15),
+                          color: primary.withValues(alpha: 0.15),
                           blurRadius: 20,
                           offset: const Offset(0, 6),
                         ),
@@ -515,9 +516,9 @@ class _GenerateTab extends StatelessWidget {
                       version: QrVersions.auto,
                       size: 180,
                       backgroundColor: Colors.white,
-                      eyeStyle: const QrEyeStyle(
+                      eyeStyle: QrEyeStyle(
                         eyeShape: QrEyeShape.square,
-                        color: AppColors.primary,
+                        color: primary,
                       ),
                       dataModuleStyle: const QrDataModuleStyle(
                         dataModuleShape: QrDataModuleShape.square,
@@ -529,7 +530,7 @@ class _GenerateTab extends StatelessWidget {
                         curve: Curves.easeOutBack,
                       ),
                   const SizedBox(height: 6),
-                  Text(
+                  const Text(
                     'Scan to join',
                     style:
                         TextStyle(fontSize: 12, color: AppColors.textSecondary),
@@ -543,8 +544,8 @@ class _GenerateTab extends StatelessWidget {
                           icon: const Icon(Icons.copy_rounded, size: 16),
                           label: const Text('Copy'),
                           style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.primary,
-                              side: const BorderSide(color: AppColors.primary)),
+                              foregroundColor: primary,
+                              side: BorderSide(color: primary)),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -554,7 +555,7 @@ class _GenerateTab extends StatelessWidget {
                           icon: const Icon(Icons.share_rounded, size: 16),
                           label: const Text('Share'),
                           style: FilledButton.styleFrom(
-                              backgroundColor: AppColors.primary),
+                              backgroundColor: primary),
                         ),
                       ),
                     ],
@@ -567,8 +568,8 @@ class _GenerateTab extends StatelessWidget {
                       icon: const Icon(Icons.qr_code_rounded, size: 16),
                       label: const Text('Share QR Code'),
                       style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.primary,
-                          side: const BorderSide(color: AppColors.primary)),
+                          foregroundColor: primary,
+                          side: BorderSide(color: primary)),
                     ),
                   ),
                 ],

@@ -56,6 +56,7 @@ class _CategoryManagementScreenState
     final customCategories = ref.watch(customCategoriesProvider);
     final hiddenCategories = ref.watch(hiddenCategoriesProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
       body: SafeArea(
@@ -82,17 +83,17 @@ class _CategoryManagementScreenState
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.15),
+                        color: primary.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.4),
+                          color: primary.withValues(alpha: 0.4),
                           width: 0.5,
                         ),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.add_rounded,
                         size: 20,
-                        color: AppColors.primary,
+                        color: primary,
                       ),
                     ),
                   ),
@@ -252,101 +253,108 @@ class _CustomCategoryGridTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : AppColors.lightCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-          width: 0.6,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: cat.color.withValues(alpha: 0.18),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(cat.icon, color: cat.color, size: 16),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  cat.label,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              GestureDetector(
-                onTap: onEdit,
-                child: Padding(
-                  padding: const EdgeInsets.all(3),
-                  child: Icon(
-                    Icons.edit_outlined,
-                    size: 15,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 2),
-              GestureDetector(
-                onTap: onDelete,
-                child: const Padding(
-                  padding: EdgeInsets.all(3),
-                  child: Icon(
-                    Icons.delete_outline_rounded,
-                    size: 15,
-                    color: AppColors.expense,
-                  ),
-                ),
-              ),
-            ],
+    final cardBg = Theme.of(context).cardTheme.color ?? AppColors.darkCard;
+
+    return GestureDetector(
+      onTap: onEdit,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isDark ? cardBg : AppColors.lightCard,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+            width: 0.6,
           ),
-          const Spacer(),
-          if (cat.suggestedApps.isNotEmpty)
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: cat.suggestedApps.map((fileName) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 5),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: Image.asset(
-                        CategoryAppIcons.pathFor(fileName),
-                        width: 22,
-                        height: 22,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(
-                          Icons.apps_rounded,
-                          size: 16,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: cat.color.withValues(alpha: 0.18),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(cat.icon, color: cat.color, size: 16),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    cat.label,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: onEdit,
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.all(6),
+                    child: Icon(
+                      Icons.edit_outlined,
+                      size: 16,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: onDelete,
+                  behavior: HitTestBehavior.opaque,
+                  child: const Padding(
+                    padding: EdgeInsets.all(6),
+                    child: Icon(
+                      Icons.delete_outline_rounded,
+                      size: 16,
+                      color: AppColors.expense,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const Spacer(),
+            if (cat.suggestedApps.isNotEmpty)
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: cat.suggestedApps.map((fileName) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 5),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: Image.asset(
+                          CategoryAppIcons.pathFor(fileName),
+                          width: 22,
+                          height: 22,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Icon(
+                            Icons.apps_rounded,
+                            size: 16,
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                }).toList(),
+                    );
+                  }).toList(),
+                ),
+              )
+            else
+              Text(
+                'No apps linked',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textSecondary.withValues(alpha: 0.6),
+                ),
               ),
-            )
-          else
-            Text(
-              'No apps linked',
-              style: TextStyle(
-                fontSize: 11,
-                color: AppColors.textSecondary.withValues(alpha: 0.6),
-              ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -369,98 +377,107 @@ class _SystemCategoryGridTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : AppColors.lightCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-          width: 0.6,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: sysCat.color.withValues(alpha: isHidden ? 0.08 : 0.18),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  sysCat.icon,
-                  color: isHidden ? AppColors.textSecondary : sysCat.color,
-                  size: 16,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  sysCat.label,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                    color: isHidden
-                        ? AppColors.textSecondary
-                        : (isDark ? Colors.white : AppColors.textLight),
-                    decoration: isHidden ? TextDecoration.lineThrough : null,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              SizedBox(
-                height: 24,
-                width: 36,
-                child: FittedBox(
-                  fit: BoxFit.contain,
-                  child: Switch.adaptive(
-                    value: !isHidden,
-                    activeTrackColor: AppColors.primary,
-                    onChanged: (_) => onToggle(),
-                  ),
-                ),
-              ),
-            ],
+    final primary = Theme.of(context).colorScheme.primary;
+    final cardBg = Theme.of(context).cardTheme.color ?? AppColors.darkCard;
+
+    return GestureDetector(
+      onTap: onToggle,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isDark ? cardBg : AppColors.lightCard,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+            width: 0.6,
           ),
-          const Spacer(),
-          if (builtInApps.isNotEmpty)
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: builtInApps.take(5).map((fileName) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 5),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: Image.asset(
-                        CategoryAppIcons.pathFor(fileName),
-                        width: 22,
-                        height: 22,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(
-                          Icons.apps_rounded,
-                          size: 16,
-                        ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: sysCat.color.withValues(alpha: isHidden ? 0.08 : 0.18),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    sysCat.icon,
+                    color: isHidden ? AppColors.textSecondary : sysCat.color,
+                    size: 16,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    sysCat.label,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      color: isHidden
+                          ? AppColors.textSecondary
+                          : (isDark ? Colors.white : AppColors.textLight),
+                      decoration: isHidden ? TextDecoration.lineThrough : null,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                IgnorePointer(
+                  child: SizedBox(
+                    height: 24,
+                    width: 36,
+                    child: FittedBox(
+                      fit: BoxFit.contain,
+                      child: Switch.adaptive(
+                        value: !isHidden,
+                        activeTrackColor: primary,
+                        onChanged: (_) {},
                       ),
                     ),
-                  );
-                }).toList(),
-              ),
-            )
-          else
-            Text(
-              'No default apps',
-              style: TextStyle(
-                fontSize: 11,
-                color: AppColors.textSecondary.withValues(alpha: 0.6),
-              ),
+                  ),
+                ),
+              ],
             ),
-        ],
+            const Spacer(),
+            if (builtInApps.isNotEmpty)
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: builtInApps.take(5).map((fileName) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 5),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: Image.asset(
+                          CategoryAppIcons.pathFor(fileName),
+                          width: 22,
+                          height: 22,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Icon(
+                            Icons.apps_rounded,
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              )
+            else
+              Text(
+                'No default apps',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textSecondary.withValues(alpha: 0.6),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

@@ -357,35 +357,43 @@ class _AmountField extends StatelessWidget {
   final TextEditingController controller;
   final String currency;
   final ValueChanged<String>? onChanged;
+  final FocusNode? focusNode;
+  final bool autofocus;
 
   const _AmountField({
     required this.controller,
     required this.currency,
     this.onChanged,
+    this.focusNode,
+    this.autofocus = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+
     return TextField(
       controller: controller,
       onChanged: onChanged,
+      focusNode: focusNode,
+      autofocus: autofocus,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       inputFormatters: [
         LengthLimitingTextInputFormatter(50),
         FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
       ],
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 28,
         fontWeight: FontWeight.w800,
-        color: AppColors.primary,
+        color: primary,
         letterSpacing: -1,
       ),
       decoration: InputDecoration(
         prefixText: '$currency ',
-        prefixStyle: const TextStyle(
+        prefixStyle: TextStyle(
           fontSize: 22,
           fontWeight: FontWeight.w700,
-          color: AppColors.primary,
+          color: primary,
         ),
         hintText: '0',
         hintStyle: TextStyle(
@@ -396,20 +404,18 @@ class _AmountField extends StatelessWidget {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide:
-              BorderSide(color: AppColors.primary.withValues(alpha: 0.3)),
+          borderSide: BorderSide(color: primary.withValues(alpha: 0.3)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide:
-              BorderSide(color: AppColors.primary.withValues(alpha: 0.2)),
+          borderSide: BorderSide(color: primary.withValues(alpha: 0.2)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+          borderSide: BorderSide(color: primary, width: 1.5),
         ),
         filled: true,
-        fillColor: AppColors.primary.withValues(alpha: 0.06),
+        fillColor: primary.withValues(alpha: 0.06),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
@@ -432,10 +438,13 @@ class _PeriodSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    final cardBg = Theme.of(context).cardTheme.color ?? AppColors.darkCard;
+
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : AppColors.lightCard,
+        color: isDark ? cardBg : AppColors.lightCard,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -452,12 +461,11 @@ class _PeriodSelector extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? AppColors.primary.withValues(alpha: 0.15)
+                      ? primary.withValues(alpha: 0.15)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                   border: isSelected
-                      ? Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.4))
+                      ? Border.all(color: primary.withValues(alpha: 0.4))
                       : null,
                 ),
                 child: Text(
@@ -466,8 +474,7 @@ class _PeriodSelector extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    color:
-                        isSelected ? AppColors.primary : AppColors.textTertiary,
+                    color: isSelected ? primary : AppColors.textTertiary,
                   ),
                 ),
               ),

@@ -30,3 +30,16 @@ export async function updateUser(id: string, data: { name?: string; avatar?: str
   });
 }
 
+export async function deleteUser(id: string): Promise<User> {
+  return prisma.$transaction(async (tx) => {
+    await tx.activity.deleteMany({ where: { userId: id } });
+    await tx.groupInvite.deleteMany({ where: { createdById: id } });
+    await tx.settlement.deleteMany({
+      where: { OR: [{ payerId: id }, { payeeId: id }] },
+    });
+    await tx.expense.deleteMany({ where: { paidById: id } });
+    return tx.user.delete({ where: { id } });
+  });
+}
+
+

@@ -78,6 +78,7 @@ class _QuickCaptureButtonState extends ConsumerState<QuickCaptureButton> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return showModalBottomSheet<_CaptureOption>(
       context: context,
+      useRootNavigator: true,
       backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),

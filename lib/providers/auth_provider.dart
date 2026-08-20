@@ -323,6 +323,52 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     }
   }
 
+  Future<void> deleteAccount() async {
+    state = const AsyncValue.loading();
+    try {
+      final tokenStorage = ref.read(tokenStorageProvider);
+      final firebaseAuth = ref.read(firebaseAuthServiceProvider);
+      final dio = ref.read(dioProvider);
+
+      try {
+        await ref.read(notificationRepositoryProvider).unregisterToken();
+        await NotificationService.instance.deleteToken();
+      } catch (_) {}
+
+      try {
+        await dio.delete(
+          ApiConstants.usersMe,
+          options: Options(extra: {AuthInterceptor.skipAuthHandling: true}),
+        );
+      } catch (e) {
+        AppLogger.instance.w('Backend account deletion request bypass/error: $e', tag: 'Auth');
+      }
+
+      try {
+        await firebaseAuth.currentUser?.delete();
+      } catch (e) {
+        AppLogger.instance.w('Firebase user delete request error: $e', tag: 'Auth');
+      }
+
+      await Future.wait([
+        tokenStorage.clearTokens(),
+        firebaseAuth.signOut(),
+        PreferencesService.clearUserData(),
+      ]);
+
+      _invalidateUserScopedProviders();
+
+      state = AsyncValue.data(
+        const AuthState(status: AuthStatus.unauthenticated),
+      );
+    } catch (e) {
+      state = AsyncValue.data(
+        AuthState(status: AuthStatus.error, error: friendlyErrorMessage(e)),
+      );
+    }
+  }
+
+
   void _invalidateUserScopedProviders() {
     ref.invalidate(transactionProvider);
     ref.invalidate(budgetProvider);

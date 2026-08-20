@@ -139,7 +139,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
             backgroundColor: Colors.transparent,
             builder: (_) => AddExpenseSheet(group: group),
           ),
-          backgroundColor: AppColors.primary,
+          backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Colors.white,
           icon: const Icon(Icons.add_rounded),
           label: const Text(
@@ -151,7 +151,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
           headerSliverBuilder: (context, _) => [
             SliverAppBar(
               pinned: true,
-              backgroundColor: isDark ? AppColors.darkBg : AppColors.lightBg,
+              backgroundColor: isDark ? (Theme.of(context).cardTheme.color ?? AppColors.darkBg) : AppColors.lightBg,
               leadingWidth: 56,
               leading: const Padding(
                 padding: EdgeInsets.only(left: 16),
@@ -175,28 +175,14 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
                   duration: const Duration(milliseconds: 200),
                   child: _isSearching
                       ? const SizedBox.shrink()
-                      : Container(
-                          key: const ValueKey('actions'),
-                          margin: const EdgeInsets.only(right: 16),
-                          padding: const EdgeInsets.all(3),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? AppColors.darkCard
-                                : AppColors.lightCard,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: isDark
-                                  ? AppColors.darkBorder
-                                  : AppColors.lightBorder,
-                              width: 0.5,
-                            ),
-                          ),
+                      : Padding(
+                          padding: const EdgeInsets.only(right: 12),
                           child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                            key: const ValueKey('actions'),
                             children: [
                               _AppBarIconBtn(
-                                icon: Icons.people_alt_rounded,
-                                tooltip: 'Invite',
+                                icon: Icons.person_add_outlined,
+                                tooltip: 'Invite members',
                                 onTap: () => context
                                     .push('/groups/${widget.groupId}/invite'),
                                 isDark: isDark,
@@ -224,9 +210,9 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
               ],
               bottom: TabBar(
                 controller: _tabController,
-                labelColor: AppColors.primary,
+                labelColor: Theme.of(context).colorScheme.primary,
                 unselectedLabelColor: AppColors.textSecondary,
-                indicatorColor: AppColors.primary,
+                indicatorColor: Theme.of(context).colorScheme.primary,
                 indicatorSize: TabBarIndicatorSize.label,
                 dividerColor:
                     isDark ? AppColors.darkBorder : AppColors.lightBorder,
@@ -2063,6 +2049,18 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final cardBg = Theme.of(context).cardTheme.color ?? AppColors.darkCard;
+
+    final userColors = [
+      primary,
+      const Color(0xFF3B82F6),
+      const Color(0xFFF59E0B),
+      const Color(0xFFEC4899),
+      const Color(0xFF8B5CF6),
+      const Color(0xFF14B8A6),
+    ];
+
     final currency = ref.watch(currencyProvider);
     final currentUserId = ref.watch(currentUserProvider)?.id ?? 'user_1';
 
@@ -2070,10 +2068,10 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
     final expensesAsync = ref.watch(groupExpensesProvider(widget.groupId));
 
     return expensesAsync.when(
-      loading: () => const Center(
-          child: CircularProgressIndicator(color: AppColors.primary)),
+      loading: () => Center(
+          child: CircularProgressIndicator(color: primary)),
       error: (e, _) => RefreshIndicator(
-        color: AppColors.primary,
+        color: primary,
         onRefresh: () async => ref.invalidate(groupExpensesProvider(widget.groupId)),
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -2089,7 +2087,7 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
       data: (expenses) {
         if (expenses.isEmpty) {
           return RefreshIndicator(
-            color: AppColors.primary,
+            color: primary,
             onRefresh: () async => ref.invalidate(groupExpensesProvider(widget.groupId)),
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -2125,13 +2123,13 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
             .fold<double>(0, (a, b) => a > b ? a : b);
         final chartMax = maxVal == 0 ? 100.0 : maxVal * 1.35;
 
-        final bgColor = isDark ? AppColors.darkCard : AppColors.lightSurface;
+        final bgColor = isDark ? cardBg : AppColors.lightSurface;
         final borderColor =
             isDark ? AppColors.darkBorder : AppColors.lightBorder;
         final gridColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
 
         return RefreshIndicator(
-          color: AppColors.primary,
+          color: primary,
           onRefresh: () async {
             ref.invalidate(groupExpensesProvider(widget.groupId));
             ref.invalidate(groupDetailProvider(widget.groupId));
@@ -2146,14 +2144,14 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      AppColors.primary.withValues(alpha: 0.15),
+                      primary.withValues(alpha: 0.15),
                       AppColors.secondary.withValues(alpha: 0.05),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.25), width: 1.5),
+                  border: Border.all(color: primary.withValues(alpha: 0.25), width: 1.5),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -2164,10 +2162,10 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
                           width: 36,
                           height: 36,
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.15),
+                            color: primary.withValues(alpha: 0.15),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.account_balance_wallet_rounded, color: AppColors.primary, size: 20),
+                          child: Icon(Icons.account_balance_wallet_rounded, color: primary, size: 20),
                         ),
                         const SizedBox(width: 12),
                         Column(
@@ -2179,10 +2177,10 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
                             ),
                             Text(
                               CurrencyFormatter.formatAmountWithCommas(totalSpent, symbol: currency),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 26,
                                 fontWeight: FontWeight.w800,
-                                color: AppColors.primary,
+                                color: primary,
                                 height: 1.1,
                               ),
                             ),
@@ -2209,7 +2207,7 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
                 ...members.asMap().entries.map((entry) {
                   final idx = entry.key;
                   final m = entry.value;
-                  final userColor = _userColors[idx % _userColors.length];
+                  final userColor = userColors[idx % userColors.length];
                   final isYou = m.userId == currentUserId;
                   final paid = expenses.where((e) => e.paidById == m.userId).fold<double>(0, (s, e) => s + e.amount);
                   final share = expenses.fold<double>(0, (s, e) => s + e.shareForUser(m.userId));
@@ -2218,7 +2216,7 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
                   final isNetNegative = net <= -0.01;
 
                   final badgeColor = isNetPositive
-                      ? AppColors.income
+                      ? primary
                       : isNetNegative
                           ? AppColors.expense
                           : AppColors.textTertiary;

@@ -34,6 +34,7 @@ class MainShell extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       builder: (_) => const AddTransactionSheet(),
     );
@@ -63,6 +64,8 @@ class _FloatingBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final cardBg = Theme.of(context).cardTheme.color ?? const Color(0xFF1E2228);
     final bottomPad = MediaQuery.of(context).padding.bottom;
 
     return Container(
@@ -76,7 +79,7 @@ class _FloatingBottomNav extends StatelessWidget {
             height: 68,
             decoration: BoxDecoration(
               color: isDark
-                  ? const Color(0xFF1E2228).withValues(alpha: 0.88)
+                  ? cardBg.withValues(alpha: 0.88)
                   : Colors.white.withValues(alpha: 0.90),
               borderRadius: BorderRadius.circular(30),
               border: Border.all(
@@ -93,7 +96,7 @@ class _FloatingBottomNav extends StatelessWidget {
                   offset: const Offset(0, 12),
                 ),
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.10),
+                  color: primary.withValues(alpha: 0.15),
                   blurRadius: 24,
                   offset: const Offset(0, 4),
                 ),
@@ -169,6 +172,7 @@ class _NavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isSelected = index == currentIndex;
+    final primary = Theme.of(context).colorScheme.primary;
 
     return Expanded(
       child: GestureDetector(
@@ -186,7 +190,7 @@ class _NavItem extends StatelessWidget {
                 : const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: isSelected
-                  ? AppColors.primary.withValues(alpha: 0.14)
+                  ? primary.withValues(alpha: 0.14)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(20),
             ),
@@ -203,7 +207,7 @@ class _NavItem extends StatelessWidget {
                     isSelected ? data.activeIcon : data.inactiveIcon,
                     key: ValueKey(isSelected),
                     color: isSelected
-                        ? AppColors.primary
+                        ? primary
                         : isDark
                             ? AppColors.textTertiary
                             : AppColors.textLightSecondary,
@@ -256,6 +260,8 @@ class _CenterFabButtonState extends State<_CenterFabButton>
 
   @override
   Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6),
       child: GestureDetector(
@@ -275,15 +281,19 @@ class _CenterFabButtonState extends State<_CenterFabButton>
           child: Container(
             width: 52,
             height: 52,
-            decoration: const BoxDecoration(
-              gradient: AppColors.primaryGradient,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [primary, primary.withValues(alpha: 0.82)],
+              ),
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Color(0x6600D09C),
+                  color: primary.withValues(alpha: 0.40),
                   blurRadius: 18,
                   spreadRadius: -3,
-                  offset: Offset(0, 6),
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),

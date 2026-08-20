@@ -11,6 +11,9 @@ class MyBalanceSummary extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final cardBg = Theme.of(context).cardTheme.color ?? AppColors.darkCard;
+
     final currency = ref.watch(currencyProvider);
     final groups = ref.watch(groupsProvider).valueOrNull ?? [];
 
@@ -38,18 +41,18 @@ class MyBalanceSummary extends ConsumerWidget {
         margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
         padding: const EdgeInsets.symmetric(vertical: 28),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.darkCard : Colors.white,
+          color: isDark ? cardBg : Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.3),
+            color: primary.withValues(alpha: 0.3),
             width: 1.5,
           ),
         ),
-        child: const Center(
+        child: Center(
           child: SizedBox(
             width: 20,
             height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+            child: CircularProgressIndicator(strokeWidth: 2, color: primary),
           ),
         ),
       );
@@ -62,15 +65,15 @@ class MyBalanceSummary extends ConsumerWidget {
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : Colors.white,
+        color: isDark ? cardBg : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.3),
+          color: primary.withValues(alpha: 0.3),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.08),
+            color: primary.withValues(alpha: 0.08),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -82,7 +85,7 @@ class MyBalanceSummary extends ConsumerWidget {
             child: _StatItem(
               label: "You're owed",
               value: CurrencyFormatter.formatAmountWithCommas(totalLent, symbol: currency),
-              color: AppColors.income,
+              color: primary,
             ),
           ),
           Container(
@@ -107,7 +110,7 @@ class MyBalanceSummary extends ConsumerWidget {
               label: 'Net balance',
               value:
                   '${isPositive ? '+' : ''}${CurrencyFormatter.formatAmountWithCommas(net.abs(), symbol: currency)}',
-              color: isPositive ? AppColors.income : AppColors.expense,
+              color: isPositive ? primary : AppColors.expense,
               showArrow: true,
               isPositive: isPositive,
             ),

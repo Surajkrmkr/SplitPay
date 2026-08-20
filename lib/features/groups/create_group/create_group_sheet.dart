@@ -126,19 +126,19 @@ class _CreateGroupSheetState extends ConsumerState<CreateGroupSheet> {
                         height: 80,
                         decoration: BoxDecoration(
                           color: (GroupIcons.colors[_selectedIconKey] ??
-                                  AppColors.primary)
+                                  Theme.of(context).colorScheme.primary)
                               .withValues(alpha: 0.15),
                           shape: BoxShape.circle,
                           border: Border.all(
                             color: GroupIcons.colors[_selectedIconKey] ??
-                                AppColors.primary,
+                                Theme.of(context).colorScheme.primary,
                             width: 2,
                           ),
                         ),
                         child: Icon(
                           GroupIcons.all[_selectedIconKey],
                           color: GroupIcons.colors[_selectedIconKey] ??
-                              AppColors.primary,
+                              Theme.of(context).colorScheme.primary,
                           size: 38,
                         ),
                       ),
@@ -314,7 +314,8 @@ class _IconPicker extends StatelessWidget {
         itemBuilder: (_, i) {
           final e = entries[i];
           final selected = e.key == selectedKey;
-          final color = GroupIcons.colors[e.key] ?? AppColors.primary;
+          final color = GroupIcons.colors[e.key] ?? Theme.of(context).colorScheme.primary;
+          final cardBg = Theme.of(context).cardTheme.color ?? AppColors.darkCard;
           return GestureDetector(
             onTap: () => onSelect(e.key),
             child: AnimatedContainer(
@@ -324,7 +325,7 @@ class _IconPicker extends StatelessWidget {
               decoration: BoxDecoration(
                 color: selected
                     ? color.withValues(alpha: 0.18)
-                    : (isDark ? AppColors.darkCard : AppColors.lightCard),
+                    : (isDark ? cardBg : AppColors.lightCard),
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: selected
@@ -410,7 +411,7 @@ class _StyledTextField extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

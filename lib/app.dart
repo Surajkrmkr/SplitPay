@@ -12,15 +12,15 @@ class SplitPayApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(themeModeProvider);
+    final themeState = ref.watch(themeProvider);
     final router = ref.watch(appRouterProvider);
 
     return MaterialApp.router(
       title: 'SplitPay',
       debugShowCheckedModeBanner: false,
-      themeMode: themeMode,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
+      themeMode: themeState.mode,
+      theme: AppTheme.buildLightTheme(themeState.preset, themeState.bgStyle),
+      darkTheme: AppTheme.buildDarkTheme(themeState.preset, themeState.bgStyle),
       routerConfig: router,
       builder: (context, child) => NetworkStatusBannerListener(
         child: InAppNotificationListener(
@@ -30,4 +30,3 @@ class SplitPayApp extends ConsumerWidget {
     );
   }
 }
-

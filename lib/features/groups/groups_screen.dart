@@ -21,15 +21,18 @@ class GroupsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final cardBg = Theme.of(context).cardTheme.color ?? AppColors.darkCard;
+
     final groupsAsync = ref.watch(groupsProvider);
     final filteredGroups = ref.watch(searchedGroupsProvider);
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBg : AppColors.lightBg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         bottom: false,
         child: RefreshIndicator(
-          color: AppColors.primary,
+          color: primary,
           onRefresh: () => ref.read(groupsProvider.notifier).refresh(),
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -54,7 +57,7 @@ class GroupsScreen extends ConsumerWidget {
                                 letterSpacing: -0.5,
                               ),
                             ),
-                            Text(
+                            const Text(
                               'Split expenses with friends',
                               style: TextStyle(
                                 fontSize: 13,
@@ -76,7 +79,7 @@ class GroupsScreen extends ConsumerWidget {
                           height: 44,
                           decoration: BoxDecoration(
                             color: isDark
-                                ? AppColors.darkCard
+                                ? cardBg
                                 : AppColors.lightCard,
                             borderRadius: BorderRadius.circular(13),
                             border: Border.all(
@@ -87,7 +90,7 @@ class GroupsScreen extends ConsumerWidget {
                           ),
                           child: Icon(
                             Icons.link_rounded,
-                            color: AppColors.primary,
+                            color: primary,
                             size: 22,
                           ),
                         ),
@@ -107,12 +110,15 @@ class GroupsScreen extends ConsumerWidget {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            gradient: AppColors.primaryGradient,
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [primary, primary.withValues(alpha: 0.85)],
+                            ),
                             borderRadius: BorderRadius.circular(13),
                             boxShadow: [
                               BoxShadow(
-                                color:
-                                    AppColors.primary.withValues(alpha: 0.35),
+                                color: primary.withValues(alpha: 0.35),
                                 blurRadius: 12,
                                 offset: const Offset(0, 4),
                               ),

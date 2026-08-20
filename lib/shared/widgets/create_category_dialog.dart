@@ -17,6 +17,7 @@ Future<CustomCategory?> showCreateCategoryBottomSheet(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
+    useRootNavigator: true,
     backgroundColor: Colors.transparent,
     constraints: BoxConstraints(maxHeight: maxHeight),
     builder: (_) => CreateCategoryBottomSheet(categoryToEdit: categoryToEdit),

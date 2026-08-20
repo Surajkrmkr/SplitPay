@@ -165,19 +165,24 @@ class _Header extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                gradient: AppColors.primaryGradient,
+                gradient: LinearGradient(
+                  colors: [
+                    Theme.of(context).colorScheme.primary,
+                    Theme.of(context).colorScheme.primary.withValues(alpha: 0.85)
+                  ],
+                ),
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.3),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
                 ],
                 border: Border.all(
                   color: isDark
-                      ? AppColors.primary.withValues(alpha: 0.4)
-                      : AppColors.primary.withValues(alpha: 0.6),
+                      ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.4)
+                      : Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
                   width: 0.5,
                 ),
               ),
