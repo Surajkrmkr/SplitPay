@@ -51,11 +51,7 @@ export async function getNotifications(
   }
 }
 
-export async function markRead(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+export async function markRead(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
     await notificationsService.markRead(req.params.id, authReq.user.userId);
@@ -65,11 +61,7 @@ export async function markRead(
   }
 }
 
-export async function markAllRead(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+export async function markAllRead(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
     await notificationsService.markAllRead(authReq.user.userId);

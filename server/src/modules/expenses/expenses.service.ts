@@ -7,11 +7,7 @@ import * as activityRepository from '../activity/activity.repository';
 import * as settlementsRepository from '../settlements/settlements.repository';
 import * as notificationsService from '../notifications/notifications.service';
 import { CreateExpenseInput, UpdateExpenseInput } from '../../validations/expense.validation';
-import {
-  calculateNetBalances,
-  simplifyDebts,
-  SimplifiedDebt,
-} from '../../utils/balance';
+import { calculateNetBalances, simplifyDebts, SimplifiedDebt } from '../../utils/balance';
 
 export async function createExpense(
   userId: string,
@@ -95,7 +91,7 @@ function calculateShares(
         }
         return {
           userId: p.userId,
-          share: Math.round((totalAmount * p.percentage) / 100 * 100) / 100,
+          share: Math.round(((totalAmount * p.percentage) / 100) * 100) / 100,
           percentage: p.percentage,
         };
       });
@@ -163,10 +159,12 @@ export async function updateExpense(
 
   const changes: string[] = [];
   if (input.paidById && input.paidById !== expense.paidById) changes.push('Paid by');
-  if (input.date && new Date(input.date).getTime() !== new Date(expense.date).getTime()) changes.push('Date/Time');
+  if (input.date && new Date(input.date).getTime() !== new Date(expense.date).getTime())
+    changes.push('Date/Time');
   if (input.splitType && input.splitType !== expense.splitType) changes.push('Split type');
   if (input.title && input.title !== expense.title) changes.push('Title');
-  if (input.amount !== undefined && Number(input.amount) !== Number(expense.amount)) changes.push('Amount');
+  if (input.amount !== undefined && Number(input.amount) !== Number(expense.amount))
+    changes.push('Amount');
 
   const { date, participants, ...rest } = input;
   const updated = await expensesRepository.updateExpense(expenseId, {

@@ -15,9 +15,7 @@ export const createExpenseSchema = z
     splitType: z.enum(['EQUAL', 'PERCENTAGE', 'EXACT']),
     notes: z.string().max(1000, 'Notes too long').optional(),
     date: z.string().datetime().optional(),
-    participants: z
-      .array(participantSchema)
-      .min(1, 'At least one participant is required'),
+    participants: z.array(participantSchema).min(1, 'At least one participant is required'),
   })
   .superRefine((data, ctx) => {
     if (data.splitType === 'PERCENTAGE') {
@@ -82,13 +80,21 @@ export const updateExpenseSchema = z
     if (data.splitType === 'PERCENTAGE') {
       const total = data.participants.reduce((s, p) => s + (p.percentage ?? 0), 0);
       if (Math.abs(total - 100) > 0.01) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Percentages must sum to 100`, path: ['participants'] });
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Percentages must sum to 100`,
+          path: ['participants'],
+        });
       }
     }
     if (data.splitType === 'EXACT') {
       const total = data.participants.reduce((s, p) => s + (p.share ?? 0), 0);
       if (Math.abs(total - data.amount) > 0.01) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Shares must sum to amount`, path: ['participants'] });
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Shares must sum to amount`,
+          path: ['participants'],
+        });
       }
     }
   });

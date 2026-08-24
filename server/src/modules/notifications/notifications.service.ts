@@ -1,16 +1,15 @@
 import * as notificationsRepository from './notifications.repository';
 import { sendPushNotification } from '../../utils/fcm';
-import { RegisterTokenInput, GetNotificationsQuery } from '../../validations/notification.validation';
+import {
+  RegisterTokenInput,
+  GetNotificationsQuery,
+} from '../../validations/notification.validation';
 import { NotFoundError } from '../../utils/app-error';
 
 // ── Token Management ──────────────────────────────────────────────────────────
 
 export async function registerToken(input: RegisterTokenInput): Promise<void> {
-  await notificationsRepository.upsertFcmToken(
-    input.userId,
-    input.fcmToken,
-    input.deviceType
-  );
+  await notificationsRepository.upsertFcmToken(input.userId, input.fcmToken, input.deviceType);
 }
 
 export async function unregisterToken(token: string): Promise<void> {
@@ -23,16 +22,9 @@ export async function unregisterAllTokens(userId: string): Promise<void> {
 
 // ── Notifications CRUD ────────────────────────────────────────────────────────
 
-export async function getNotifications(
-  userId: string,
-  query: GetNotificationsQuery
-) {
+export async function getNotifications(userId: string, query: GetNotificationsQuery) {
   const { page, limit } = query;
-  const { items, total } = await notificationsRepository.findUserNotifications(
-    userId,
-    page,
-    limit
-  );
+  const { items, total } = await notificationsRepository.findUserNotifications(userId, page, limit);
   return {
     notifications: items,
     meta: {
@@ -44,10 +36,7 @@ export async function getNotifications(
   };
 }
 
-export async function markRead(
-  notificationId: string,
-  userId: string
-): Promise<void> {
+export async function markRead(notificationId: string, userId: string): Promise<void> {
   await notificationsRepository.markNotificationRead(notificationId, userId);
 }
 
@@ -55,10 +44,7 @@ export async function markAllRead(userId: string): Promise<void> {
   await notificationsRepository.markAllNotificationsRead(userId);
 }
 
-export async function deleteNotification(
-  notificationId: string,
-  userId: string
-): Promise<void> {
+export async function deleteNotification(notificationId: string, userId: string): Promise<void> {
   await notificationsRepository.deleteNotification(notificationId, userId);
 }
 
@@ -84,7 +70,16 @@ export async function notifyGroupExpenseAdded(opts: {
   recipientUserIds: string[];
   currency?: string;
 }): Promise<void> {
-  const { groupId, groupName, actorId, actorName, actorAvatar, expenseTitle, amount, recipientUserIds } = opts;
+  const {
+    groupId,
+    groupName,
+    actorId,
+    actorName,
+    actorAvatar,
+    expenseTitle,
+    amount,
+    recipientUserIds,
+  } = opts;
   const currency = opts.currency ?? '₹';
   const title = groupName;
   const body = `${actorName} added ${currency}${amount} for "${expenseTitle}"`;
@@ -283,7 +278,16 @@ export async function notifyGroupExpenseDeleted(opts: {
   recipientUserIds: string[];
   currency?: string;
 }): Promise<void> {
-  const { groupId, groupName, actorId, actorName, actorAvatar, expenseTitle, amount, recipientUserIds } = opts;
+  const {
+    groupId,
+    groupName,
+    actorId,
+    actorName,
+    actorAvatar,
+    expenseTitle,
+    amount,
+    recipientUserIds,
+  } = opts;
   const currency = opts.currency ?? '₹';
   const title = groupName;
   const body = `${actorName} deleted ${currency}${amount} for "${expenseTitle}"`;
@@ -331,7 +335,17 @@ export async function notifyGroupExpenseUpdated(opts: {
   currency?: string;
   changes?: string[];
 }): Promise<void> {
-  const { groupId, groupName, actorId, actorName, actorAvatar, expenseTitle, amount, recipientUserIds, changes } = opts;
+  const {
+    groupId,
+    groupName,
+    actorId,
+    actorName,
+    actorAvatar,
+    expenseTitle,
+    amount,
+    recipientUserIds,
+    changes,
+  } = opts;
   const currency = opts.currency ?? '₹';
   const title = groupName;
   const changeDetail = changes && changes.length > 0 ? ` (${changes.join(', ')})` : '';
@@ -364,4 +378,3 @@ export async function notifyGroupExpenseUpdated(opts: {
     }).catch(() => {});
   }
 }
-

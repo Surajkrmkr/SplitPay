@@ -2,7 +2,12 @@ import { Response, NextFunction, Request } from 'express';
 import { AuthenticatedRequest } from '../../types';
 import * as groupsService from './groups.service';
 import { sendSuccess, sendCreated } from '../../utils/response';
-import { CreateGroupInput, AddMemberInput, UpdateGroupInput, UpdateMemberRoleInput } from '../../validations/group.validation';
+import {
+  CreateGroupInput,
+  AddMemberInput,
+  UpdateGroupInput,
+  UpdateMemberRoleInput,
+} from '../../validations/group.validation';
 
 export async function createGroup(
   req: AuthenticatedRequest,
@@ -72,39 +77,78 @@ export async function removeMember(
   }
 }
 
-export async function updateGroup(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+export async function updateGroup(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   try {
-    const group = await groupsService.updateGroup(req.params.id, req.user.userId, req.body as UpdateGroupInput);
+    const group = await groupsService.updateGroup(
+      req.params.id,
+      req.user.userId,
+      req.body as UpdateGroupInput
+    );
     sendSuccess(res, group, 'Group updated successfully');
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 }
 
-export async function deleteGroup(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+export async function deleteGroup(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   try {
     await groupsService.deleteGroup(req.params.id, req.user.userId);
     sendSuccess(res, null, 'Group deleted successfully');
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 }
 
-export async function updateMemberRole(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+export async function updateMemberRole(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   try {
-    await groupsService.updateMemberRole(req.params.id, req.user.userId, req.params.memberId, req.body as UpdateMemberRoleInput);
+    await groupsService.updateMemberRole(
+      req.params.id,
+      req.user.userId,
+      req.params.memberId,
+      req.body as UpdateMemberRoleInput
+    );
     sendSuccess(res, null, 'Member role updated');
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 }
 
-export async function generateInvite(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+export async function generateInvite(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   try {
     const result = await groupsService.generateInvite(req.params.id, req.user.userId);
     sendCreated(res, result, 'Invite created');
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 }
 
-export async function getActiveInvite(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+export async function getActiveInvite(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   try {
     const result = await groupsService.getActiveInvite(req.params.id, req.user.userId);
     sendSuccess(res, result, result ? 'Active invite retrieved' : 'No active invite');
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 }
 
 // Re-export with Request type cast for router compatibility
@@ -124,7 +168,11 @@ export function addMemberHandler(req: Request, res: Response, next: NextFunction
   return addMember(req as AuthenticatedRequest, res, next);
 }
 
-export function removeMemberHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+export function removeMemberHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   return removeMember(req as AuthenticatedRequest, res, next);
 }
 export function updateGroupHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -133,12 +181,24 @@ export function updateGroupHandler(req: Request, res: Response, next: NextFuncti
 export function deleteGroupHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
   return deleteGroup(req as AuthenticatedRequest, res, next);
 }
-export function updateMemberRoleHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+export function updateMemberRoleHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   return updateMemberRole(req as AuthenticatedRequest, res, next);
 }
-export function generateInviteHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+export function generateInviteHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   return generateInvite(req as AuthenticatedRequest, res, next);
 }
-export function getActiveInviteHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+export function getActiveInviteHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   return getActiveInvite(req as AuthenticatedRequest, res, next);
 }

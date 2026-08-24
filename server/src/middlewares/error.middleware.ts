@@ -30,7 +30,10 @@ export function errorHandler(
 
   // Prisma Database errors
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
-    logger.error({ err, code: err.code, meta: err.meta, url: req.url, method: req.method }, 'Prisma error');
+    logger.error(
+      { err, code: err.code, meta: err.meta, url: req.url, method: req.method },
+      'Prisma error'
+    );
     if (err.code === 'P2002') {
       return sendError(res, 'A record with this unique value already exists', 409);
     }
@@ -51,11 +54,7 @@ export function errorHandler(
   // Unknown / unexpected errors
   logger.error({ err, url: req.url, method: req.method }, 'Unhandled error');
 
-  return sendError(
-    res,
-    'An unexpected error occurred. Please try again later.',
-    500
-  );
+  return sendError(res, 'An unexpected error occurred. Please try again later.', 500);
 }
 
 export function notFoundHandler(req: Request, res: Response): Response {

@@ -42,9 +42,9 @@ export async function findGroupSettlements(groupId: string): Promise<SettlementW
   });
 }
 
-export async function findGroupSettlementsForBalance(groupId: string): Promise<
-  { payerId: string; payeeId: string; amount: Decimal }[]
-> {
+export async function findGroupSettlementsForBalance(
+  groupId: string
+): Promise<{ payerId: string; payeeId: string; amount: Decimal }[]> {
   return prisma.settlement.findMany({
     where: { groupId },
     select: { payerId: true, payeeId: true, amount: true },

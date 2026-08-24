@@ -29,7 +29,6 @@ export async function updateMe(
   }
 }
 
-
 export async function searchUsers(
   req: AuthenticatedRequest,
   res: Response,
@@ -56,4 +55,3 @@ export async function deleteMe(
     next(err);
   }
 }
-

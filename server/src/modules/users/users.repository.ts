@@ -23,7 +23,10 @@ export async function searchUsers(query: string, excludeUserId?: string): Promis
   });
 }
 
-export async function updateUser(id: string, data: { name?: string; avatar?: string }): Promise<User> {
+export async function updateUser(
+  id: string,
+  data: { name?: string; avatar?: string }
+): Promise<User> {
   return prisma.user.update({
     where: { id },
     data,
@@ -41,5 +44,3 @@ export async function deleteUser(id: string): Promise<User> {
     return tx.user.delete({ where: { id } });
   });
 }
-
-

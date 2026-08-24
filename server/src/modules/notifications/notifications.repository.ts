@@ -72,9 +72,7 @@ export async function createNotification(data: CreateNotificationData) {
 }
 
 /** Batch-create notifications for multiple recipients. */
-export async function createNotifications(
-  items: CreateNotificationData[]
-): Promise<void> {
+export async function createNotifications(items: CreateNotificationData[]): Promise<void> {
   if (items.length === 0) return;
   await prisma.notification.createMany({
     data: items.map((d) => ({
@@ -91,11 +89,7 @@ export async function createNotifications(
   });
 }
 
-export async function findUserNotifications(
-  userId: string,
-  page: number,
-  limit: number
-) {
+export async function findUserNotifications(userId: string, page: number, limit: number) {
   const [items, total] = await Promise.all([
     prisma.notification.findMany({
       where: { userId },
@@ -108,10 +102,7 @@ export async function findUserNotifications(
   return { items, total };
 }
 
-export async function markNotificationRead(
-  notificationId: string,
-  userId: string
-): Promise<void> {
+export async function markNotificationRead(notificationId: string, userId: string): Promise<void> {
   await prisma.notification.updateMany({
     where: { id: notificationId, userId },
     data: { isRead: true },
@@ -125,10 +116,7 @@ export async function markAllNotificationsRead(userId: string): Promise<void> {
   });
 }
 
-export async function deleteNotification(
-  notificationId: string,
-  userId: string
-): Promise<void> {
+export async function deleteNotification(notificationId: string, userId: string): Promise<void> {
   await prisma.notification.deleteMany({
     where: { id: notificationId, userId },
   });
@@ -137,4 +125,3 @@ export async function deleteNotification(
 export async function deleteAllNotifications(userId: string): Promise<void> {
   await prisma.notification.deleteMany({ where: { userId } });
 }
-

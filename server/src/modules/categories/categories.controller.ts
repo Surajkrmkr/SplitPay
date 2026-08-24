@@ -4,7 +4,11 @@ import * as service from './categories.service';
 import { sendSuccess, sendCreated } from '../../utils/response';
 import { CreateCategoryInput, UpdateCategoryInput } from '../../validations/category.validation';
 
-export async function createCategory(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function createCategory(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   try {
     const { userId } = (req as AuthenticatedRequest).user;
     const cat = await service.createCategory(userId, req.body as CreateCategoryInput);
@@ -14,7 +18,11 @@ export async function createCategory(req: Request, res: Response, next: NextFunc
   }
 }
 
-export async function getCategories(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function getCategories(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   try {
     const { userId } = (req as AuthenticatedRequest).user;
     const cats = await service.getCategories(userId);
@@ -24,17 +32,29 @@ export async function getCategories(req: Request, res: Response, next: NextFunct
   }
 }
 
-export async function updateCategory(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function updateCategory(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   try {
     const { userId } = (req as AuthenticatedRequest).user;
-    const cat = await service.updateCategory(userId, req.params.id, req.body as UpdateCategoryInput);
+    const cat = await service.updateCategory(
+      userId,
+      req.params.id,
+      req.body as UpdateCategoryInput
+    );
     sendSuccess(res, cat, 'Category updated');
   } catch (err) {
     next(err);
   }
 }
 
-export async function deleteCategory(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function deleteCategory(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   try {
     const { userId } = (req as AuthenticatedRequest).user;
     await service.deleteCategory(userId, req.params.id);

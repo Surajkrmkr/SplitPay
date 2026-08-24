@@ -142,7 +142,11 @@ export async function findInviteByCode(code: string) {
   return prisma.groupInvite.findUnique({
     where: { code },
     include: {
-      group: { include: { members: { include: { user: { select: { id: true, name: true, avatar: true } } } } } },
+      group: {
+        include: {
+          members: { include: { user: { select: { id: true, name: true, avatar: true } } } },
+        },
+      },
       createdBy: { select: { id: true, name: true, avatar: true } },
     },
   });

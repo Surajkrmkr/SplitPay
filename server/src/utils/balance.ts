@@ -28,10 +28,7 @@ export function simplifyDebts(rawBalances: RawBalance[]): SimplifiedDebt[] {
       fromUserId,
       Math.round(((netBalance.get(fromUserId) ?? 0) - amount) * 100) / 100
     );
-    netBalance.set(
-      toUserId,
-      Math.round(((netBalance.get(toUserId) ?? 0) + amount) * 100) / 100
-    );
+    netBalance.set(toUserId, Math.round(((netBalance.get(toUserId) ?? 0) + amount) * 100) / 100);
   }
 
   // Separate into debtors (negative) and creditors (positive)

@@ -29,10 +29,7 @@ export async function getGroupSettlements(
   try {
     const authReq = req as AuthenticatedRequest;
     const { id: groupId } = req.params;
-    const settlements = await settlementsService.getGroupSettlements(
-      groupId,
-      authReq.user.userId
-    );
+    const settlements = await settlementsService.getGroupSettlements(groupId, authReq.user.userId);
     sendSuccess(res, settlements, 'Settlements retrieved');
   } catch (err) {
     next(err);

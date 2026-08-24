@@ -4,7 +4,11 @@ import * as expensesService from './expenses.service';
 import { sendSuccess, sendCreated } from '../../utils/response';
 import { CreateExpenseInput, UpdateExpenseInput } from '../../validations/expense.validation';
 
-export async function createExpense(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function createExpense(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
     const expense = await expensesService.createExpense(
@@ -32,20 +36,36 @@ export async function getGroupExpenses(
   }
 }
 
-export async function updateExpense(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function updateExpense(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
-    const expense = await expensesService.updateExpense(req.params.id, authReq.user.userId, req.body as UpdateExpenseInput);
+    const expense = await expensesService.updateExpense(
+      req.params.id,
+      authReq.user.userId,
+      req.body as UpdateExpenseInput
+    );
     sendSuccess(res, expense, 'Expense updated successfully');
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 }
 
-export async function deleteExpense(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function deleteExpense(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
     await expensesService.deleteExpense(req.params.id, authReq.user.userId);
     sendSuccess(res, null, 'Expense deleted successfully');
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 }
 
 export async function getGroupBalances(

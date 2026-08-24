@@ -33,8 +33,6 @@ router.delete('/me', (req: Request, res: Response, next: NextFunction) =>
   usersController.deleteMe(req as AuthenticatedRequest, res, next)
 );
 
-
-
 /**
  * GET /users/search?q=query
  * Search users by name or email

@@ -1,5 +1,10 @@
 import { GroupRole } from '@prisma/client';
-import { ForbiddenError, NotFoundError, ConflictError, BadRequestError } from '../../utils/app-error';
+import {
+  ForbiddenError,
+  NotFoundError,
+  ConflictError,
+  BadRequestError,
+} from '../../utils/app-error';
 import * as groupsRepository from './groups.repository';
 import { GroupWithMembers } from './groups.repository';
 import * as activityRepository from '../activity/activity.repository';
@@ -7,7 +12,12 @@ import * as notificationsService from '../notifications/notifications.service';
 import * as expensesRepository from '../expenses/expenses.repository';
 import * as settlementsRepository from '../settlements/settlements.repository';
 import { calculateNetBalances, simplifyDebts } from '../../utils/balance';
-import { CreateGroupInput, AddMemberInput, UpdateGroupInput, UpdateMemberRoleInput } from '../../validations/group.validation';
+import {
+  CreateGroupInput,
+  AddMemberInput,
+  UpdateGroupInput,
+  UpdateMemberRoleInput,
+} from '../../validations/group.validation';
 import crypto from 'crypto';
 
 export async function createGroup(
@@ -193,7 +203,13 @@ export async function generateInvite(
 
   // Only one invite code should be valid per group at a time.
   await groupsRepository.deactivateGroupInvites(groupId);
-  await groupsRepository.createInvite({ code, groupId, createdById: requesterId, expiresAt, maxUses: 50 });
+  await groupsRepository.createInvite({
+    code,
+    groupId,
+    createdById: requesterId,
+    expiresAt,
+    maxUses: 50,
+  });
   return { code, expiresAt };
 }
 
@@ -219,7 +235,8 @@ export async function joinViaInvite(code: string, userId: string): Promise<Group
   if (!invite) throw new NotFoundError('Invite code not found');
   if (!invite.active) throw new BadRequestError('Invite code is no longer active');
   if (invite.expiresAt < new Date()) throw new BadRequestError('Invite code has expired');
-  if (invite.usedCount >= invite.maxUses) throw new BadRequestError('Invite code has reached its usage limit');
+  if (invite.usedCount >= invite.maxUses)
+    throw new BadRequestError('Invite code has reached its usage limit');
 
   const alreadyMember = await groupsRepository.isMember(invite.groupId, userId);
   if (alreadyMember) throw new ConflictError('You are already a member of this group');
@@ -267,7 +284,8 @@ export async function getInviteInfo(code: string) {
   if (!invite) throw new NotFoundError('Invite code not found');
   if (!invite.active) throw new BadRequestError('Invite code is no longer active');
   if (invite.expiresAt < new Date()) throw new BadRequestError('Invite code has expired');
-  if (invite.usedCount >= invite.maxUses) throw new BadRequestError('Invite code has reached its usage limit');
+  if (invite.usedCount >= invite.maxUses)
+    throw new BadRequestError('Invite code has reached its usage limit');
   return {
     code: invite.code,
     groupName: invite.group.name,

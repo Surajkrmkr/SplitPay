@@ -11,7 +11,9 @@ if (admin.apps.length === 0) {
         credential: admin.credential.cert(serviceAccount),
       });
     } catch {
-      console.error('❌ Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY — Firebase Admin SDK not initialized');
+      console.error(
+        '❌ Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY — Firebase Admin SDK not initialized'
+      );
       app = admin.initializeApp();
     }
   } else {

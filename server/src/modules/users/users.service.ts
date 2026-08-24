@@ -70,5 +70,3 @@ export async function deleteMe(userId: string): Promise<void> {
     }
   }
 }
-
-

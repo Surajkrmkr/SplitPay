@@ -105,7 +105,12 @@ export async function updateExpense(
     if (participants) {
       await tx.expenseParticipant.deleteMany({ where: { expenseId } });
       await tx.expenseParticipant.createMany({
-        data: participants.map((p) => ({ expenseId, userId: p.userId, share: p.share ?? 0, percentage: p.percentage ?? null })),
+        data: participants.map((p) => ({
+          expenseId,
+          userId: p.userId,
+          share: p.share ?? 0,
+          percentage: p.percentage ?? null,
+        })),
       });
     }
 
@@ -114,7 +119,9 @@ export async function updateExpense(
       data: expenseData as Parameters<typeof tx.expense.update>[0]['data'],
       include: {
         paidBy: { select: { id: true, name: true, email: true, avatar: true } },
-        participants: { include: { user: { select: { id: true, name: true, email: true, avatar: true } } } },
+        participants: {
+          include: { user: { select: { id: true, name: true, email: true, avatar: true } } },
+        },
       },
     });
   });
