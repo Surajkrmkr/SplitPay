@@ -22,24 +22,15 @@ platform :ios do
       in_house: false
     )
 
-    key_id = ENV["APP_STORE_CONNECT_API_KEY_ID"]
-    issuer_id = ENV["APP_STORE_CONNECT_ISSUER_ID"]
-
-    auth_args = "-allowProvisioningUpdates"
-    if File.exist?(key_path) && key_id && issuer_id
-      auth_args += " -authenticationKeyPath '#{key_path}' -authenticationKeyID '#{key_id}' -authenticationKeyIssuerID '#{issuer_id}'"
-    end
-
-    # Signing stays "Automatic" in the Xcode project (see project.pbxproj) —
-    # -allowProvisioningUpdates lets Xcode fetch/refresh the App Store
-    # provisioning profile itself via the API key, as long as a matching
-    # Distribution certificate is already present in the CI keychain.
+    # Signing stays "Automatic" in the Xcode project —
+    # app_store_connect_api_key automatically populates the API key context
+    # for gym/build_app. Passing -allowProvisioningUpdates via xcargs lets Xcode
+    # fetch/refresh provisioning profiles using that API key.
     build_app(
       workspace: "Runner.xcworkspace",
       scheme: "Runner",
       export_method: "app-store",
-      xcargs: auth_args,
-      export_xcargs: auth_args
+      xcargs: "-allowProvisioningUpdates"
     )
 
     api_key
