@@ -35,6 +35,7 @@ platform :ios do
       scheme: "Runner",
       export_method: "app-store",
       export_team_id: team_id,
+      skip_profile_detection: true,
       xcargs: xcargs_flags
     )
 
