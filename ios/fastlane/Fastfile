@@ -23,13 +23,13 @@ platform :ios do
     )
 
     team_id = ENV["APPLE_TEAM_ID"]
-    xcargs_flags = "-allowProvisioningUpdates"
+    xcargs_flags = "-allowProvisioningUpdates CODE_SIGNING_ALLOWED=NO"
     xcargs_flags += " DEVELOPMENT_TEAM='#{team_id}'" if team_id && !team_id.empty?
 
-    # Signing stays "Automatic" in the Xcode project —
-    # app_store_connect_api_key automatically populates the API key context
-    # for gym/build_app. Passing -allowProvisioningUpdates and DEVELOPMENT_TEAM
-    # lets Xcode fetch/refresh provisioning profiles for the team.
+    # Archive without requiring local development profiles (CODE_SIGNING_ALLOWED=NO).
+    # Then gym runs xcodebuild -exportArchive with export_method: "app-store"
+    # and -allowProvisioningUpdates using the App Store Connect API key to
+    # sign the IPA with the Distribution certificate in the CI keychain.
     build_app(
       workspace: "Runner.xcworkspace",
       scheme: "Runner",
