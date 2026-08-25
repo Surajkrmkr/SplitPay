@@ -22,15 +22,20 @@ platform :ios do
       in_house: false
     )
 
+    team_id = ENV["APPLE_TEAM_ID"]
+    xcargs_flags = "-allowProvisioningUpdates"
+    xcargs_flags += " DEVELOPMENT_TEAM='#{team_id}'" if team_id && !team_id.empty?
+
     # Signing stays "Automatic" in the Xcode project —
     # app_store_connect_api_key automatically populates the API key context
-    # for gym/build_app. Passing -allowProvisioningUpdates via xcargs lets Xcode
-    # fetch/refresh provisioning profiles using that API key.
+    # for gym/build_app. Passing -allowProvisioningUpdates and DEVELOPMENT_TEAM
+    # lets Xcode fetch/refresh provisioning profiles for the team.
     build_app(
       workspace: "Runner.xcworkspace",
       scheme: "Runner",
       export_method: "app-store",
-      xcargs: "-allowProvisioningUpdates"
+      export_team_id: team_id,
+      xcargs: xcargs_flags
     )
 
     api_key
