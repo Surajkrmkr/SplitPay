@@ -26,15 +26,23 @@ platform :ios do
     xcargs_flags = "-allowProvisioningUpdates CODE_SIGNING_ALLOWED=NO"
     xcargs_flags += " DEVELOPMENT_TEAM='#{team_id}'" if team_id && !team_id.empty?
 
+    export_opts = {
+      method: "app-store",
+      signingStyle: "automatic"
+    }
+    export_opts[:teamID] = team_id if team_id && !team_id.empty?
+
     # Archive without requiring local development profiles (CODE_SIGNING_ALLOWED=NO).
-    # Then gym runs xcodebuild -exportArchive with export_method: "app-store"
-    # and -allowProvisioningUpdates using the App Store Connect API key to
-    # sign the IPA with the Distribution certificate in the CI keychain.
+    # Then gym runs xcodebuild -exportArchive with export_options (signingStyle: automatic)
+    # and export_xcargs: "-allowProvisioningUpdates" using the App Store Connect API key
+    # to fetch/generate the App Store provisioning profile and sign the IPA.
     build_app(
       workspace: "Runner.xcworkspace",
       scheme: "Runner",
       export_method: "app-store",
       export_team_id: team_id,
+      export_options: export_opts,
+      export_xcargs: "-allowProvisioningUpdates",
       skip_profile_detection: true,
       xcargs: xcargs_flags
     )
