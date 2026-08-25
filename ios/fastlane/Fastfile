@@ -1,21 +1,32 @@
 default_platform(:ios)
 
 platform :ios do
-  desc "Build and upload to TestFlight (internal testing)"
-  lane :beta do
+  private_lane :build_app_with_api_key do
+    raw_path = ENV["APP_STORE_CONNECT_API_KEY_PATH"] || "AuthKey.p8"
+    resolved_path = raw_path
+    unless File.exist?(resolved_path)
+      candidates = [
+        File.join(Dir.pwd, raw_path),
+        File.join(Dir.pwd, "..", raw_path),
+        File.join(Dir.pwd, "..", "..", raw_path)
+      ]
+      found = candidates.find { |p| File.exist?(p) }
+      resolved_path = found if found
+    end
+    key_path = File.expand_path(resolved_path)
+
     api_key = app_store_connect_api_key(
       key_id: ENV["APP_STORE_CONNECT_API_KEY_ID"],
       issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
-      key_filepath: ENV["APP_STORE_CONNECT_API_KEY_PATH"],
+      key_filepath: key_path,
       in_house: false
     )
 
-    key_path = File.expand_path(ENV["APP_STORE_CONNECT_API_KEY_PATH"]) if ENV["APP_STORE_CONNECT_API_KEY_PATH"]
     key_id = ENV["APP_STORE_CONNECT_API_KEY_ID"]
     issuer_id = ENV["APP_STORE_CONNECT_ISSUER_ID"]
 
     auth_args = "-allowProvisioningUpdates"
-    if key_path && key_id && issuer_id
+    if File.exist?(key_path) && key_id && issuer_id
       auth_args += " -authenticationKeyPath '#{key_path}' -authenticationKeyID '#{key_id}' -authenticationKeyIssuerID '#{issuer_id}'"
     end
 
@@ -31,6 +42,29 @@ platform :ios do
       export_xcargs: auth_args
     )
 
+    api_key
+  end
+
+  desc "Build and upload to App Store (Production)"
+  lane :release do
+    api_key = build_app_with_api_key
+    upload_to_app_store(
+      api_key: api_key,
+      skip_metadata: true,
+      skip_screenshots: true,
+      skip_waiting_for_build_processing: true,
+      force: true
+    )
+  end
+
+  desc "Alias for release lane"
+  lane :production do
+    release
+  end
+
+  desc "Build and upload to TestFlight (Beta testing)"
+  lane :beta do
+    api_key = build_app_with_api_key
     upload_to_testflight(
       api_key: api_key,
       skip_waiting_for_build_processing: true,

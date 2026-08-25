@@ -13,9 +13,9 @@ on:
           - android
           - ios
       track:
-        description: "Target track for Play Store (Android)"
+        description: "Target track for release (Android & iOS)"
         required: true
-        default: internal
+        default: production
         type: choice
         options:
           - internal
@@ -91,16 +91,18 @@ jobs:
           keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
           EOF
 
-      - name: Resolve version name from pubspec.yaml
+      - name: Resolve version from pubspec.yaml
         id: version
         run: |
-          echo "name=$(grep '^version:' pubspec.yaml | sed 's/version: *//' | cut -d'+' -f1)" >> "$GITHUB_OUTPUT"
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: *//' | tr -d '\r')
+          echo "name=$(echo $VERSION | cut -d'+' -f1)" >> "$GITHUB_OUTPUT"
+          echo "number=$(echo $VERSION | cut -d'+' -f2)" >> "$GITHUB_OUTPUT"
 
       - name: Build release App Bundle
         run: >
           flutter build appbundle --release
           --build-name=${{ steps.version.outputs.name }}
-          --build-number=${{ github.run_number }}
+          --build-number=${{ steps.version.outputs.number }}
 
       - uses: ruby/setup-ruby@v1
         with:
@@ -157,18 +159,22 @@ jobs:
           rm cert.p12
 
       - name: Decode App Store Connect API key
-        run: echo "${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}" | base64 --decode > AuthKey.p8
+        run: |
+          echo "${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}" | base64 --decode > AuthKey.p8
+          echo "${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}" | base64 --decode > ios/AuthKey.p8
 
-      - name: Resolve version name from pubspec.yaml
+      - name: Resolve version from pubspec.yaml
         id: version
         run: |
-          echo "name=$(grep '^version:' pubspec.yaml | sed 's/version: *//' | cut -d'+' -f1)" >> "$GITHUB_OUTPUT"
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: *//' | tr -d '\r')
+          echo "name=$(echo $VERSION | cut -d'+' -f1)" >> "$GITHUB_OUTPUT"
+          echo "number=$(echo $VERSION | cut -d'+' -f2)" >> "$GITHUB_OUTPUT"
 
       - name: Flutter build (no codesign)
         run: >
           flutter build ios --release --no-codesign
           --build-name=${{ steps.version.outputs.name }}
-          --build-number=${{ github.run_number }}
+          --build-number=${{ steps.version.outputs.number }}
 
       - uses: ruby/setup-ruby@v1
         with:
@@ -176,11 +182,11 @@ jobs:
           bundler-cache: true
           working-directory: ios
 
-      - name: Build & upload to TestFlight
+      - name: Build & upload to App Store
         working-directory: ios
         env:
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-          APP_STORE_CONNECT_API_KEY_PATH: ../AuthKey.p8
+          APP_STORE_CONNECT_API_KEY_PATH: AuthKey.p8
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: bundle exec fastlane beta
+        run: bundle exec fastlane ${{ inputs.track == 'internal' && 'beta' || 'release' }}
