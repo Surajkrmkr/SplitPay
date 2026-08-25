@@ -10,6 +10,15 @@ platform :ios do
       in_house: false
     )
 
+    key_path = File.expand_path(ENV["APP_STORE_CONNECT_API_KEY_PATH"]) if ENV["APP_STORE_CONNECT_API_KEY_PATH"]
+    key_id = ENV["APP_STORE_CONNECT_API_KEY_ID"]
+    issuer_id = ENV["APP_STORE_CONNECT_ISSUER_ID"]
+
+    auth_args = "-allowProvisioningUpdates"
+    if key_path && key_id && issuer_id
+      auth_args += " -authenticationKeyPath '#{key_path}' -authenticationKeyID '#{key_id}' -authenticationKeyIssuerID '#{issuer_id}'"
+    end
+
     # Signing stays "Automatic" in the Xcode project (see project.pbxproj) —
     # -allowProvisioningUpdates lets Xcode fetch/refresh the App Store
     # provisioning profile itself via the API key, as long as a matching
@@ -18,8 +27,8 @@ platform :ios do
       workspace: "Runner.xcworkspace",
       scheme: "Runner",
       export_method: "app-store",
-      api_key: api_key,
-      xcargs: "-allowProvisioningUpdates"
+      xcargs: auth_args,
+      export_xcargs: auth_args
     )
 
     upload_to_testflight(
