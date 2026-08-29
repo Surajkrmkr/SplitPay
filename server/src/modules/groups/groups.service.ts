@@ -331,9 +331,7 @@ export async function removeMember(
     // that can no longer be settled from inside the group — settle up first.
     const hasBalance = await hasOutstandingBalance(groupId, memberId);
     if (hasBalance) {
-      throw new BadRequestError(
-        'Settle all your balances in this group before leaving'
-      );
+      throw new BadRequestError('Settle all your balances in this group before leaving');
     }
 
     // Don't let the sole admin leave a group that still has other members —
@@ -343,9 +341,7 @@ export async function removeMember(
         (m) => m.role === GroupRole.ADMIN && m.userId !== memberId
       );
       if (otherAdmins.length === 0) {
-        throw new BadRequestError(
-          'Promote another member to admin before leaving this group'
-        );
+        throw new BadRequestError('Promote another member to admin before leaving this group');
       }
     }
   }
@@ -386,7 +382,5 @@ async function hasOutstandingBalance(groupId: string, userId: string): Promise<b
   const rawBalances = calculateNetBalances(expenseData, settlementData);
   const simplifiedBalances = simplifyDebts(rawBalances);
 
-  return simplifiedBalances.some(
-    (b) => b.fromUserId === userId || b.toUserId === userId
-  );
+  return simplifiedBalances.some((b) => b.fromUserId === userId || b.toUserId === userId);
 }
