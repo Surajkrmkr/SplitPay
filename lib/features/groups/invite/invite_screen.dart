@@ -181,7 +181,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
 
     // Header band with app icon + name
     final headerPaint = Paint()
-      ..shader = const LinearGradient(
+      ..shader = LinearGradient(
         colors: [AppColors.primary, AppColors.secondary],
         begin: Alignment.centerLeft,
         end: Alignment.centerRight,
@@ -238,7 +238,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
     final painter = QrPainter(
       data: 'dimeflow://join/$_generatedCode',
       version: QrVersions.auto,
-      eyeStyle: const QrEyeStyle(
+      eyeStyle: QrEyeStyle(
         eyeShape: QrEyeShape.square,
         color: AppColors.primary,
       ),
@@ -706,7 +706,7 @@ class _JoinTab extends StatelessWidget {
               focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide:
-                      const BorderSide(color: AppColors.primary, width: 2)),
+                      BorderSide(color: AppColors.primary, width: 2)),
               contentPadding: const EdgeInsets.symmetric(vertical: 20),
             ),
             onChanged: onCodeChanged,
@@ -719,7 +719,7 @@ class _JoinTab extends StatelessWidget {
             label: const Text('Scan QR Code'),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.primary,
-              side: const BorderSide(color: AppColors.primary),
+              side: BorderSide(color: AppColors.primary),
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14)),
@@ -729,7 +729,7 @@ class _JoinTab extends StatelessWidget {
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
             child: loadingPreview
-                ? const Center(
+                ? Center(
                     child: SizedBox(
                         width: 20,
                         height: 20,

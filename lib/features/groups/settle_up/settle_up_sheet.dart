@@ -555,7 +555,7 @@ class _MethodPickerView extends ConsumerWidget {
           subtitle: 'Record a cash or offline payment',
           onTap: isLoading ? null : onManual,
           trailing: isLoading
-              ? const SizedBox(
+              ? SizedBox(
                   width: 20,
                   height: 20,
                   child: CircularProgressIndicator(
@@ -836,7 +836,7 @@ class _ProcessingView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const CircularProgressIndicator(
+            CircularProgressIndicator(
                 color: AppColors.primary, strokeWidth: 3),
             const SizedBox(height: 24),
             Text(
@@ -891,7 +891,7 @@ class _ProcessingView extends StatelessWidget {
               color: AppColors.primary.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.help_outline_rounded,
+            child: Icon(Icons.help_outline_rounded,
                 color: AppColors.primary, size: 36),
           ),
           const SizedBox(height: 16),
@@ -931,9 +931,9 @@ class _ProcessingView extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14)),
             ),
             onPressed: onRetryApp,
-            icon: const Icon(Icons.open_in_new_rounded,
+            icon: Icon(Icons.open_in_new_rounded,
                 size: 18, color: AppColors.primary),
-            label: const Text(
+            label: Text(
               'Re-open UPI App',
               style: TextStyle(
                 color: AppColors.primary,
@@ -1338,7 +1338,7 @@ class _AvatarRow extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.arrow_forward_rounded,
+                Icon(Icons.arrow_forward_rounded,
                     color: AppColors.primary, size: 22),
                 const SizedBox(height: 2),
                 Text(
@@ -1568,7 +1568,7 @@ class _UpiAppPills extends StatelessWidget {
               ),
               child: Text(
                 '+$extra',
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.primary,
                   fontSize: 9,
                   fontWeight: FontWeight.w700,
@@ -1599,7 +1599,7 @@ class _UpiAppIcon extends StatelessWidget {
                 alignment: Alignment.center,
                 child: Text(
                   app.name.isNotEmpty ? app.name[0].toUpperCase() : '?',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.primary,
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
@@ -1646,7 +1646,7 @@ class _AppPickerTile extends StatelessWidget {
                       child: Image.memory(app.icon!,
                           width: 44, height: 44, fit: BoxFit.cover),
                     )
-                  : const Icon(Icons.account_balance_wallet_rounded,
+                  : Icon(Icons.account_balance_wallet_rounded,
                       color: AppColors.primary, size: 22),
             ),
             const SizedBox(width: 14),

@@ -393,7 +393,7 @@ class _ActiveChip extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.primary,
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -402,7 +402,7 @@ class _ActiveChip extends StatelessWidget {
           const SizedBox(width: 4),
           GestureDetector(
             onTap: onRemove,
-            child: const Icon(Icons.close_rounded,
+            child: Icon(Icons.close_rounded,
                 size: 14, color: AppColors.primary),
           ),
         ],
@@ -879,7 +879,7 @@ class _AmountLabel extends StatelessWidget {
         ),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
               color: AppColors.primary),

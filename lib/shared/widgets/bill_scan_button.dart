@@ -116,7 +116,7 @@ class _BillScanButtonState extends ConsumerState<BillScanButton> {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
                   children: [
-                    const Icon(Icons.document_scanner_rounded,
+                    Icon(Icons.document_scanner_rounded,
                         color: AppColors.primary, size: 18),
                     const SizedBox(width: 8),
                     Text(
@@ -206,7 +206,7 @@ class _BillScanButtonState extends ConsumerState<BillScanButton> {
             mainAxisSize: MainAxisSize.min,
             children: [
               _busy
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 14,
                       height: 14,
                       child: CircularProgressIndicator(
@@ -214,12 +214,12 @@ class _BillScanButtonState extends ConsumerState<BillScanButton> {
                         color: AppColors.primary,
                       ),
                     )
-                  : const Icon(Icons.document_scanner_rounded,
+                  : Icon(Icons.document_scanner_rounded,
                       size: 16, color: AppColors.primary),
               const SizedBox(width: 6),
               Text(
                 _busy ? 'Scanning…' : 'Scan',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: AppColors.primary,
@@ -293,7 +293,7 @@ Future<BillScanApplied?> showBillScanConfirmDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         title: Row(
           children: [
-            const Icon(Icons.auto_awesome_rounded,
+            Icon(Icons.auto_awesome_rounded,
                 color: AppColors.primary, size: 18),
             const SizedBox(width: 8),
             const Text('Detected from your bill',

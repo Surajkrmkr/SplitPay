@@ -277,7 +277,7 @@ class _BiometricUnlockPanel extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.fingerprint_rounded,
                   size: 34,
                   color: AppColors.primary,
@@ -320,7 +320,7 @@ class _BiometricUnlockPanel extends StatelessWidget {
             padding:
                 const EdgeInsets.symmetric(horizontal: 36, vertical: 14),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 colors: [AppColors.primary, AppColors.primaryDark],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -384,7 +384,7 @@ class _BiometricScanningPanel extends StatelessWidget {
               width: 1.5,
             ),
           ),
-          child: const Icon(
+          child: Icon(
             Icons.fingerprint_rounded,
             size: 34,
             color: AppColors.primary,

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/ad_constants.dart';
 import '../../core/constants/app_colors.dart';
 import '../../providers/budget_provider.dart';
+import '../../providers/home_widget_sync_provider.dart';
 import '../../shared/widgets/app_ad_banner.dart';
 import '../../shared/widgets/app_search_bar.dart';
 import '../../shared/widgets/empty_state.dart';
@@ -34,6 +34,9 @@ class BudgetScreen extends ConsumerWidget {
     final filtered = ref.watch(filteredBudgetsProvider);
     final activeBudgets = ref.watch(activeBudgetsProvider);
     final showArchived = ref.watch(showArchivedBudgetsProvider);
+    // Keeps the Overall Budget home-screen widget fresh whenever this screen
+    // (where budgets are created/edited) is visited.
+    ref.watch(homeWidgetSyncProvider);
     final hasAnyBudgets = allBudgets.isNotEmpty;
     final hasArchivedBudgets = allBudgets.any((b) => b.isArchived);
 
@@ -104,21 +107,48 @@ class BudgetScreen extends ConsumerWidget {
                       .state = true,
                 ),
               )
+            else if (showArchived)
+              // Archived budgets stay as a single-column list.
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, i) {
+                      final budget = filtered[i];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 14),
+                        child: BudgetCard(
+                          budget: budget,
+                          onTap: () => context.push('/budget/${budget.id}'),
+                        ),
+                      );
+                    },
+                    childCount: filtered.length,
+                  ),
+                ),
+              )
             else
-              SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, i) {
-                    final budget = filtered[i];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 14),
-                      child: BudgetCard(
+              // Active budgets shown as a 2-column grid.
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                sliver: SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 14,
+                    crossAxisSpacing: 14,
+                    childAspectRatio: 0.82,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, i) {
+                      final budget = filtered[i];
+                      return BudgetCard(
                         budget: budget,
-                        animationIndex: i,
+                        compact: true,
                         onTap: () => context.push('/budget/${budget.id}'),
-                      ),
-                    );
-                  },
-                  childCount: filtered.length,
+                      );
+                    },
+                    childCount: filtered.length,
+                  ),
                 ),
               ),
 
@@ -142,7 +172,6 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
@@ -165,26 +194,8 @@ class _Header extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Theme.of(context).colorScheme.primary,
-                    Theme.of(context).colorScheme.primary.withValues(alpha: 0.85)
-                  ],
-                ),
+                color: Theme.of(context).colorScheme.primary,
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-                border: Border.all(
-                  color: isDark
-                      ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.4)
-                      : Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
-                  width: 0.5,
-                ),
               ),
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
@@ -205,7 +216,7 @@ class _Header extends StatelessWidget {
           ),
         ],
       ),
-    ).animate().fadeIn(duration: 400.ms);
+    );
   }
 }
 
@@ -274,7 +285,7 @@ class _ArchiveToggle extends StatelessWidget {
           ),
         ],
       ),
-    ).animate(delay: 150.ms).fadeIn(duration: 300.ms);
+    );
   }
 }
 

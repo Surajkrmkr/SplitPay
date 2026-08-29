@@ -71,6 +71,7 @@ class ThemeNotifier extends StateNotifier<CustomThemeState> {
         ? AppBackgroundStyle.values[bgIndex]
         : AppBackgroundStyle.standard;
 
+    AppColors.applyPreset(preset);
     state = CustomThemeState(mode: mode, preset: preset, bgStyle: bgStyle);
   }
 
@@ -84,6 +85,7 @@ class ThemeNotifier extends StateNotifier<CustomThemeState> {
   }
 
   Future<void> setPreset(AppThemePreset preset) async {
+    AppColors.applyPreset(preset);
     state = state.copyWith(preset: preset);
     await PreferencesService.set('themePresetIndex', preset.index);
   }

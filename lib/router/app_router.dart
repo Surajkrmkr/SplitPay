@@ -15,6 +15,7 @@ import '../features/transactions/transactions_screen.dart';
 import '../features/analytics/analytics_screen.dart';
 import '../features/budget/budget_screen.dart';
 import '../features/budget/budget_detail_screen.dart';
+import '../features/budget/budget_overview_screen.dart';
 import '../data/models/notification_model.dart';
 import '../features/notifications/notifications_screen.dart';
 import '../features/settings/notification_settings_screen.dart';
@@ -104,6 +105,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/analytics',
         pageBuilder: (context, state) =>
             _detailPage(context, state, const AnalyticsScreen()),
+      ),
+      // Budget overview — aggregated stats across all active budgets.
+      // Registered before the dynamic ':budgetId' route below so the
+      // literal path isn't shadowed.
+      GoRoute(
+        path: '/budget/overview',
+        pageBuilder: (context, state) =>
+            _detailPage(context, state, const BudgetOverviewScreen()),
       ),
       // Budget detail — outside the shell so the navbar is hidden
       GoRoute(

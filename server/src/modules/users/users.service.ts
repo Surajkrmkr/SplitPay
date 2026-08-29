@@ -2,13 +2,17 @@ import { User } from '@prisma/client';
 import { NotFoundError } from '../../utils/app-error';
 import { UpdateProfileInput } from '../../validations/user.validation';
 import { admin } from '../../configs/firebase';
+import { isAdFreeEmail } from '../../configs/premium-users';
 import * as usersRepository from './users.repository';
 
-export type SafeUser = Omit<User, 'googleId'>;
+export type SafeUser = Omit<User, 'googleId'> & { isAdFree: boolean };
 
 function omitGoogleId(user: User): SafeUser {
   const { googleId: _googleId, ...safeUser } = user;
-  return safeUser;
+  // Ad-free if the user has a persisted premium flag OR is on the legacy
+  // hardcoded allowlist (internal testers/VIPs granted before the
+  // `is_premium` column existed).
+  return { ...safeUser, isAdFree: user.isPremium || isAdFreeEmail(user.email) };
 }
 
 export async function getMe(userId: string): Promise<SafeUser> {

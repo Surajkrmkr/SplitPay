@@ -629,7 +629,7 @@ class _DaysBeforePicker extends StatelessWidget {
               ListTile(
                 title: Text(label, style: const TextStyle(fontSize: 14)),
                 trailing: value == days
-                    ? const Icon(Icons.check_rounded,
+                    ? Icon(Icons.check_rounded,
                         color: AppColors.primary, size: 20)
                     : null,
                 onTap: () {

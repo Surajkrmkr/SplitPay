@@ -7,12 +7,17 @@ class AuthUserModel {
   final String? avatar;
   final DateTime createdAt;
 
+  /// Whether this user is on the hardcoded ad-free allowlist (stopgap ahead
+  /// of a real premium subscription tier). Computed server-side.
+  final bool isAdFree;
+
   const AuthUserModel({
     required this.id,
     required this.email,
     required this.name,
     this.avatar,
     required this.createdAt,
+    this.isAdFree = false,
   });
 
   factory AuthUserModel.fromJson(Map<String, dynamic> json) {
@@ -22,6 +27,7 @@ class AuthUserModel {
       name: json['name'] as String,
       avatar: json['avatar'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
+      isAdFree: json['isAdFree'] as bool? ?? false,
     );
   }
 
@@ -32,6 +38,7 @@ class AuthUserModel {
       'name': name,
       'avatar': avatar,
       'createdAt': createdAt.toIso8601String(),
+      'isAdFree': isAdFree,
     };
   }
 
@@ -51,6 +58,7 @@ class AuthUserModel {
     String? name,
     String? avatar,
     DateTime? createdAt,
+    bool? isAdFree,
   }) {
     return AuthUserModel(
       id: id ?? this.id,
@@ -58,6 +66,7 @@ class AuthUserModel {
       name: name ?? this.name,
       avatar: avatar ?? this.avatar,
       createdAt: createdAt ?? this.createdAt,
+      isAdFree: isAdFree ?? this.isAdFree,
     );
   }
 

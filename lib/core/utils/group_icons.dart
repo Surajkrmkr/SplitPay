@@ -28,7 +28,7 @@ class GroupIcons {
     'home': AppColors.catBills,
     'food': AppColors.catFood,
     'party': AppColors.catEntertainment,
-    'sports': AppColors.primary,
+    'sports': Color(0xFF00D09C),
     'beach': AppColors.catTravel,
     'office': AppColors.textSecondary,
     'school': AppColors.catSubscription,

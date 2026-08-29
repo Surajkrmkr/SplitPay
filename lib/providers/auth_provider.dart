@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/services/app_logger.dart';
@@ -77,6 +79,11 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       final user = AuthUserModel.fromJson(
         res.data['data'] as Map<String, dynamic>,
       );
+      // Re-register the FCM token on every cold start, not just at sign-in —
+      // otherwise a token that rotates (reinstall, OS update, natural FCM
+      // refresh) between logins is never persisted again, and the backend
+      // keeps pushing to a dead token indefinitely.
+      await _registerFcmToken(user.id);
       return AuthState(status: AuthStatus.authenticated, user: user);
     } on DioException catch (_) {
       // Backend unreachable — fall back to Firebase user
@@ -394,6 +401,14 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     );
   }
 
+  // This is now called on every cold start in addition to every sign-in, so
+  // without tracking the active subscription we'd either leak a listener per
+  // call (each capturing whichever userId was current when it subscribed —
+  // wrong for the next user after a logout/login) or, with a simple "only
+  // once" guard, permanently pin token-refresh registration to the first
+  // user of the process. Cancel-and-resubscribe keeps it single and current.
+  StreamSubscription<String>? _tokenRefreshSub;
+
   Future<void> _registerFcmToken(String userId) async {
     try {
       final token = await NotificationService.instance.getToken();
@@ -403,7 +418,9 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
             fcmToken: token,
           );
       // Re-register if token rotates
-      NotificationService.instance.onTokenRefresh.listen((newToken) {
+      await _tokenRefreshSub?.cancel();
+      _tokenRefreshSub =
+          NotificationService.instance.onTokenRefresh.listen((newToken) {
         ref.read(notificationRepositoryProvider).registerToken(
               userId: userId,
               fcmToken: newToken,
@@ -423,4 +440,11 @@ final currentUserProvider = Provider<AuthUserModel?>((ref) {
 final isAuthenticatedProvider = Provider<bool>((ref) {
   final state = ref.watch(authProvider).valueOrNull;
   return state?.status == AuthStatus.authenticated;
+});
+
+/// Whether the signed-in user should never see ads or ad placeholders.
+/// Currently backed by a hardcoded server-side allowlist; will become a
+/// real premium-subscription check once that ships.
+final isAdFreeProvider = Provider<bool>((ref) {
+  return ref.watch(currentUserProvider)?.isAdFree ?? false;
 });

@@ -32,6 +32,16 @@
 				<string>com.googleusercontent.apps.127223843872-p55s7s5l1b2tdvj8uuep8hpndqbenh23</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.splitpay.expensetracker.widgets</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>dimeflow</string>
+			</array>
+		</dict>
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>

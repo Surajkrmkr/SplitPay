@@ -51,16 +51,38 @@
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-4861691653340010~4263214643" />
 
-        <!-- App Widget Receiver -->
+        <!-- App Widget Receivers -->
         <receiver
-            android:name=".BalanceRecentWidgetProvider"
+            android:name=".OverallBudgetWidgetProvider"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/balance_recent_widget_info" />
+                android:resource="@xml/overall_budget_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".RecentTransactionsWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/recent_transactions_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".InsightsWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/insights_widget_info" />
         </receiver>
 
         <!-- Don't delete the meta-data below.

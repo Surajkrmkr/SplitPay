@@ -83,11 +83,16 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                     isDark: isDark,
                     ref: ref,
                   )),
-              if (isAdmin) ...[
-                _SectionHeader('Danger Zone', isDark),
+              _SectionHeader('Danger Zone', isDark),
+              _LeaveGroupTile(
+                groupId: widget.groupId,
+                currentUserId: currentUserId,
+                isDark: isDark,
+                ref: ref,
+              ),
+              if (isAdmin)
                 _DeleteGroupTile(
                     groupId: widget.groupId, isDark: isDark, ref: ref),
-              ],
               SizedBox(height: MediaQuery.of(context).viewPadding.bottom + 24),
             ],
           );
@@ -139,7 +144,7 @@ class _RenameGroupTile extends StatelessWidget {
           shape: BoxShape.circle,
         ),
         child:
-            const Icon(Icons.edit_rounded, color: AppColors.primary, size: 20),
+            Icon(Icons.edit_rounded, color: AppColors.primary, size: 20),
       ),
       title: Text('Rename Group',
           style: TextStyle(
@@ -157,205 +162,200 @@ class _RenameGroupTile extends StatelessWidget {
   void _showRenameDialog(BuildContext context) {
     final nameController = TextEditingController(text: group.name);
     final descController = TextEditingController(text: group.description ?? '');
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Container(
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.darkSurface : Colors.white,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-                decoration: const BoxDecoration(
-                  gradient: AppColors.primaryGradient,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      isScrollControlled: true,
+      useSafeArea: true,
+      useRootNavigator: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        bool isSaving = false;
+        return StatefulBuilder(
+          builder: (ctx, setState) {
+            final isDark = Theme.of(ctx).brightness == Brightness.dark;
+            final keyboardHeight = MediaQuery.of(ctx).viewInsets.bottom;
+
+            return Padding(
+              padding: EdgeInsets.only(bottom: keyboardHeight),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkSurface : Colors.white,
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(24)),
                 ),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.edit_rounded,
-                          color: Colors.white, size: 24),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Edit Group Info',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Update your group name and description',
-                      style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 13),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(24),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    TextField(
-                      controller: nameController,
-                      inputFormatters: [LengthLimitingTextInputFormatter(50)],
-                      autofocus: true,
-                      decoration: InputDecoration(
-                        labelText: 'Group Name',
-                        prefixIcon: const Icon(Icons.group_rounded, size: 20),
-                        filled: true,
-                        fillColor:
-                            isDark ? AppColors.darkCard : AppColors.lightBg,
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide.none),
-                        focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(
-                                color: AppColors.primary, width: 1.5)),
+                    const SizedBox(height: 12),
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.darkBorder,
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                    const SizedBox(height: 14),
-                    TextField(
-                      controller: descController,
-                      inputFormatters: [LengthLimitingTextInputFormatter(50)],
-                      maxLines: 2,
-                      decoration: InputDecoration(
-                        labelText: 'Description (optional)',
-                        prefixIcon: const Padding(
-                          padding: EdgeInsets.only(bottom: 24),
-                          child: Icon(Icons.notes_rounded, size: 20),
-                        ),
-                        filled: true,
-                        fillColor:
-                            isDark ? AppColors.darkCard : AppColors.lightBg,
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide.none),
-                        focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(
-                                color: AppColors.primary, width: 1.5)),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => ctx.pop(),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14)),
-                              side: BorderSide(
-                                  color: isDark
-                                      ? AppColors.darkBorder
-                                      : AppColors.lightBorder),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 12, 20),
+                      child: Row(
+                        children: [
+                          Text(
+                            'Edit Group Info',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? Colors.white : AppColors.textLight,
                             ),
-                            child: Text(
-                              'Cancel',
-                              style: TextStyle(
-                                color: isDark
-                                    ? AppColors.textSecondary
-                                    : AppColors.textLightSecondary,
-                                fontWeight: FontWeight.w600,
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded),
+                            onPressed:
+                                isSaving ? null : () => Navigator.pop(ctx),
+                            color: AppColors.textSecondary,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Column(
+                        children: [
+                          TextField(
+                            controller: nameController,
+                            inputFormatters: [
+                              LengthLimitingTextInputFormatter(50)
+                            ],
+                            autofocus: true,
+                            decoration: InputDecoration(
+                              labelText: 'Group Name',
+                              prefixIcon:
+                                  const Icon(Icons.group_rounded, size: 20),
+                              filled: true,
+                              fillColor: isDark
+                                  ? AppColors.darkCard
+                                  : AppColors.lightCard,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
                               ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              gradient: AppColors.primaryGradient,
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: descController,
+                            inputFormatters: [
+                              LengthLimitingTextInputFormatter(50)
+                            ],
+                            maxLines: 2,
+                            decoration: InputDecoration(
+                              labelText: 'Description (optional)',
+                              prefixIcon: const Padding(
+                                padding: EdgeInsets.only(bottom: 24),
+                                child: Icon(Icons.notes_rounded, size: 20),
+                              ),
+                              filled: true,
+                              fillColor: isDark
+                                  ? AppColors.darkCard
+                                  : AppColors.lightCard,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: FilledButton(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
                             ),
-                            child: ElevatedButton(
-                              onPressed: () async {
-                                final name = nameController.text.trim();
-                                if (name.isEmpty) return;
-                                ctx.pop();
-                                try {
-                                  await ref
-                                      .read(groupApiServiceProvider)
-                                      .updateGroup(
-                                        group.id,
-                                        name: name,
-                                        description:
-                                            descController.text.trim().isEmpty
-                                                ? null
-                                                : descController.text.trim(),
-                                      );
-                                  ref.invalidate(groupDetailProvider(group.id));
-                                  ref.invalidate(groupsProvider);
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                          content: const Text('Group updated'),
+                          ),
+                          onPressed: isSaving
+                              ? null
+                              : () async {
+                                  final name = nameController.text.trim();
+                                  if (name.isEmpty) return;
+                                  setState(() => isSaving = true);
+                                  try {
+                                    await ref
+                                        .read(groupApiServiceProvider)
+                                        .updateGroup(
+                                          group.id,
+                                          name: name,
+                                          description: descController.text
+                                                  .trim()
+                                                  .isEmpty
+                                              ? null
+                                              : descController.text.trim(),
+                                        );
+                                    ref.invalidate(
+                                        groupDetailProvider(group.id));
+                                    ref.invalidate(groupsProvider);
+                                    if (ctx.mounted) Navigator.pop(ctx);
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content:
+                                              const Text('Group updated'),
                                           backgroundColor: AppColors.income,
-                                          behavior: SnackBarBehavior.floating,
+                                          behavior:
+                                              SnackBarBehavior.floating,
                                           shape: RoundedRectangleBorder(
                                               borderRadius:
-                                                  BorderRadius.circular(12))),
-                                    );
+                                                  BorderRadius.circular(12)),
+                                        ),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    setState(() => isSaving = false);
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(SnackBar(
+                                        content:
+                                            Text(friendlyErrorMessage(e)),
+                                        backgroundColor: AppColors.expense,
+                                        behavior: SnackBarBehavior.floating,
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12)),
+                                      ));
+                                    }
                                   }
-                                } catch (e) {
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(SnackBar(
-                                      content: Text(friendlyErrorMessage(e)),
-                                      backgroundColor: AppColors.expense,
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12)),
-                                    ));
-                                  }
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.transparent,
-                                shadowColor: Colors.transparent,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14)),
-                              ),
-                              child: const Text('Save Changes',
+                                },
+                          child: isSaving
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2, color: Colors.white),
+                                )
+                              : const Text(
+                                  'Save Changes',
                                   style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w700)),
-                            ),
-                          ),
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 15),
+                                ),
                         ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -634,6 +634,185 @@ class _MemberTile extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12)),
             ));
           }
+        }
+      }
+    }
+  }
+}
+
+// ── Leave group ──────────────────────────────────────────────
+
+class _LeaveGroupTile extends StatelessWidget {
+  final String groupId;
+  final String currentUserId;
+  final bool isDark;
+  final WidgetRef ref;
+  const _LeaveGroupTile({
+    required this.groupId,
+    required this.currentUserId,
+    required this.isDark,
+    required this.ref,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+            color: AppColors.expense.withValues(alpha: 0.12),
+            shape: BoxShape.circle),
+        child: const Icon(Icons.logout_rounded,
+            color: AppColors.expense, size: 20),
+      ),
+      title: const Text('Leave Group',
+          style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: AppColors.expense)),
+      subtitle: const Text('You will no longer see this group',
+          style: TextStyle(fontSize: 12)),
+      onTap: () => _confirmLeave(context),
+    );
+  }
+
+  Future<void> _confirmLeave(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkSurface : Colors.white,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFF6B6B),
+                    borderRadius:
+                        BorderRadius.vertical(top: Radius.circular(24)),
+                  ),
+                  child: Column(children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          shape: BoxShape.circle),
+                      child: const Icon(Icons.logout_rounded,
+                          color: Colors.white, size: 24),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text('Leave Group',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700)),
+                  ]),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.expense.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                              color: AppColors.expense.withValues(alpha: 0.2)),
+                        ),
+                        child: Row(children: [
+                          const Icon(Icons.warning_amber_rounded,
+                              color: AppColors.expense, size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'You will be removed from this group and its expense history.',
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  color: isDark
+                                      ? Colors.white70
+                                      : AppColors.textLight),
+                            ),
+                          ),
+                        ]),
+                      ),
+                      const SizedBox(height: 20),
+                      Row(children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => ctx.pop(false),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14)),
+                              side: BorderSide(
+                                  color: isDark
+                                      ? AppColors.darkBorder
+                                      : AppColors.lightBorder),
+                            ),
+                            child: Text('Cancel',
+                                style: TextStyle(
+                                    color: isDark
+                                        ? AppColors.textSecondary
+                                        : AppColors.textLightSecondary,
+                                    fontWeight: FontWeight.w600)),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () => ctx.pop(true),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.expense,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14)),
+                            ),
+                            child: const Text('Leave',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700)),
+                          ),
+                        ),
+                      ]),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        await ref
+            .read(groupApiServiceProvider)
+            .removeMember(groupId, currentUserId);
+        ref.invalidate(groupsProvider);
+        if (context.mounted) context.go('/groups');
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(friendlyErrorMessage(e)),
+            backgroundColor: AppColors.expense,
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ));
         }
       }
     }

@@ -472,7 +472,7 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+          borderSide: BorderSide(color: AppColors.primary, width: 1.5),
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -538,7 +538,7 @@ class _EditDateTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(Icons.calendar_today_rounded,
+            Icon(Icons.calendar_today_rounded,
                 size: 16, color: AppColors.primary),
             const SizedBox(width: 8),
             Expanded(
@@ -592,7 +592,7 @@ class _EditTimeTile extends StatelessWidget {
                     ? Colors.white
                     : AppColors.primary),
             dayPeriodBorderSide:
-                const BorderSide(color: AppColors.primary, width: 1),
+                BorderSide(color: AppColors.primary, width: 1),
           ),
         ),
         child: child!,
@@ -623,7 +623,7 @@ class _EditTimeTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(Icons.access_time_rounded,
+            Icon(Icons.access_time_rounded,
                 size: 16, color: AppColors.primary),
             const SizedBox(width: 8),
             Expanded(

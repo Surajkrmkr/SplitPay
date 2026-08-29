@@ -9,5 +9,15 @@
     <color name="widget_text_primary">#FFFFFF</color>
     <color name="widget_text_secondary">#8B93A7</color>
     <color name="widget_divider">#2A2D3A</color>
+
+    <!-- New home-screen widgets (Overall Budget / Recent Transactions / Insights) -->
+    <color name="w2_card_bg">#FFFFFF</color>
+    <color name="w2_text_primary">#1A1A1A</color>
+    <color name="w2_text_secondary">#8B93A7</color>
+    <color name="w2_track">#E9EAEF</color>
+    <color name="w2_accent">#00D09C</color>
+    <color name="w2_expense">#FF6B6B</color>
+    <color name="w2_pill_text">#FFFFFF</color>
+    <color name="w2_ring_icon">#1A1A1A</color>
 </resources>
 

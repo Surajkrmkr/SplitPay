@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark-mode variants for the Overall Budget / Recent Transactions / Insights widgets -->
+    <color name="w2_card_bg">#1E1F24</color>
+    <color name="w2_text_primary">#FFFFFF</color>
+    <color name="w2_text_secondary">#9BA2B4</color>
+    <color name="w2_track">#33353D</color>
+    <color name="w2_accent">#00D09C</color>
+    <color name="w2_expense">#FF6B6B</color>
+    <color name="w2_pill_text">#FFFFFF</color>
+    <color name="w2_ring_icon">#FFFFFF</color>
+</resources>

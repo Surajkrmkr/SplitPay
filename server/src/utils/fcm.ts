@@ -1,25 +1,19 @@
-import * as admin from 'firebase-admin';
+import { admin } from '../configs/firebase';
 import { env } from '../configs/env';
 import { logger } from './logger';
 
-let initialized = false;
-
+// The Firebase Admin app is already initialized once, at import time, by
+// `configs/firebase` (used for ID token verification). Calling
+// `admin.initializeApp()` again here — as this file used to — throws
+// "Firebase app named '[DEFAULT]' already exists", which was silently
+// swallowed below and permanently disabled push notifications. Reuse the
+// shared app instead of re-initializing.
 function ensureInitialized(): boolean {
-  if (initialized) return true;
   if (!env.FIREBASE_SERVICE_ACCOUNT_KEY) {
     logger.warn('FIREBASE_SERVICE_ACCOUNT_KEY not set — FCM push notifications disabled');
     return false;
   }
-  try {
-    const serviceAccount = JSON.parse(env.FIREBASE_SERVICE_ACCOUNT_KEY);
-    admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-    initialized = true;
-    logger.info('Firebase Admin SDK initialized');
-    return true;
-  } catch (err) {
-    logger.error({ err }, 'Failed to initialize Firebase Admin SDK');
-    return false;
-  }
+  return true;
 }
 
 export interface FcmPayload {

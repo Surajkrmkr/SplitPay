@@ -121,7 +121,7 @@ class _GuestLoginPromptState extends ConsumerState<GuestLoginPrompt> {
               color: AppColors.primary.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.lock_open_rounded,
               color: AppColors.primary,
               size: 28,
@@ -260,7 +260,7 @@ class _PromptSignInButton extends StatelessWidget {
         ),
         child: Center(
           child: isLoading
-              ? const SizedBox(
+              ? SizedBox(
                   width: 22,
                   height: 22,
                   child: CircularProgressIndicator(

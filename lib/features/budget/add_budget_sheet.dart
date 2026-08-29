@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/constants/app_colors.dart';
+import '../../shared/widgets/animated_amount_field.dart';
 import '../../data/models/budget_model.dart';
 import '../../data/models/transaction_model.dart';
 import '../../providers/budget_provider.dart';
@@ -26,7 +27,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
   BudgetPeriod _period = BudgetPeriod.monthly;
   final Set<String> _selectedCategoryIds = {};
   double _alertThreshold = 0.8;
-  int _colorValue = kBudgetColors[0].toARGB32();
+  int _colorValue = AppColors.primary.toARGB32();
   int _iconCodePoint = kBudgetIcons[0].codePoint;
   bool _saving = false;
 
@@ -210,7 +211,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
                         hintText: 'e.g. Monthly Food Budget',
                         prefixIcon: Icon(Icons.label_rounded, size: 20),
                       ),
-                    ).animate(delay: 50.ms).fadeIn().slideY(begin: 0.1),
+                    ),
 
                     const SizedBox(height: 16),
 
@@ -221,7 +222,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
                       controller: _amountController,
                       currency: ref.watch(currencyProvider),
                       onChanged: (_) => setState(() {}),
-                    ).animate(delay: 80.ms).fadeIn().slideY(begin: 0.1),
+                    ),
 
                     const SizedBox(height: 16),
 
@@ -232,7 +233,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
                       selected: _period,
                       onChanged: (p) => setState(() => _period = p),
                       isDark: isDark,
-                    ).animate(delay: 110.ms).fadeIn().slideY(begin: 0.1),
+                    ),
 
                     const SizedBox(height: 16),
 
@@ -244,7 +245,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
                       customCats: customCats,
                       isDark: isDark,
                       onToggle: _toggleCategory,
-                    ).animate(delay: 140.ms).fadeIn().slideY(begin: 0.1),
+                    ),
                     if (_selectedCategoryIds.isEmpty) ...[
                       const SizedBox(height: 6),
                       Text(
@@ -264,7 +265,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
                     _ColorPicker(
                       selectedValue: _colorValue,
                       onChanged: (v) => setState(() => _colorValue = v),
-                    ).animate(delay: 170.ms).fadeIn().slideY(begin: 0.1),
+                    ),
 
                     const SizedBox(height: 16),
 
@@ -276,7 +277,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
                       color: Color(_colorValue),
                       isDark: isDark,
                       onChanged: (cp) => setState(() => _iconCodePoint = cp),
-                    ).animate(delay: 200.ms).fadeIn().slideY(begin: 0.1),
+                    ),
 
                     const SizedBox(height: 16),
 
@@ -291,7 +292,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
                       activeColor: Color(_colorValue),
                       inactiveColor: Color(_colorValue).withValues(alpha: 0.15),
                       onChanged: (v) => setState(() => _alertThreshold = v),
-                    ).animate(delay: 220.ms).fadeIn(),
+                    ),
 
                     const SizedBox(height: 8),
                   ],
@@ -325,7 +326,7 @@ class _AddBudgetSheetState extends ConsumerState<AddBudgetSheet> {
                   isEdit: _isEdit,
                   color: Color(_colorValue),
                   onPressed: _save,
-                ).animate(delay: 240.ms).fadeIn().slideY(begin: 0.1),
+                ),
               ),
             ],
           ),
@@ -353,7 +354,7 @@ class _Label extends StatelessWidget {
 
 // ─── Amount field ─────────────────────────────────────────────────────────────
 
-class _AmountField extends StatelessWidget {
+class _AmountField extends StatefulWidget {
   final TextEditingController controller;
   final String currency;
   final ValueChanged<String>? onChanged;
@@ -369,55 +370,90 @@ class _AmountField extends StatelessWidget {
   });
 
   @override
+  State<_AmountField> createState() => _AmountFieldState();
+}
+
+class _AmountFieldState extends State<_AmountField> {
+  FocusNode? _internalNode;
+  FocusNode get _node => widget.focusNode ?? (_internalNode ??= FocusNode());
+  bool _focused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _node.addListener(_onFocusChange);
+  }
+
+  @override
+  void dispose() {
+    _node.removeListener(_onFocusChange);
+    _internalNode?.dispose();
+    super.dispose();
+  }
+
+  void _onFocusChange() {
+    if (mounted) setState(() => _focused = _node.hasFocus);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
 
-    return TextField(
-      controller: controller,
-      onChanged: onChanged,
-      focusNode: focusNode,
-      autofocus: autofocus,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      inputFormatters: [
-        LengthLimitingTextInputFormatter(50),
-        FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
-      ],
-      style: TextStyle(
-        fontSize: 28,
-        fontWeight: FontWeight.w800,
-        color: primary,
-        letterSpacing: -1,
-      ),
-      decoration: InputDecoration(
-        prefixText: '$currency ',
-        prefixStyle: TextStyle(
-          fontSize: 22,
-          fontWeight: FontWeight.w700,
-          color: primary,
-        ),
-        hintText: '0',
-        hintStyle: TextStyle(
-          fontSize: 28,
-          fontWeight: FontWeight.w800,
-          color: AppColors.textTertiary,
-          letterSpacing: -1,
-        ),
-        border: OutlineInputBorder(
+    return GestureDetector(
+      onTap: _node.requestFocus,
+      child: AnimatedContainer(
+        duration: 150.ms,
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(
+          color: primary.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: primary.withValues(alpha: 0.3)),
+          border: Border.all(
+            color: _focused ? primary : primary.withValues(alpha: 0.2),
+            width: _focused ? 1.5 : 1,
+          ),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: primary.withValues(alpha: 0.2)),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '${widget.currency} ',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: primary,
+                ),
+              ),
+              AnimatedAmountField(
+                controller: widget.controller,
+                focusNode: _node,
+                autofocus: widget.autofocus,
+                onChanged: widget.onChanged,
+                cursorColor: primary,
+                textAlign: TextAlign.left,
+                inputFormatters: [
+                  LengthLimitingTextInputFormatter(50),
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                ],
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  color: primary,
+                  letterSpacing: -1,
+                ),
+                hintStyle: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textTertiary,
+                  letterSpacing: -1,
+                ),
+              ),
+            ],
+          ),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: primary, width: 1.5),
-        ),
-        filled: true,
-        fillColor: primary.withValues(alpha: 0.06),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
     );
   }
@@ -505,25 +541,37 @@ class _CategoryPicker extends StatelessWidget {
   Widget build(BuildContext context) {
     // Only show expense-relevant categories
     final builtIn = Category.values.where((c) => c != Category.salary).toList();
+    final total = builtIn.length + customCats.length;
 
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        ...builtIn.map((cat) {
-          final isSelected = selectedIds.contains(cat.name);
-          return _CategoryChip(
-            label: cat.label,
-            icon: cat.icon,
-            color: cat.color,
-            isSelected: isSelected,
-            isDark: isDark,
-            onTap: () => onToggle(cat.name),
-          );
-        }),
-        ...customCats.map((cat) {
+    // Two fixed rows, scrolling horizontally — icon-only tiles so more
+    // categories fit on screen at once.
+    return SizedBox(
+      height: 100,
+      child: GridView.builder(
+        scrollDirection: Axis.horizontal,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          childAspectRatio: 1,
+        ),
+        itemCount: total,
+        itemBuilder: (context, i) {
+          if (i < builtIn.length) {
+            final cat = builtIn[i];
+            final isSelected = selectedIds.contains(cat.name);
+            return _CategoryIconTile(
+              label: cat.label,
+              icon: cat.icon,
+              color: cat.color,
+              isSelected: isSelected,
+              isDark: isDark,
+              onTap: () => onToggle(cat.name),
+            );
+          }
+          final cat = customCats[i - builtIn.length];
           final isSelected = selectedIds.contains(cat.id);
-          return _CategoryChip(
+          return _CategoryIconTile(
             label: cat.label,
             icon: cat.icon,
             color: cat.color,
@@ -531,13 +579,13 @@ class _CategoryPicker extends StatelessWidget {
             isDark: isDark,
             onTap: () => onToggle(cat.id),
           );
-        }),
-      ],
+        },
+      ),
     );
   }
 }
 
-class _CategoryChip extends StatelessWidget {
+class _CategoryIconTile extends StatelessWidget {
   final String label;
   final IconData icon;
   final Color color;
@@ -545,7 +593,7 @@ class _CategoryChip extends StatelessWidget {
   final bool isDark;
   final VoidCallback onTap;
 
-  const _CategoryChip({
+  const _CategoryIconTile({
     required this.label,
     required this.icon,
     required this.color,
@@ -556,48 +604,46 @@ class _CategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: 200.ms,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? color.withValues(alpha: 0.15)
-              : isDark
-                  ? AppColors.darkCard
-                  : AppColors.lightCard,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
+    return Tooltip(
+      message: label,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: 200.ms,
+          width: 44,
+          decoration: BoxDecoration(
             color: isSelected
-                ? color.withValues(alpha: 0.5)
+                ? color.withValues(alpha: 0.15)
                 : isDark
-                    ? AppColors.darkBorder
-                    : AppColors.lightBorder,
-            width: isSelected ? 1.5 : 0.5,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isSelected)
-              Icon(Icons.check_circle_rounded, color: color, size: 13)
-            else
-              Icon(icon, color: AppColors.textTertiary, size: 13),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected
-                    ? color
-                    : isDark
-                        ? AppColors.textSecondary
-                        : AppColors.textLightSecondary,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                fontSize: 13,
-              ),
+                    ? AppColors.darkCard
+                    : AppColors.lightCard,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected
+                  ? color.withValues(alpha: 0.5)
+                  : isDark
+                      ? AppColors.darkBorder
+                      : AppColors.lightBorder,
+              width: isSelected ? 1.5 : 0.5,
             ),
-          ],
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Icon(
+                icon,
+                color: isSelected ? color : AppColors.textTertiary,
+                size: 20,
+              ),
+              if (isSelected)
+                Positioned(
+                  top: 3,
+                  right: 3,
+                  child: Icon(Icons.check_circle_rounded,
+                      color: color, size: 12),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -746,19 +792,8 @@ class _SaveButton extends StatelessWidget {
       child: AnimatedContainer(
         duration: 200.ms,
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [color, color.withValues(alpha: 0.75)],
-          ),
+          color: color,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: canSubmit
-              ? [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.4),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ]
-              : [],
         ),
         child: Opacity(
           opacity: canSubmit ? 1 : 0.4,

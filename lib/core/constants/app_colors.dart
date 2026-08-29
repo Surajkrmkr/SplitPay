@@ -214,11 +214,21 @@ class AppColors {
   static const lightCard = Color(0xFFF0F2F5);
   static const lightBorder = Color(0xFFE5E7EB);
 
-  // Brand colors (Defaults to Emerald)
-  static const primary = Color(0xFF00D09C);
-  static const primaryDark = Color(0xFF00A87D);
-  static const primaryLight = Color(0xFF33DAAD);
+  // Brand / accent colors.
+  // These follow the accent preset selected in Settings and are updated at
+  // runtime via [applyPreset]. They default to Emerald until a preset loads.
+  static Color primary = const Color(0xFF00D09C);
+  static Color primaryDark = const Color(0xFF00A87D);
+  static Color primaryLight = const Color(0xFF33DAAD);
   static const secondary = Color(0xFF5B6EF5);
+
+  /// Updates the runtime accent colors to match the selected [preset].
+  /// Called by the theme provider on load and whenever the preset changes.
+  static void applyPreset(AppThemePreset preset) {
+    primary = preset.primaryColor;
+    primaryDark = preset.primaryDarkColor;
+    primaryLight = preset.primaryLightColor;
+  }
 
   // Semantic colors
   static const income = Color(0xFF00D09C);
@@ -262,9 +272,9 @@ class AppColors {
     colors: [Color(0xFF1A3A2A), Color(0xFF0F1D16)],
   );
 
-  static const primaryGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFF00D09C), Color(0xFF00A87D)],
-  );
+  static LinearGradient get primaryGradient => LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [primary, primaryDark],
+      );
 }

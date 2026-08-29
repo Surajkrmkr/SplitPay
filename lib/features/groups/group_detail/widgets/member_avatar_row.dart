@@ -190,7 +190,7 @@ class MemberAvatarRow extends ConsumerWidget {
                                     AppColors.primary.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: const Text(
+                              child: Text(
                                 'Admin',
                                 style: TextStyle(
                                   fontSize: 11,

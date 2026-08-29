@@ -13,6 +13,7 @@ import '../../data/models/transaction_model.dart';
 import '../../data/models/custom_category.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../shared/widgets/animated_amount_field.dart';
 import '../../shared/widgets/app_ad_banner.dart';
 import '../../shared/widgets/app_icon_picker.dart';
 import '../../shared/widgets/bill_scan_button.dart';
@@ -173,7 +174,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                     ? Colors.white
                     : AppColors.primary),
             dayPeriodBorderSide:
-                const BorderSide(color: AppColors.primary, width: 1),
+                BorderSide(color: AppColors.primary, width: 1),
           ),
         ),
         child: child!,
@@ -503,7 +504,10 @@ class _AmountInput extends StatelessWidget {
     final color =
         type == TransactionType.expense ? AppColors.expense : AppColors.income;
 
-    return Row(
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+      mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -519,38 +523,30 @@ class _AmountInput extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 6),
-        IntrinsicWidth(
-          child: TextField(
-            controller: controller,
-            onChanged: onChanged,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            inputFormatters: [
-              LengthLimitingTextInputFormatter(50),
-              CurrencyInputFormatter(),
-            ],
-            autofocus: true,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 48,
-              fontWeight: FontWeight.w800,
-              color: color,
-              letterSpacing: -1,
-            ),
-            decoration: InputDecoration(
-              hintText: '0',
-              hintStyle: TextStyle(
-                fontSize: 48,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textTertiary,
-                letterSpacing: -1,
-              ),
-              border: InputBorder.none,
-              isDense: true,
-              contentPadding: EdgeInsets.zero,
-            ),
+        AnimatedAmountField(
+          controller: controller,
+          onChanged: onChanged,
+          autofocus: true,
+          cursorColor: color,
+          inputFormatters: [
+            LengthLimitingTextInputFormatter(50),
+            CurrencyInputFormatter(),
+          ],
+          style: TextStyle(
+            fontSize: 48,
+            fontWeight: FontWeight.w800,
+            color: color,
+            letterSpacing: -1,
+          ),
+          hintStyle: TextStyle(
+            fontSize: 48,
+            fontWeight: FontWeight.w800,
+            color: AppColors.textTertiary,
+            letterSpacing: -1,
           ),
         ),
       ],
+      ),
     );
   }
 }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../providers/budget_provider.dart';
@@ -77,6 +76,6 @@ class BudgetFilterChips extends ConsumerWidget {
           );
         },
       ),
-    ).animate(delay: 100.ms).fadeIn(duration: 300.ms);
+    );
   }
 }

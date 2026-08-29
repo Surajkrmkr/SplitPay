@@ -309,7 +309,7 @@ class _CreateCategoryBottomSheetState
                       if (_selectedApps.isNotEmpty)
                         GestureDetector(
                           onTap: () => setState(() => _selectedApps.clear()),
-                          child: const Text(
+                          child: Text(
                             'Clear All',
                             style: TextStyle(
                               fontSize: 11,
@@ -396,7 +396,7 @@ class _CreateCategoryBottomSheetState
                                         right: -4,
                                         top: -4,
                                         child: Container(
-                                          decoration: const BoxDecoration(
+                                          decoration: BoxDecoration(
                                             color: AppColors.primary,
                                             shape: BoxShape.circle,
                                           ),

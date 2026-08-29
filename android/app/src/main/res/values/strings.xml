@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_overall_budget_description">Shows your overall budget spend as a gauge for the current period.</string>
+    <string name="widget_insights_description">Shows a 7-day spending bar chart and this week\'s total.</string>
+    <string name="widget_recent_transactions_description">Shows this week\'s net total and your most recent transactions.</string>
+</resources>

@@ -129,7 +129,7 @@ class SuggestionPill extends StatelessWidget {
           ),
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
               color: AppColors.primary,

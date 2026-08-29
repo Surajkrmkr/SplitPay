@@ -1,15 +1,21 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../../core/constants/ad_constants.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/app_logger.dart';
+import '../../providers/auth_provider.dart';
 
 /// Reusable Ad Banner widget for Dimeflow.
 /// Accepts an [AdPlacement] enum to fetch the corresponding platform Ad Unit ID.
 /// Supports configurable [adSize] (standard banner, large banner, medium rectangle).
-class AppAdBanner extends StatefulWidget {
+///
+/// Renders nothing for ad-free users (see [isAdFreeProvider]) — the ad unit
+/// is never requested for them, so there's no wasted fetch or flash of a
+/// loading placeholder either.
+class AppAdBanner extends ConsumerStatefulWidget {
   final AdPlacement placement;
   final AdSize adSize;
   final EdgeInsetsGeometry margin;
@@ -24,10 +30,10 @@ class AppAdBanner extends StatefulWidget {
   });
 
   @override
-  State<AppAdBanner> createState() => _AppAdBannerState();
+  ConsumerState<AppAdBanner> createState() => _AppAdBannerState();
 }
 
-class _AppAdBannerState extends State<AppAdBanner> {
+class _AppAdBannerState extends ConsumerState<AppAdBanner> {
   BannerAd? _bannerAd;
   bool _isAdLoaded = false;
   bool _hasFailed = false;
@@ -35,7 +41,7 @@ class _AppAdBannerState extends State<AppAdBanner> {
   @override
   void initState() {
     super.initState();
-    _loadAd();
+    if (!ref.read(isAdFreeProvider)) _loadAd();
   }
 
   void _loadAd() {
@@ -97,7 +103,7 @@ class _AppAdBannerState extends State<AppAdBanner> {
 
   @override
   Widget build(BuildContext context) {
-    if (!AdConstants.enableAds) {
+    if (!AdConstants.enableAds || ref.watch(isAdFreeProvider)) {
       return const SizedBox.shrink();
     }
 

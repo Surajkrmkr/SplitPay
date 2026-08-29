@@ -146,7 +146,7 @@ class _AppIconPickerDialogState extends State<AppIconPickerDialog> {
                                         right: 0,
                                         top: 0,
                                         child: Container(
-                                          decoration: const BoxDecoration(
+                                          decoration: BoxDecoration(
                                             color: AppColors.primary,
                                             shape: BoxShape.circle,
                                           ),

@@ -1,5 +1,6 @@
 import { User } from '@prisma/client';
 import { admin } from '../../configs/firebase';
+import { isAdFreeEmail } from '../../configs/premium-users';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../../utils/jwt';
 import { UnauthorizedError, BadRequestError } from '../../utils/app-error';
 import * as authRepository from './auth.repository';
@@ -8,7 +9,7 @@ import * as usersRepository from '../users/users.repository';
 export interface AuthResult {
   accessToken: string;
   refreshToken: string;
-  user: Omit<User, 'googleId' | 'firebaseUid'>;
+  user: Omit<User, 'googleId' | 'firebaseUid'> & { isAdFree: boolean };
 }
 
 /**
@@ -133,7 +134,10 @@ export async function googleLogin(idToken: string): Promise<AuthResult> {
   return {
     accessToken,
     refreshToken,
-    user: userWithoutProviderIds,
+    // Ad-free if the user has a persisted premium flag OR is on the legacy
+    // hardcoded allowlist (internal testers/VIPs granted before the
+    // `is_premium` column existed).
+    user: { ...userWithoutProviderIds, isAdFree: user.isPremium || isAdFreeEmail(user.email) },
   };
 }
 

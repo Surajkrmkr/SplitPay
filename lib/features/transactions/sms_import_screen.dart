@@ -57,7 +57,7 @@ class SmsImportScreen extends ConsumerWidget {
               ),
               Expanded(
                 child: state.isLoading
-                    ? const Center(
+                    ? Center(
                         child: CircularProgressIndicator(color: AppColors.primary),
                       )
                     : state.transactions.isEmpty
@@ -282,7 +282,7 @@ class _SyncButton extends StatelessWidget {
     return TextButton.icon(
       onPressed: (isSyncing || !isGranted) ? null : onPressed,
       icon: isSyncing
-          ? const SizedBox(
+          ? SizedBox(
               width: 16,
               height: 16,
               child: CircularProgressIndicator(
@@ -373,7 +373,7 @@ class _PermissionCard extends StatelessWidget {
               color: AppColors.primary.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.sms_rounded,
               color: AppColors.primary,
               size: 28,
@@ -468,7 +468,7 @@ class _StatsHeaderBar extends StatelessWidget {
               ),
               child: Text(
                 allUnimportedSelected ? 'Deselect All' : 'Select All',
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w700,
                   fontSize: 13,
@@ -786,7 +786,7 @@ class _EmptyState extends StatelessWidget {
               label: const Text('Sync Latest Messages'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.primary,
-                side: const BorderSide(color: AppColors.primary),
+                side: BorderSide(color: AppColors.primary),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),

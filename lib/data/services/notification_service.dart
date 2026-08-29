@@ -4,9 +4,9 @@ import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/painting.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import '../../core/constants/app_colors.dart';
 import '../models/notification_model.dart';
 
 // Top-level handler required by FCM for terminated/background state
@@ -172,7 +172,7 @@ class NotificationService {
           importance: Importance.high,
           priority: Priority.high,
           icon: '@drawable/ic_stat_notify',
-          color: const Color(0xFF00D09C),
+          color: AppColors.primary,
         ),
         iOS: const DarwinNotificationDetails(
           presentAlert: true,

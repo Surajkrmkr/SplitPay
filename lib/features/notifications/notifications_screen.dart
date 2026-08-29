@@ -200,7 +200,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           TextButton(
             onPressed: () =>
                 ref.read(notificationsProvider.notifier).markAllRead(),
-            child: const Text(
+            child: Text(
               'Mark all read',
               style: TextStyle(
                 color: AppColors.primary,
@@ -397,7 +397,7 @@ class _ErrorState extends StatelessWidget {
           const SizedBox(height: 12),
           TextButton(
             onPressed: onRetry,
-            child: const Text('Retry',
+            child: Text('Retry',
                 style: TextStyle(color: AppColors.primary)),
           ),
         ],

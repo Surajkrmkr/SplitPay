@@ -107,7 +107,7 @@ class SettingsScreen extends ConsumerWidget {
                           title: 'Sync SMS Transactions',
                           subtitle:
                               'Auto-detect bank & UPI transactions from SMS',
-                          onTap: () => Navigator.of(context).push(
+                          onTap: () => Navigator.of(context, rootNavigator: true).push(
                             MaterialPageRoute<void>(
                               builder: (_) => const SmsImportScreen(),
                             ),
@@ -280,83 +280,144 @@ void _showEditNameDialog(
   final firstNameController = TextEditingController(text: firstNameInitial);
   final lastNameController = TextEditingController(text: lastNameInitial);
 
-  showDialog(
+  showModalBottomSheet(
     context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    useRootNavigator: true,
+    backgroundColor: Colors.transparent,
     builder: (ctx) {
       bool isSaving = false;
       return StatefulBuilder(
         builder: (ctx, setState) {
           final isDark = Theme.of(ctx).brightness == Brightness.dark;
-          return AlertDialog(
-            title: const Text('Edit Profile Name',
-                style: TextStyle(fontWeight: FontWeight.w700)),
-            content: SingleChildScrollView(
+          final keyboardHeight = MediaQuery.of(ctx).viewInsets.bottom;
+
+          return Padding(
+            padding: EdgeInsets.only(bottom: keyboardHeight),
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurface : Colors.white,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  TextField(
-                    controller: firstNameController,
-                    autofocus: true,
-                    textCapitalization: TextCapitalization.words,
-                    decoration: InputDecoration(
-                      labelText: 'First Name',
-                      filled: true,
-                      fillColor:
-                          isDark ? AppColors.darkCard : AppColors.lightCard,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
+                  const SizedBox(height: 12),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.darkBorder,
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: lastNameController,
-                    textCapitalization: TextCapitalization.words,
-                    decoration: InputDecoration(
-                      labelText: 'Last Name',
-                      filled: true,
-                      fillColor:
-                          isDark ? AppColors.darkCard : AppColors.lightCard,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 12, 20),
+                    child: Row(
+                      children: [
+                        Text(
+                          'Edit Profile Name',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? Colors.white : AppColors.textLight,
+                          ),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded),
+                          onPressed:
+                              isSaving ? null : () => Navigator.pop(ctx),
+                          color: AppColors.textSecondary,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      children: [
+                        TextField(
+                          controller: firstNameController,
+                          autofocus: true,
+                          textCapitalization: TextCapitalization.words,
+                          decoration: InputDecoration(
+                            labelText: 'First Name',
+                            filled: true,
+                            fillColor: isDark
+                                ? AppColors.darkCard
+                                : AppColors.lightCard,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: lastNameController,
+                          textCapitalization: TextCapitalization.words,
+                          decoration: InputDecoration(
+                            labelText: 'Last Name',
+                            filled: true,
+                            fillColor: isDark
+                                ? AppColors.darkCard
+                                : AppColors.lightCard,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        onPressed: isSaving
+                            ? null
+                            : () async {
+                                setState(() => isSaving = true);
+                                final fn = firstNameController.text.trim();
+                                final ln = lastNameController.text.trim();
+                                await ref
+                                    .read(authProvider.notifier)
+                                    .updateProfile(
+                                      firstName: fn,
+                                      lastName: ln,
+                                    );
+                                if (ctx.mounted) Navigator.pop(ctx);
+                              },
+                        child: isSaving
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Text(
+                                'Save',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.w700, fontSize: 15),
+                              ),
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: isSaving ? null : () => Navigator.pop(ctx),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                style:
-                    FilledButton.styleFrom(backgroundColor: AppColors.primary),
-                onPressed: isSaving
-                    ? null
-                    : () async {
-                        setState(() => isSaving = true);
-                        final fn = firstNameController.text.trim();
-                        final ln = lastNameController.text.trim();
-                        await ref.read(authProvider.notifier).updateProfile(
-                              firstName: fn,
-                              lastName: ln,
-                            );
-                        if (ctx.mounted) Navigator.pop(ctx);
-                      },
-                child: isSaving
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
-                      )
-                    : const Text('Save'),
-              ),
-            ],
           );
         },
       );

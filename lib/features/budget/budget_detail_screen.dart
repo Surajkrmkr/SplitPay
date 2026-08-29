@@ -1,7 +1,5 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/constants/app_colors.dart';
@@ -16,6 +14,10 @@ import '../../providers/settings_provider.dart';
 import '../transactions/widgets/edit_transaction_sheet.dart';
 import 'add_budget_sheet.dart';
 
+/// Budget detail — a single flat "hero" card (icon, amount, progress, stats,
+/// date range) followed by the matching transaction list. No gradients, no
+/// oversized ring — everything reuses the flat card language used across the
+/// rest of the Budgets feature.
 class BudgetDetailScreen extends ConsumerWidget {
   final String budgetId;
 
@@ -51,120 +53,103 @@ class BudgetDetailScreen extends ConsumerWidget {
     };
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBg : AppColors.lightBg,
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          // ── Collapsible header ──
-          SliverAppBar(
-            expandedHeight: 320,
-            pinned: true,
-            backgroundColor: isDark ? AppColors.darkBg : AppColors.lightBg,
-            leadingWidth: 56,
-            leading: const Padding(
-              padding: EdgeInsets.only(left: 16),
-              child: Center(child: AppBackButton()),
-            ),
-            actions: [
-              IconButton(
-                onPressed: () => _showMenu(context, ref, budget),
-                icon: const Icon(Icons.more_vert_rounded),
-              ),
-            ],
-            flexibleSpace: FlexibleSpaceBar(
-              background: _DetailHero(
-                budget: budget,
-                spent: spent,
-                progress: progress,
-                status: status,
-                statusColor: statusColor,
-                remaining: remaining,
-                overspent: overspent,
-                currency: currency,
-                isDark: isDark,
+      body: SafeArea(
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            // ── Header ──
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 12, 0),
+                child: Row(
+                  children: [
+                    const AppBackButton(),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => _showMenu(context, ref, budget),
+                      icon: const Icon(Icons.more_vert_rounded),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
 
-          // ── Stats row ──
-          SliverToBoxAdapter(
-            child: _StatsRow(
-              budget: budget,
-              spent: spent,
-              remaining: remaining,
-              currency: currency,
-              isDark: isDark,
-            ).animate(delay: 100.ms).fadeIn().slideY(begin: 0.1),
-          ),
-
-          // ── Period info ──
-          SliverToBoxAdapter(
-            child: _PeriodInfo(budget: budget, isDark: isDark)
-                .animate(delay: 150.ms)
-                .fadeIn()
-                .slideY(begin: 0.1),
-          ),
-
-          // ── Transactions header ──
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Transactions',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                  ),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: budget.color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '${transactions.length}',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: budget.color,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ).animate(delay: 200.ms).fadeIn(),
-          ),
-
-          // ── Transaction list ──
-          if (transactions.isEmpty)
-            const SliverFillRemaining(
-              child: _EmptyTransactions(),
-            )
-          else
-            SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, i) => _TransactionTile(
-                  tx: transactions[i],
+            // ── Hero card ──
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                child: _HeroCard(
+                  budget: budget,
+                  spent: spent,
+                  progress: progress,
+                  status: status,
+                  statusColor: statusColor,
+                  remaining: remaining,
+                  overspent: overspent,
                   currency: currency,
                   isDark: isDark,
-                ).animate(delay: (220 + i * 40).ms).fadeIn().slideX(
-                      begin: 0.05,
-                      curve: Curves.easeOutCubic,
-                    ),
-                childCount: transactions.length,
+                ),
               ),
             ),
 
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: 40 + MediaQuery.of(context).padding.bottom,
+            // ── Transactions header ──
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Transactions',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                    Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: budget.color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${transactions.length}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: budget.color,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ],
+
+            // ── Transaction list ──
+            if (transactions.isEmpty)
+              const SliverFillRemaining(
+                child: _EmptyTransactions(),
+              )
+            else
+              SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, i) => _TransactionTile(
+                    tx: transactions[i],
+                    currency: currency,
+                    isDark: isDark,
+                  ),
+                  childCount: transactions.length,
+                ),
+              ),
+
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 40 + MediaQuery.of(context).padding.bottom,
+              ),
+            ),
+          ],
+        ),
       ),
       bottomNavigationBar: _EditBar(
         budget: budget,
@@ -198,9 +183,9 @@ class BudgetDetailScreen extends ConsumerWidget {
   }
 }
 
-// ── Hero section with progress ring ─────────────────────────────────────────
+// ── Hero card ─────────────────────────────────────────────────────────────────
 
-class _DetailHero extends StatelessWidget {
+class _HeroCard extends StatelessWidget {
   final Budget budget;
   final double spent;
   final double progress;
@@ -211,7 +196,7 @@ class _DetailHero extends StatelessWidget {
   final String currency;
   final bool isDark;
 
-  const _DetailHero({
+  const _HeroCard({
     required this.budget,
     required this.spent,
     required this.progress,
@@ -225,159 +210,171 @@ class _DetailHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 100, 20, 24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            budget.color.withValues(alpha: 0.18),
-            budget.color.withValues(alpha: 0.04),
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          // Title + period
-          Text(
-            budget.title,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: isDark ? Colors.white : AppColors.textLight,
-              letterSpacing: -0.3,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 4),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: budget.color.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(budget.period.periodIcon, color: budget.color, size: 12),
-                const SizedBox(width: 5),
-                Text(
-                  budget.period.label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: budget.color,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // Progress ring
-          TweenAnimationBuilder<double>(
-            duration: 1000.ms,
-            tween: Tween(begin: 0, end: progress.clamp(0.0, 1.0)),
-            curve: Curves.easeOutCubic,
-            builder: (_, value, __) => _ProgressRing(
-              progress: value,
-              color: statusColor,
-              budget: budget,
-              spent: spent,
-              remaining: remaining,
-              overspent: overspent,
-              currency: currency,
-              isDark: isDark,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProgressRing extends StatelessWidget {
-  final double progress;
-  final Color color;
-  final Budget budget;
-  final double spent;
-  final double remaining;
-  final double overspent;
-  final String currency;
-  final bool isDark;
-
-  const _ProgressRing({
-    required this.progress,
-    required this.color,
-    required this.budget,
-    required this.spent,
-    required this.remaining,
-    required this.overspent,
-    required this.currency,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+    final cardBg = Theme.of(context).cardTheme.color ?? AppColors.darkCard;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final dividerColor = AppColors.textTertiary.withValues(alpha: 0.3);
+    final range = budget.period.currentRange;
+    final fmt = DateFormat('d MMM');
     final isOver = overspent > 0;
 
-    return SizedBox(
-      width: 140,
-      height: 140,
-      child: Stack(
-        alignment: Alignment.center,
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? cardBg : AppColors.lightSurface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: borderColor, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CustomPaint(
-            size: const Size(140, 140),
-            painter: _ArcPainter(
-              progress: progress,
-              bgColor: color.withValues(alpha: 0.12),
-              fgColor: color,
+          // Icon, title, date range, % badge
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: budget.color.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(budget.icon, color: budget.color, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      budget.title,
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? Colors.white : AppColors.textLight,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Icon(budget.period.periodIcon,
+                            color: AppColors.textSecondary, size: 12),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${budget.period.label} · ${fmt.format(range.start)} – ${fmt.format(range.end)}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              _PctBadge(progress: progress, color: statusColor),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // Amount
+          Text(
+            CurrencyFormatter.format(spent, symbol: currency),
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+              color: statusColor,
+              letterSpacing: -0.8,
             ),
           ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
+          Text(
+            'of ${CurrencyFormatter.format(budget.amount, symbol: currency)} budget',
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          ClipRRect(
+            borderRadius: BorderRadius.circular(3),
+            child: LinearProgressIndicator(
+              value: progress.clamp(0.0, 1.0),
+              minHeight: 6,
+              backgroundColor: statusColor.withValues(alpha: 0.12),
+              valueColor: AlwaysStoppedAnimation<Color>(statusColor),
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          Row(
             children: [
               Icon(
-                isOver ? Icons.warning_rounded : budget.icon,
-                color: color,
-                size: 22,
+                status == BudgetStatus.exceeded
+                    ? Icons.warning_rounded
+                    : Icons.info_outline_rounded,
+                size: 13,
+                color: statusColor,
               ),
-              const SizedBox(height: 4),
-              FittedBox(
-                fit: BoxFit.scaleDown,
+              const SizedBox(width: 5),
+              Expanded(
                 child: Text(
                   isOver
-                      ? CurrencyFormatter.format(overspent, symbol: currency)
-                      : CurrencyFormatter.format(remaining, symbol: currency),
+                      ? '${CurrencyFormatter.format(overspent, symbol: currency)} over budget'
+                      : '${CurrencyFormatter.format(remaining, symbol: currency)} remaining',
                   style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: color,
-                    letterSpacing: -0.5,
+                    fontSize: 12,
+                    color: statusColor,
+                    fontWeight: FontWeight.w600,
                   ),
                   maxLines: 1,
-                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               Text(
-                isOver ? 'over budget' : 'remaining',
+                budget.period.nextResetLabel,
                 style: const TextStyle(
                   fontSize: 11,
-                  color: AppColors.textSecondary,
+                  color: AppColors.textTertiary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                '${(progress * 100).clamp(0.0, 999.0).toStringAsFixed(0)}% used',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: color,
-                  fontWeight: FontWeight.w700,
-                ),
+            ],
+          ),
+
+          const SizedBox(height: 18),
+          Container(height: 0.5, color: dividerColor),
+          const SizedBox(height: 18),
+
+          Row(
+            children: [
+              Expanded(
+                child: _StatCell(
+                    label: 'Budget',
+                    value: CurrencyFormatter.format(budget.amount,
+                        symbol: currency),
+                    color: budget.color),
+              ),
+              Container(width: 0.5, height: 32, color: dividerColor),
+              Expanded(
+                child: _StatCell(
+                    label: 'Spent',
+                    value: CurrencyFormatter.format(spent, symbol: currency),
+                    color: AppColors.expense),
+              ),
+              Container(width: 0.5, height: 32, color: dividerColor),
+              Expanded(
+                child: _StatCell(
+                    label: 'Left',
+                    value:
+                        CurrencyFormatter.format(remaining, symbol: currency),
+                    color: AppColors.income),
               ),
             ],
           ),
@@ -387,114 +384,29 @@ class _ProgressRing extends StatelessWidget {
   }
 }
 
-class _ArcPainter extends CustomPainter {
+class _PctBadge extends StatelessWidget {
   final double progress;
-  final Color bgColor;
-  final Color fgColor;
+  final Color color;
 
-  const _ArcPainter({
-    required this.progress,
-    required this.bgColor,
-    required this.fgColor,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2 - 10;
-
-    final bgPaint = Paint()
-      ..color = bgColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 14
-      ..strokeCap = StrokeCap.round;
-
-    final fgPaint = Paint()
-      ..color = fgColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 14
-      ..strokeCap = StrokeCap.round;
-
-    const startAngle = -math.pi / 2;
-    const fullSweep = 2 * math.pi;
-
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      startAngle,
-      fullSweep,
-      false,
-      bgPaint,
-    );
-
-    if (progress > 0) {
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        startAngle,
-        fullSweep * progress,
-        false,
-        fgPaint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(_ArcPainter old) => old.progress != progress;
-}
-
-// ── Stats row ────────────────────────────────────────────────────────────────
-
-class _StatsRow extends StatelessWidget {
-  final Budget budget;
-  final double spent;
-  final double remaining;
-  final String currency;
-  final bool isDark;
-
-  const _StatsRow({
-    required this.budget,
-    required this.spent,
-    required this.remaining,
-    required this.currency,
-    required this.isDark,
-  });
+  const _PctBadge({required this.progress, required this.color});
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = isDark ? AppColors.darkCard : AppColors.lightSurface;
-    final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
-
+    final pct = (progress * 100).clamp(0.0, 999.0);
     return Container(
-      margin: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor, width: 0.5),
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _StatCell(
-                label: 'Budget',
-                value:
-                    CurrencyFormatter.format(budget.amount, symbol: currency),
-                color: budget.color),
-          ),
-          _Divider(),
-          Expanded(
-            child: _StatCell(
-                label: 'Spent',
-                value: CurrencyFormatter.format(spent, symbol: currency),
-                color: AppColors.expense),
-          ),
-          _Divider(),
-          Expanded(
-            child: _StatCell(
-                label: 'Left',
-                value: CurrencyFormatter.format(remaining, symbol: currency),
-                color: AppColors.income),
-          ),
-        ],
+      child: Text(
+        '${pct.toStringAsFixed(0)}%',
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w800,
+          color: color,
+          letterSpacing: -0.3,
+        ),
       ),
     );
   }
@@ -534,67 +446,6 @@ class _StatCell extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _Divider extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) => Container(
-        width: 0.5,
-        height: 32,
-        color: AppColors.textTertiary.withValues(alpha: 0.3),
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-      );
-}
-
-// ── Period info ───────────────────────────────────────────────────────────────
-
-class _PeriodInfo extends StatelessWidget {
-  final Budget budget;
-  final bool isDark;
-
-  const _PeriodInfo({required this.budget, required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    final range = budget.period.currentRange;
-    final fmt = DateFormat('d MMM yyyy');
-    final bgColor = isDark ? AppColors.darkCard : AppColors.lightSurface;
-    final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
-
-    return Container(
-      margin: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: borderColor, width: 0.5),
-      ),
-      child: Row(
-        children: [
-          Icon(budget.period.periodIcon, color: budget.color, size: 18),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              '${fmt.format(range.start)} – ${fmt.format(range.end)}',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: isDark ? Colors.white : AppColors.textLight,
-              ),
-            ),
-          ),
-          Text(
-            budget.period.nextResetLabel,
-            style: const TextStyle(
-              fontSize: 11,
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

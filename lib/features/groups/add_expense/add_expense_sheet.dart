@@ -11,6 +11,7 @@ import '../../../data/services/group_api_service.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/group_provider.dart';
 import '../../../providers/settings_provider.dart';
+import '../../../shared/widgets/animated_amount_field.dart';
 import '../../../shared/widgets/avatar_widget.dart';
 import '../../../shared/widgets/bill_scan_button.dart';
 import '../../../shared/widgets/sp_button.dart';
@@ -567,7 +568,10 @@ class AmountDisplay extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            Row(
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+              mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -579,33 +583,29 @@ class AmountDisplay extends StatelessWidget {
                     color: primary,
                   ),
                 ),
-                IntrinsicWidth(
-                  child: TextField(
-                    controller: controller,
-                    focusNode: focusNode,
-                    autofocus: autofocus,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                    inputFormatters: [
-                      LengthLimitingTextInputFormatter(50),
-                      CurrencyInputFormatter(),
-                    ],
-                    onChanged: onChanged,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 40,
-                      fontWeight: FontWeight.w800,
-                      color: isDark ? Colors.white : AppColors.textLight,
-                    ),
-                    decoration: const InputDecoration(
-                      hintText: '0',
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.zero,
-                      isDense: true,
-                    ),
+                AnimatedAmountField(
+                  controller: controller,
+                  focusNode: focusNode,
+                  autofocus: autofocus,
+                  onChanged: onChanged,
+                  cursorColor: primary,
+                  inputFormatters: [
+                    LengthLimitingTextInputFormatter(50),
+                    CurrencyInputFormatter(),
+                  ],
+                  style: TextStyle(
+                    fontSize: 40,
+                    fontWeight: FontWeight.w800,
+                    color: isDark ? Colors.white : AppColors.textLight,
+                  ),
+                  hintStyle: const TextStyle(
+                    fontSize: 40,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textTertiary,
                   ),
                 ),
               ],
+              ),
             ),
           ],
         ),
@@ -732,7 +732,7 @@ class _TimePickerTile extends StatelessWidget {
                     ? Colors.white
                     : AppColors.primary),
             dayPeriodBorderSide:
-                const BorderSide(color: AppColors.primary, width: 1),
+                BorderSide(color: AppColors.primary, width: 1),
           ),
         ),
         child: child!,

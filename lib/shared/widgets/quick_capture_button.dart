@@ -102,7 +102,7 @@ class _QuickCaptureButtonState extends ConsumerState<QuickCaptureButton> {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
                   children: [
-                    const Icon(Icons.auto_awesome_rounded,
+                    Icon(Icons.auto_awesome_rounded,
                         color: AppColors.primary, size: 18),
                     const SizedBox(width: 8),
                     Text(
@@ -221,7 +221,7 @@ class _QuickCaptureButtonState extends ConsumerState<QuickCaptureButton> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         title: Row(
           children: [
-            const Icon(Icons.sms_rounded, color: AppColors.primary, size: 18),
+            Icon(Icons.sms_rounded, color: AppColors.primary, size: 18),
             const SizedBox(width: 8),
             const Text('Paste SMS',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
@@ -287,7 +287,7 @@ class _QuickCaptureButtonState extends ConsumerState<QuickCaptureButton> {
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
           title: Row(
             children: [
-              const Icon(Icons.auto_awesome_rounded,
+              Icon(Icons.auto_awesome_rounded,
                   color: AppColors.primary, size: 18),
               const SizedBox(width: 8),
               const Text('Detected from your SMS',
@@ -448,7 +448,7 @@ class _QuickCaptureButtonState extends ConsumerState<QuickCaptureButton> {
           mainAxisSize: MainAxisSize.min,
           children: [
             _busy
-                ? const SizedBox(
+                ? SizedBox(
                     width: 15,
                     height: 15,
                     child: CircularProgressIndicator(
@@ -456,7 +456,7 @@ class _QuickCaptureButtonState extends ConsumerState<QuickCaptureButton> {
                       color: AppColors.primary,
                     ),
                   )
-                : const Icon(Icons.auto_awesome_rounded,
+                : Icon(Icons.auto_awesome_rounded,
                     size: 16, color: AppColors.primary),
             const SizedBox(width: 8),
             Text(

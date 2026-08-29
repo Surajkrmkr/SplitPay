@@ -4,6 +4,9 @@ import * as groupsRepository from './groups.repository';
 import { GroupWithMembers } from './groups.repository';
 import * as activityRepository from '../activity/activity.repository';
 import * as notificationsService from '../notifications/notifications.service';
+import * as expensesRepository from '../expenses/expenses.repository';
+import * as settlementsRepository from '../settlements/settlements.repository';
+import { calculateNetBalances, simplifyDebts } from '../../utils/balance';
 import { CreateGroupInput, AddMemberInput, UpdateGroupInput, UpdateMemberRoleInput } from '../../validations/group.validation';
 import crypto from 'crypto';
 
@@ -305,6 +308,30 @@ export async function removeMember(
     throw new ForbiddenError('Only group admins can remove other members');
   }
 
+  if (isSelf) {
+    // Leaving with an outstanding balance (owed or owing) would strand debts
+    // that can no longer be settled from inside the group — settle up first.
+    const hasBalance = await hasOutstandingBalance(groupId, memberId);
+    if (hasBalance) {
+      throw new BadRequestError(
+        'Settle all your balances in this group before leaving'
+      );
+    }
+
+    // Don't let the sole admin leave a group that still has other members —
+    // someone must remain in charge of it.
+    if (isAdmin && group.members.length > 1) {
+      const otherAdmins = group.members.filter(
+        (m) => m.role === GroupRole.ADMIN && m.userId !== memberId
+      );
+      if (otherAdmins.length === 0) {
+        throw new BadRequestError(
+          'Promote another member to admin before leaving this group'
+        );
+      }
+    }
+  }
+
   await groupsRepository.removeMember(groupId, memberId);
 
   // Log MEMBER_REMOVED activity
@@ -312,6 +339,36 @@ export async function removeMember(
     groupId,
     userId: requesterId,
     type: 'MEMBER_REMOVED',
-    metadata: { removedUserId: memberId },
+    metadata: { removedUserId: memberId, self: isSelf },
   });
+}
+
+/// Whether `userId` currently owes or is owed money in `groupId`, based on
+/// the same net-balance calculation used by the balances endpoint.
+async function hasOutstandingBalance(groupId: string, userId: string): Promise<boolean> {
+  const expenses = await expensesRepository.findGroupExpensesForBalance(groupId);
+  const settlements = await settlementsRepository.findGroupSettlementsForBalance(groupId);
+
+  const expenseData = expenses.map((e) => ({
+    id: e.id,
+    amount: Number(e.amount),
+    paidById: e.paidById,
+    participants: e.participants.map((p) => ({
+      userId: p.userId,
+      share: Number(p.share),
+    })),
+  }));
+
+  const settlementData = settlements.map((s) => ({
+    payerId: s.payerId,
+    payeeId: s.payeeId,
+    amount: Number(s.amount),
+  }));
+
+  const rawBalances = calculateNetBalances(expenseData, settlementData);
+  const simplifiedBalances = simplifyDebts(rawBalances);
+
+  return simplifiedBalances.some(
+    (b) => b.fromUserId === userId || b.toUserId === userId
+  );
 }

@@ -484,7 +484,7 @@ class _SearchField extends StatelessWidget {
             minimumSize: Size.zero,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
-          child: const Text(
+          child: Text(
             'Cancel',
             style: TextStyle(
               color: AppColors.primary,
@@ -649,7 +649,7 @@ class _BalanceSummaryCard extends ConsumerWidget {
     final isPositive = net >= 0;
     final accentColor = isSettled
         ? AppColors.primary
-        : (isPositive ? AppColors.income : AppColors.expense);
+        : (isPositive ? AppColors.primary : AppColors.expense);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -1212,7 +1212,7 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
                             child: Container(
                               width: 16,
                               height: 16,
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                 color: AppColors.primary,
                                 shape: BoxShape.circle,
                               ),
@@ -1612,18 +1612,19 @@ class _FilterChip extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
   final bool isDark;
-  final Color color;
+  final Color? color;
 
   const _FilterChip({
     required this.label,
     required this.selected,
     required this.onTap,
     required this.isDark,
-    this.color = AppColors.primary,
+    this.color,
   });
 
   @override
   Widget build(BuildContext context) {
+    final color = this.color ?? AppColors.primary;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -1679,7 +1680,7 @@ class _ActiveChip extends StatelessWidget {
           children: [
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.primary,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -1688,7 +1689,7 @@ class _ActiveChip extends StatelessWidget {
             const SizedBox(width: 4),
             GestureDetector(
               onTap: onRemove,
-              child: const Icon(Icons.close_rounded,
+              child: Icon(Icons.close_rounded,
                   size: 13, color: AppColors.primary),
             ),
           ],
@@ -1714,7 +1715,7 @@ class _AmountBound extends StatelessWidget {
                 color: AppColors.textTertiary,
                 fontWeight: FontWeight.w500)),
         Text(value,
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
                 color: AppColors.primary)),
@@ -2037,7 +2038,7 @@ class _TotalTab extends ConsumerStatefulWidget {
 }
 
 class _TotalTabState extends ConsumerState<_TotalTab> {
-  static const List<Color> _userColors = [
+  static final List<Color> _userColors = [
     AppColors.primary,
     Color(0xFF3B82F6),
     Color(0xFFF59E0B),
@@ -2337,7 +2338,7 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
                             ),
                             Text(
                               CurrencyFormatter.formatCompact(totalSpent, symbol: currency),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.primary,
@@ -2640,7 +2641,7 @@ class _SettlementsSection extends ConsumerWidget {
                     ),
                     child: Text(
                       '${settlements.length}',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 11,
                           color: AppColors.primary,
                           fontWeight: FontWeight.w700),
