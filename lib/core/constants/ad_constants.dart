@@ -42,7 +42,6 @@ abstract class AdConstants {
   static const String testIosBanner = 'ca-app-pub-3940256099942544/2934735716';
 
   static const String _testAndroidInterstitial = 'ca-app-pub-3940256099942544/1033173712';
-  static const String _testIosInterstitial = 'ca-app-pub-3940256099942544/4411468910';
 
   static const String _testAndroidRewarded = 'ca-app-pub-3940256099942544/5224354917';
   static const String _testIosRewarded = 'ca-app-pub-3940256099942544/1712485313';
@@ -50,45 +49,60 @@ abstract class AdConstants {
   // ── 1. Banner: Homescreen - Below Split with friends ────────────────────────
   static const String homeSplitAndroidUnitId =
       'ca-app-pub-4861691653340010/6399521843';
-  static const String homeSplitIosUnitId = testIosBanner;
+  static const String homeSplitIosUnitId =
+      'ca-app-pub-4861691653340010/6957151938';
 
   // ── 2. Banner: Homescreen - Below Quick Insights ────────────────────────────
   static const String homeQuickInsightsAndroidUnitId =
       'ca-app-pub-4861691653340010/2973176488';
-  static const String homeQuickInsightsIosUnitId = testIosBanner;
+  static const String homeQuickInsightsIosUnitId =
+      'ca-app-pub-4861691653340010/8003579648';
 
   // ── 3. Banner: Add Expense Sheet - Below Suggested Apps ─────────────────────
   static const String addExpenseAndroidUnitId =
       'ca-app-pub-4861691653340010/3188944692';
-  static const String addExpenseIosUnitId = testIosBanner;
+  static const String addExpenseIosUnitId =
+      'ca-app-pub-4861691653340010/6331405326';
 
   // ── 4. Banner: Recent Transactions - Every 4 Transactions ──────────────────
   static const String transactionsListAndroidUnitId =
       'ca-app-pub-4861691653340010/8337329599';
-  static const String transactionsListIosUnitId = testIosBanner;
+  static const String transactionsListIosUnitId =
+      'ca-app-pub-4861691653340010/3125718138';
 
   // ── 5. Banner: Analytics - Below By Category ────────────────────────────────
   static const String analyticsCategoryAndroidUnitId =
       'ca-app-pub-4861691653340010/8385431059';
-  static const String analyticsCategoryIosUnitId = testIosBanner;
+  static const String analyticsCategoryIosUnitId =
+      'ca-app-pub-4861691653340010/6689558620';
 
   // ── 6. Banner: Groups Screen - End of Groups List ───────────────────────────
   static const String groupsListAndroidUnitId =
       'ca-app-pub-4861691653340010/6720849805';
-  static const String groupsListIosUnitId = testIosBanner;
+  static const String groupsListIosUnitId =
+      'ca-app-pub-4861691653340010/4615883458';
 
   // ── 7. Banner: Group Details - Total Tab Bottom of Graph ────────────────────
   static const String groupDetailsTotalAndroidUnitId =
       'ca-app-pub-4861691653340010/6720849805';
-  static const String groupDetailsTotalIosUnitId = testIosBanner;
+  static const String groupDetailsTotalIosUnitId =
+      'ca-app-pub-4861691653340010/9320530742';
 
   // ── 8. Banner: Budget Screen - Below Total Budget Card ──────────────────────
   static const String budgetSummaryAndroidUnitId = "ca-app-pub-4861691653340010/8169808638";
-  static const String budgetSummaryIosUnitId = testIosBanner;
+  static const String budgetSummaryIosUnitId =
+      'ca-app-pub-4861691653340010/9125089620';
 
   // ── Future Scope: Interstitial & Rewarded Ad Unit IDs ───────────────────────
   static const String interstitialAndroidUnitId = _testAndroidInterstitial;
-  static const String interstitialIosUnitId = _testIosInterstitial;
+  // NOTE: this AdMob unit ("Interstitial", ca-app-pub-4861691653340010/5668120993)
+  // was created with ad format "Banner" in the AdMob console, not
+  // "Interstitial" — AdMob will likely reject/fail to fill interstitial ad
+  // requests made with a banner-format unit ID. Not wired into any real ad
+  // display code yet ("future scope"), but recreate it as an actual
+  // Interstitial-format unit in AdMob before using it for real.
+  static const String interstitialIosUnitId =
+      'ca-app-pub-4861691653340010/5668120993';
 
   static const String rewardedAndroidUnitId = _testAndroidRewarded;
   static const String rewardedIosUnitId = _testIosRewarded;
