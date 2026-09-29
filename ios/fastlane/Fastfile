@@ -41,25 +41,21 @@ platform :ios do
     xcargs_flags = xcode_api_key_args.dup
     xcargs_flags += " DEVELOPMENT_TEAM=#{Shellwords.escape(team_id)}" if team_id && !team_id.empty?
 
-    export_opts = {
-      method: "app-store",
-      signingStyle: "automatic"
-    }
-    export_opts[:teamID] = team_id if team_id && !team_id.empty?
-
-    # Use explicit profiles for both the app and its widget during export.
+    # Always export with the installed App Store profiles for the app and widget.
     app_profile_name = ENV["IOS_APP_STORE_PROFILE_NAME"]
     widget_profile_name = ENV["IOS_WIDGET_APP_STORE_PROFILE_NAME"]
-    if [app_profile_name, widget_profile_name].any? { |name| !name.to_s.empty? }
-      UI.user_error!("Set IOS_APP_STORE_PROFILE_NAME and IOS_WIDGET_APP_STORE_PROFILE_NAME") if
-        app_profile_name.to_s.empty? || widget_profile_name.to_s.empty?
+    UI.user_error!("IOS_APP_STORE_PROFILE_NAME is not set") if app_profile_name.to_s.empty?
+    UI.user_error!("IOS_WIDGET_APP_STORE_PROFILE_NAME is not set") if widget_profile_name.to_s.empty?
 
-      export_opts[:signingStyle] = "manual"
-      export_opts[:provisioningProfiles] = {
+    export_opts = {
+      method: "app-store",
+      signingStyle: "manual",
+      provisioningProfiles: {
         "com.splitpay.expensetracker" => app_profile_name,
         "com.splitpay.expensetracker.DimeWidgets" => widget_profile_name
       }
-    end
+    }
+    export_opts[:teamID] = team_id if team_id && !team_id.empty?
 
     # Let Xcode manage signing during archive and export using the API key.
     build_app(
