@@ -1,5 +1,7 @@
 default_platform(:ios)
 
+require "shellwords"
+
 platform :ios do
   private_lane :build_app_with_api_key do
     raw_path = ENV["APP_STORE_CONNECT_API_KEY_PATH"] || "AuthKey.p8"
@@ -14,17 +16,30 @@ platform :ios do
       resolved_path = found if found
     end
     key_path = File.expand_path(resolved_path)
+    UI.user_error!("App Store Connect API key not found: #{key_path}") unless File.exist?(key_path)
+
+    key_id = ENV["APP_STORE_CONNECT_API_KEY_ID"]
+    issuer_id = ENV["APP_STORE_CONNECT_ISSUER_ID"]
+    UI.user_error!("APP_STORE_CONNECT_API_KEY_ID is not set") if key_id.to_s.empty?
+    UI.user_error!("APP_STORE_CONNECT_ISSUER_ID is not set") if issuer_id.to_s.empty?
 
     api_key = app_store_connect_api_key(
-      key_id: ENV["APP_STORE_CONNECT_API_KEY_ID"],
-      issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
+      key_id: key_id,
+      issuer_id: issuer_id,
       key_filepath: key_path,
       in_house: false
     )
 
     team_id = ENV["APPLE_TEAM_ID"]
-    xcargs_flags = "-allowProvisioningUpdates CODE_SIGNING_ALLOWED=NO"
-    xcargs_flags += " DEVELOPMENT_TEAM='#{team_id}'" if team_id && !team_id.empty?
+    xcode_api_key_args = [
+      "-allowProvisioningUpdates",
+      "-authenticationKeyPath #{Shellwords.escape(key_path)}",
+      "-authenticationKeyID #{Shellwords.escape(key_id)}",
+      "-authenticationKeyIssuerID #{Shellwords.escape(issuer_id)}"
+    ].join(" ")
+
+    xcargs_flags = xcode_api_key_args.dup
+    xcargs_flags += " DEVELOPMENT_TEAM=#{Shellwords.escape(team_id)}" if team_id && !team_id.empty?
 
     export_opts = {
       method: "app-store",
@@ -32,18 +47,24 @@ platform :ios do
     }
     export_opts[:teamID] = team_id if team_id && !team_id.empty?
 
-    # Archive without requiring local development profiles (CODE_SIGNING_ALLOWED=NO).
-    # Then gym runs xcodebuild -exportArchive with export_options (signingStyle: automatic)
-    # and export_xcargs: "-allowProvisioningUpdates" using the App Store Connect API key
-    # to fetch/generate the App Store provisioning profile and sign the IPA.
+    # Optional manual mapping for CI setups that use a pre-created profile.
+    bundle_id = ENV["IOS_BUNDLE_ID"]
+    profile_name = ENV["IOS_APP_STORE_PROFILE_NAME"]
+    if profile_name && !profile_name.empty?
+      UI.user_error!("Set IOS_BUNDLE_ID when using IOS_APP_STORE_PROFILE_NAME") if bundle_id.to_s.empty?
+
+      export_opts[:signingStyle] = "manual"
+      export_opts[:provisioningProfiles] = { bundle_id => profile_name }
+    end
+
+    # Let Xcode manage signing during archive and export using the API key.
     build_app(
       workspace: "Runner.xcworkspace",
       scheme: "Runner",
       export_method: "app-store",
       export_team_id: team_id,
       export_options: export_opts,
-      export_xcargs: "-allowProvisioningUpdates",
-      skip_profile_detection: true,
+      export_xcargs: xcode_api_key_args,
       xcargs: xcargs_flags
     )
 
