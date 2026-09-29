@@ -158,6 +158,44 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
           rm cert.p12
 
+      - name: Install App Store provisioning profiles
+        env:
+          APP_PROFILE_BASE64: ${{ secrets.IOS_APP_STORE_PROFILE_BASE64 }}
+          WIDGET_PROFILE_BASE64: ${{ secrets.IOS_WIDGET_APP_STORE_PROFILE_BASE64 }}
+          APP_PROFILE_NAME: ${{ secrets.IOS_APP_STORE_PROFILE_NAME }}
+          WIDGET_PROFILE_NAME: ${{ secrets.IOS_WIDGET_APP_STORE_PROFILE_NAME }}
+        run: |
+          set -euo pipefail
+          profile_dir="$HOME/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p "$profile_dir"
+
+          install_profile() {
+            local encoded_profile="$1"
+            local expected_name="$2"
+            local profile_file plist_file profile_name profile_uuid
+            profile_file="$(mktemp)"
+            plist_file="$(mktemp)"
+
+            printf '%s' "$encoded_profile" | base64 -D > "$profile_file"
+            security cms -D -i "$profile_file" > "$plist_file"
+            profile_name=$(/usr/libexec/PlistBuddy -c 'Print :Name' "$plist_file")
+            if [[ "$profile_name" != "$expected_name" ]]; then
+              echo "Provisioning profile name mismatch: expected '$expected_name', got '$profile_name'" >&2
+              exit 1
+            fi
+
+            profile_uuid=$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$plist_file")
+            cp "$profile_file" "$profile_dir/$profile_uuid.mobileprovision"
+            rm "$profile_file" "$plist_file"
+          }
+
+          : "${APP_PROFILE_BASE64:?Missing IOS_APP_STORE_PROFILE_BASE64 secret}"
+          : "${WIDGET_PROFILE_BASE64:?Missing IOS_WIDGET_APP_STORE_PROFILE_BASE64 secret}"
+          : "${APP_PROFILE_NAME:?Missing IOS_APP_STORE_PROFILE_NAME secret}"
+          : "${WIDGET_PROFILE_NAME:?Missing IOS_WIDGET_APP_STORE_PROFILE_NAME secret}"
+          install_profile "$APP_PROFILE_BASE64" "$APP_PROFILE_NAME"
+          install_profile "$WIDGET_PROFILE_BASE64" "$WIDGET_PROFILE_NAME"
+
       - name: Decode App Store Connect API key
         run: |
           echo "${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}" | base64 --decode > AuthKey.p8
@@ -189,4 +227,6 @@ jobs:
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           APP_STORE_CONNECT_API_KEY_PATH: AuthKey.p8
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          IOS_APP_STORE_PROFILE_NAME: ${{ secrets.IOS_APP_STORE_PROFILE_NAME }}
+          IOS_WIDGET_APP_STORE_PROFILE_NAME: ${{ secrets.IOS_WIDGET_APP_STORE_PROFILE_NAME }}
         run: bundle exec fastlane ${{ inputs.track == 'internal' && 'beta' || 'release' }}

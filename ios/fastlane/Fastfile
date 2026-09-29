@@ -47,14 +47,18 @@ platform :ios do
     }
     export_opts[:teamID] = team_id if team_id && !team_id.empty?
 
-    # Optional manual mapping for CI setups that use a pre-created profile.
-    bundle_id = ENV["IOS_BUNDLE_ID"]
-    profile_name = ENV["IOS_APP_STORE_PROFILE_NAME"]
-    if profile_name && !profile_name.empty?
-      UI.user_error!("Set IOS_BUNDLE_ID when using IOS_APP_STORE_PROFILE_NAME") if bundle_id.to_s.empty?
+    # Use explicit profiles for both the app and its widget during export.
+    app_profile_name = ENV["IOS_APP_STORE_PROFILE_NAME"]
+    widget_profile_name = ENV["IOS_WIDGET_APP_STORE_PROFILE_NAME"]
+    if [app_profile_name, widget_profile_name].any? { |name| !name.to_s.empty? }
+      UI.user_error!("Set IOS_APP_STORE_PROFILE_NAME and IOS_WIDGET_APP_STORE_PROFILE_NAME") if
+        app_profile_name.to_s.empty? || widget_profile_name.to_s.empty?
 
       export_opts[:signingStyle] = "manual"
-      export_opts[:provisioningProfiles] = { bundle_id => profile_name }
+      export_opts[:provisioningProfiles] = {
+        "com.splitpay.expensetracker" => app_profile_name,
+        "com.splitpay.expensetracker.DimeWidgets" => widget_profile_name
+      }
     end
 
     # Let Xcode manage signing during archive and export using the API key.
