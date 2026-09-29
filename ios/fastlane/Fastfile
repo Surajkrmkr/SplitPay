@@ -64,7 +64,6 @@ platform :ios do
       export_method: "app-store",
       export_team_id: team_id,
       export_options: export_opts,
-      export_xcargs: xcode_api_key_args,
       xcargs: xcargs_flags
     )
 
