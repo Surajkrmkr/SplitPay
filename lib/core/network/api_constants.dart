@@ -18,7 +18,10 @@ class ApiConstants {
 
   // Groups
   static const String groups = '/groups';
+  static const String groupsOrder = '/groups/order';
   static String groupById(String id) => '/groups/$id';
+  static String groupPaymentReminders(String id) =>
+      '/groups/$id/payment-reminders';
   static String groupMembers(String id) => '/groups/$id/members';
   static String groupMember(String gId, String mId) =>
       '/groups/$gId/members/$mId';
@@ -57,6 +60,7 @@ class ApiConstants {
 
   // Budgets
   static const String budgets = '/budgets';
+  static const String budgetsOrder = '/budgets/order';
   static String budgetById(String id) => '/budgets/$id';
 
   // Sync

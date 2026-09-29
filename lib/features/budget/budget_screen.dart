@@ -34,6 +34,9 @@ class BudgetScreen extends ConsumerWidget {
     final filtered = ref.watch(filteredBudgetsProvider);
     final activeBudgets = ref.watch(activeBudgetsProvider);
     final showArchived = ref.watch(showArchivedBudgetsProvider);
+    final canReorder = !showArchived &&
+        ref.watch(budgetPeriodFilterProvider) == BudgetPeriodFilter.all &&
+        ref.watch(budgetSearchQueryProvider).trim().isEmpty;
     // Keeps the Overall Budget home-screen widget fresh whenever this screen
     // (where budgets are created/edited) is visited.
     ref.watch(homeWidgetSyncProvider);
@@ -128,26 +131,109 @@ class BudgetScreen extends ConsumerWidget {
                 ),
               )
             else
-              // Active budgets shown as a 2-column grid.
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                sliver: SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 14,
-                    crossAxisSpacing: 14,
-                    childAspectRatio: 0.82,
-                  ),
-                  delegate: SliverChildBuilderDelegate(
-                    (context, i) {
-                      final budget = filtered[i];
-                      return BudgetCard(
-                        budget: budget,
-                        compact: true,
-                        onTap: () => context.push('/budget/${budget.id}'),
+              // Keyed tiles retain their identity and animate into new slots.
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      const spacing = 14.0;
+                      final cardWidth = (constraints.maxWidth - spacing) / 2;
+                      final cardHeight = cardWidth / 0.82;
+                      final rowCount = (filtered.length + 1) ~/ 2;
+                      final gridHeight =
+                          rowCount * cardHeight + (rowCount - 1) * spacing;
+
+                      return SizedBox(
+                        height: gridHeight,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: filtered.asMap().entries.map((entry) {
+                            final index = entry.key;
+                            final budget = entry.value;
+                            final card = BudgetCard(
+                              budget: budget,
+                              compact: true,
+                              onTap: () => context.push('/budget/${budget.id}'),
+                            );
+                            final child = !canReorder
+                                ? card
+                                : DragTarget<String>(
+                                    onWillAcceptWithDetails: (details) =>
+                                        details.data != budget.id,
+                                    onAcceptWithDetails: (details) => ref
+                                        .read(budgetProvider.notifier)
+                                        .reorderActive(
+                                            details.data, budget.id),
+                                    builder: (context, candidates, rejected) {
+                                      final isDropTarget =
+                                          candidates.isNotEmpty;
+                                      return AnimatedScale(
+                                        scale: isDropTarget ? 0.97 : 1,
+                                        duration:
+                                            const Duration(milliseconds: 160),
+                                        curve: Curves.easeOutBack,
+                                        child: AnimatedContainer(
+                                          duration: const Duration(
+                                              milliseconds: 160),
+                                          foregroundDecoration: BoxDecoration(
+                                            borderRadius:
+                                                BorderRadius.circular(18),
+                                            border: Border.all(
+                                              color: isDropTarget
+                                                  ? Theme.of(context)
+                                                      .colorScheme
+                                                      .primary
+                                                  : Colors.transparent,
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: LongPressDraggable<String>(
+                                            data: budget.id,
+                                            feedback: Transform.scale(
+                                              scale: 1.04,
+                                              child: Material(
+                                                color: Colors.transparent,
+                                                elevation: 14,
+                                                borderRadius:
+                                                    BorderRadius.circular(18),
+                                                child: SizedBox(
+                                                  width: cardWidth,
+                                                  child: BudgetCard(
+                                                    budget: budget,
+                                                    compact: true,
+                                                    onTap: () {},
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            childWhenDragging: AnimatedOpacity(
+                                              opacity: 0.25,
+                                              duration: const Duration(
+                                                  milliseconds: 160),
+                                              child: card,
+                                            ),
+                                            child: card,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  );
+
+                            return AnimatedPositioned(
+                              key: ValueKey(budget.id),
+                              duration: const Duration(milliseconds: 280),
+                              curve: Curves.easeInOutCubic,
+                              left: (index % 2) * (cardWidth + spacing),
+                              top: (index ~/ 2) * (cardHeight + spacing),
+                              width: cardWidth,
+                              height: cardHeight,
+                              child: child,
+                            );
+                          }).toList(),
+                        ),
                       );
                     },
-                    childCount: filtered.length,
                   ),
                 ),
               ),

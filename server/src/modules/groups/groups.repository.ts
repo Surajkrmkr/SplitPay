@@ -44,25 +44,40 @@ export async function findGroupById(groupId: string): Promise<GroupWithMembers |
 }
 
 export async function findUserGroups(userId: string): Promise<GroupWithMembers[]> {
-  return prisma.group.findMany({
-    where: {
-      members: { some: { userId } },
-    },
+  const memberships = await prisma.groupMember.findMany({
+    where: { userId },
+    orderBy: [{ sortOrder: 'asc' }, { group: { updatedAt: 'desc' } }],
     include: {
-      members: {
+      group: {
         include: {
-          user: {
-            select: { id: true, name: true, email: true, avatar: true },
+          members: {
+            include: {
+              user: {
+                select: { id: true, name: true, email: true, avatar: true },
+              },
+            },
+            orderBy: { joinedAt: 'asc' },
+          },
+          _count: {
+            select: { members: true, expenses: true },
           },
         },
-        orderBy: { joinedAt: 'asc' },
-      },
-      _count: {
-        select: { members: true, expenses: true },
       },
     },
-    orderBy: { updatedAt: 'desc' },
   });
+
+  return memberships.map(({ group }) => group);
+}
+
+export async function reorderGroups(userId: string, groupIds: string[]): Promise<void> {
+  await prisma.$transaction(
+    groupIds.map((groupId, sortOrder) =>
+      prisma.groupMember.update({
+        where: { groupId_userId: { groupId, userId } },
+        data: { sortOrder },
+      })
+    )
+  );
 }
 
 export async function addMember(

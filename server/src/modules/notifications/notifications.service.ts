@@ -320,6 +320,40 @@ export async function notifyGroupExpenseDeleted(opts: {
   }
 }
 
+export async function notifyPaymentReminder(opts: {
+  groupId: string;
+  groupName: string;
+  senderId: string;
+  senderName: string;
+  senderAvatar: string | null;
+  recipientId: string;
+}): Promise<void> {
+  const { groupId, groupName, senderId, senderName, senderAvatar, recipientId } = opts;
+  const title = groupName;
+  const body = `${senderName} reminded you to settle your balance.`;
+  const tokens = await notificationsRepository.getUserFcmTokens(recipientId);
+
+  await notificationsRepository.createNotification({
+    userId: recipientId,
+    type: 'PAYMENT_REMINDER',
+    title,
+    body,
+    groupId,
+    actorName: senderName,
+    actorAvatar: senderAvatar ?? undefined,
+    data: { type: 'PAYMENT_REMINDER', groupId, senderId },
+  });
+
+  if (tokens.length > 0) {
+    sendPushNotification({
+      tokens,
+      title,
+      body,
+      data: { type: 'PAYMENT_REMINDER', groupId, senderId },
+    }).catch(() => {});
+  }
+}
+
 /**
  * Notify group members when an expense is updated.
  */

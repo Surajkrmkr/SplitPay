@@ -23,5 +23,12 @@ export const updateBudgetSchema = z.object({
   alertThreshold: z.number().min(0).max(1).optional(),
 });
 
+export const reorderBudgetsSchema = z.object({
+  budgetIds: z
+    .array(z.string().uuid('Invalid budget ID'))
+    .refine((ids) => new Set(ids).size === ids.length, 'Budget IDs must be unique'),
+});
+
 export type CreateBudgetInput = z.infer<typeof createBudgetSchema>;
 export type UpdateBudgetInput = z.infer<typeof updateBudgetSchema>;
+export type ReorderBudgetsInput = z.infer<typeof reorderBudgetsSchema>;

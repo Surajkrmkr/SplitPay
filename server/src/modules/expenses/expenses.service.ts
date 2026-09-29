@@ -335,3 +335,41 @@ export async function getGroupBalances(
     },
   };
 }
+
+export async function sendPaymentReminder(
+  groupId: string,
+  senderId: string,
+  recipientId: string
+): Promise<void> {
+  if (senderId === recipientId) {
+    throw new BadRequestError('You cannot remind yourself');
+  }
+
+  const group = await groupsRepository.findGroupById(groupId);
+  if (!group) throw new NotFoundError('Group not found');
+
+  const sender = group.members.find((member) => member.userId === senderId);
+  if (!sender) throw new ForbiddenError('You are not a member of this group');
+
+  const recipient = group.members.find((member) => member.userId === recipientId);
+  if (!recipient) {
+    throw new BadRequestError('The reminder recipient is not in this group');
+  }
+
+  const { balances } = await getGroupBalances(groupId, senderId);
+  const balance = balances.find(
+    (item) => item.fromUserId === recipientId && item.toUserId === senderId
+  );
+  if (!balance) {
+    throw new BadRequestError('This member does not currently owe you money');
+  }
+
+  await notificationsService.notifyPaymentReminder({
+    groupId,
+    groupName: group.name,
+    senderId,
+    senderName: sender.user.name,
+    senderAvatar: sender.user.avatar,
+    recipientId,
+  });
+}

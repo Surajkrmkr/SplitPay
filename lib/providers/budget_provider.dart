@@ -61,6 +61,38 @@ class BudgetNotifier extends StateNotifier<List<Budget>> {
     }
   }
 
+  Future<void> reorderActive(String draggedId, String targetId) async {
+    final original = state;
+    final active = state.where((budget) => !budget.isArchived).toList();
+    final from = active.indexWhere((budget) => budget.id == draggedId);
+    final to = active.indexWhere((budget) => budget.id == targetId);
+    if (from < 0 || to < 0 || from == to) return;
+
+    final reorderedActive = [...active];
+    final movedBudget = reorderedActive.removeAt(from);
+    reorderedActive.insert(to, movedBudget);
+
+    final activeSlots = <int>[];
+    for (var index = 0; index < state.length; index++) {
+      if (!state[index].isArchived) {
+        activeSlots.add(index);
+      }
+    }
+    final reordered = [...state];
+    for (var index = 0; index < activeSlots.length; index++) {
+      reordered[activeSlots[index]] = reorderedActive[index];
+    }
+    state = reordered;
+
+    try {
+      await _repo.reorderActive(
+        reorderedActive.map((budget) => budget.id).toList(),
+      );
+    } catch (_) {
+      state = original;
+    }
+  }
+
   Future<void> archive(String id) async {
     final b = state.firstWhere((b) => b.id == id);
     await update(b.copyWith(isArchived: true, updatedAt: DateTime.now()));

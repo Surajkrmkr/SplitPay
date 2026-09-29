@@ -26,6 +26,7 @@ class GroupsScreen extends ConsumerWidget {
 
     final groupsAsync = ref.watch(groupsProvider);
     final filteredGroups = ref.watch(searchedGroupsProvider);
+    final isSearching = ref.watch(groupSearchQueryProvider).trim().isNotEmpty;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -195,21 +196,43 @@ class GroupsScreen extends ConsumerWidget {
                     );
                   }
 
-                  return SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        if (index == 0) {
-                          return const MyBalanceSummary();
-                        }
-                        final group = filteredGroups[index - 1];
-                        return GroupCard(
-                          group: group,
-                          index: index - 1,
-                          onTap: () => context.push('/groups/${group.id}'),
-                        );
-                      },
-                      childCount: filteredGroups.length + 1,
-                    ),
+                  Widget buildItem(BuildContext context, int index) {
+                    if (index == 0) {
+                      return const KeyedSubtree(
+                        key: ValueKey('my-balance-summary'),
+                        child: MyBalanceSummary(),
+                      );
+                    }
+                    final group = filteredGroups[index - 1];
+                    final card = GroupCard(
+                      group: group,
+                      index: index - 1,
+                      onTap: () => context.push('/groups/${group.id}'),
+                    );
+                    if (isSearching) return card;
+                    return ReorderableDelayedDragStartListener(
+                      key: ValueKey(group.id),
+                      index: index,
+                      child: card,
+                    );
+                  }
+
+                  if (isSearching) {
+                    return SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        buildItem,
+                        childCount: filteredGroups.length + 1,
+                      ),
+                    );
+                  }
+
+                  return SliverReorderableList(
+                    itemCount: filteredGroups.length + 1,
+                    itemBuilder: buildItem,
+                    onReorder: (oldIndex, newIndex) => ref
+                        .read(groupsProvider.notifier)
+                        .reorder(
+                            oldIndex - 1, newIndex <= 1 ? 0 : newIndex - 1),
                   );
                 },
               ),

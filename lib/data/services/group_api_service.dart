@@ -152,6 +152,18 @@ class GroupApiService {
         .toList();
   }
 
+  Future<void> reorderGroups(List<String> groupIds) async {
+    if (_useMock) return;
+    await _dio.patch(ApiConstants.groupsOrder, data: {'groupIds': groupIds});
+  }
+
+  Future<void> remindGroupMember(String groupId, String recipientId) async {
+    await _dio.post(
+      ApiConstants.groupPaymentReminders(groupId),
+      data: {'recipientId': recipientId},
+    );
+  }
+
   Future<GroupExpenseModel> updateExpense(
     String expenseId, {
     String? title,

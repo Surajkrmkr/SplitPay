@@ -32,8 +32,19 @@ export async function createBudget(data: CreateBudgetData) {
 export async function findAll(userId: string) {
   return prisma.budget.findMany({
     where: { userId },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
   });
+}
+
+export async function reorderActive(userId: string, budgetIds: string[]) {
+  await prisma.$transaction(
+    budgetIds.map((id, sortOrder) =>
+      prisma.budget.updateMany({
+        where: { id, userId, isArchived: false },
+        data: { sortOrder },
+      })
+    )
+  );
 }
 
 export async function findById(id: string, userId: string) {

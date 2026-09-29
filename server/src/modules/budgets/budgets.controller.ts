@@ -2,7 +2,11 @@ import { Request, Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../../types';
 import * as service from './budgets.service';
 import { sendSuccess, sendCreated } from '../../utils/response';
-import { CreateBudgetInput, UpdateBudgetInput } from '../../validations/budget.validation';
+import {
+  CreateBudgetInput,
+  ReorderBudgetsInput,
+  UpdateBudgetInput,
+} from '../../validations/budget.validation';
 
 export async function createBudget(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -19,6 +23,21 @@ export async function getBudgets(req: Request, res: Response, next: NextFunction
     const { userId } = (req as AuthenticatedRequest).user;
     const budgets = await service.getBudgets(userId);
     sendSuccess(res, budgets, 'Budgets retrieved');
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function reorderBudgets(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { userId } = (req as AuthenticatedRequest).user;
+    const { budgetIds } = req.body as ReorderBudgetsInput;
+    await service.reorderBudgets(userId, budgetIds);
+    sendSuccess(res, null, 'Budgets reordered');
   } catch (err) {
     next(err);
   }

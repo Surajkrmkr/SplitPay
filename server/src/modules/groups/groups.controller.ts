@@ -1,12 +1,15 @@
 import { Response, NextFunction, Request } from 'express';
 import { AuthenticatedRequest } from '../../types';
 import * as groupsService from './groups.service';
+import * as expensesService from '../expenses/expenses.service';
 import { sendSuccess, sendCreated } from '../../utils/response';
 import {
   CreateGroupInput,
   AddMemberInput,
   UpdateGroupInput,
   UpdateMemberRoleInput,
+  ReorderGroupsInput,
+  PaymentReminderInput,
 } from '../../validations/group.validation';
 
 export async function createGroup(
@@ -30,6 +33,34 @@ export async function getGroups(
   try {
     const groups = await groupsService.getGroups(req.user.userId);
     sendSuccess(res, groups, 'Groups retrieved');
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function reorderGroups(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { groupIds } = req.body as ReorderGroupsInput;
+    await groupsService.reorderGroups(req.user.userId, groupIds);
+    sendSuccess(res, null, 'Groups reordered');
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function sendPaymentReminder(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { recipientId } = req.body as PaymentReminderInput;
+    await expensesService.sendPaymentReminder(req.params.id, req.user.userId, recipientId);
+    sendSuccess(res, null, 'Payment reminder sent');
   } catch (err) {
     next(err);
   }
@@ -158,6 +189,22 @@ export function createGroupHandler(req: Request, res: Response, next: NextFuncti
 
 export function getGroupsHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
   return getGroups(req as AuthenticatedRequest, res, next);
+}
+
+export function reorderGroupsHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  return reorderGroups(req as AuthenticatedRequest, res, next);
+}
+
+export function paymentReminderHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  return sendPaymentReminder(req as AuthenticatedRequest, res, next);
 }
 
 export function getGroupHandler(req: Request, res: Response, next: NextFunction): Promise<void> {

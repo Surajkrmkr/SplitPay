@@ -23,6 +23,10 @@ class BudgetRepository {
   Future<void> delete(String id) async {
     await _api.deleteBudget(id);
   }
+
+  Future<void> reorderActive(List<String> budgetIds) async {
+    await _api.reorderActiveBudgets(budgetIds);
+  }
 }
 
 final budgetRepositoryProvider = Provider<BudgetRepository>((ref) {

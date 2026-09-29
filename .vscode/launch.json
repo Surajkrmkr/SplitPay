@@ -17,7 +17,7 @@
             "request": "launch",
             "type": "dart",
             "args": [
-                "--dart-define=API_BASE_URL=https://x1vmwdss-3000.inc1.devtunnels.ms/api/v1"
+                "--dart-define=API_BASE_URL=https://8zjnbb1l-3000.inc1.devtunnels.ms/api/v1"
             ]
         },
         {

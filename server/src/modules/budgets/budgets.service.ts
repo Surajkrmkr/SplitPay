@@ -1,5 +1,5 @@
 import { BudgetPeriod } from '@prisma/client';
-import { NotFoundError, ForbiddenError } from '../../utils/app-error';
+import { NotFoundError, ForbiddenError, BadRequestError } from '../../utils/app-error';
 import * as repo from './budgets.repository';
 import { CreateBudgetInput, UpdateBudgetInput } from '../../validations/budget.validation';
 
@@ -19,6 +19,17 @@ export async function createBudget(userId: string, input: CreateBudgetInput) {
 
 export async function getBudgets(userId: string) {
   return repo.findAll(userId);
+}
+
+export async function reorderBudgets(userId: string, budgetIds: string[]) {
+  const budgets = await repo.findAll(userId);
+  const activeIds = budgets.filter((budget) => !budget.isArchived).map((budget) => budget.id);
+  const requestedIds = new Set(budgetIds);
+  if (requestedIds.size !== activeIds.length || activeIds.some((id) => !requestedIds.has(id))) {
+    throw new BadRequestError('Order must include every active budget exactly once');
+  }
+
+  await repo.reorderActive(userId, budgetIds);
 }
 
 export async function updateBudget(userId: string, id: string, input: UpdateBudgetInput) {

@@ -29,6 +29,31 @@ class GroupsNotifier extends AsyncNotifier<List<GroupModel>> {
     );
   }
 
+  Future<void> reorder(int oldIndex, int newIndex) async {
+    final groups = state.valueOrNull;
+    if (groups == null || oldIndex < 0 || oldIndex >= groups.length) return;
+    if (newIndex > oldIndex) {
+      newIndex--;
+    }
+    if (newIndex < 0 || newIndex >= groups.length || oldIndex == newIndex) {
+      return;
+    }
+
+    final original = state;
+    final reordered = [...groups];
+    final group = reordered.removeAt(oldIndex);
+    reordered.insert(newIndex, group);
+    state = AsyncValue.data(reordered);
+
+    try {
+      await ref
+          .read(groupApiServiceProvider)
+          .reorderGroups(reordered.map((group) => group.id).toList());
+    } catch (_) {
+      state = original;
+    }
+  }
+
   Future<GroupModel> createGroup(
     String name, {
     String? description,

@@ -11,12 +11,14 @@ class BalanceTile extends ConsumerWidget {
   final BalanceModel balance;
   final String groupId;
   final VoidCallback? onSettleUp;
+  final Future<void> Function()? onRemind;
 
   const BalanceTile({
     super.key,
     required this.balance,
     required this.groupId,
     this.onSettleUp,
+    this.onRemind,
   });
 
   static const double _pillWidth = 72;
@@ -160,6 +162,10 @@ class BalanceTile extends ConsumerWidget {
                         ),
                       ),
                     ],
+                    if (isYouReceiving && onRemind != null) ...[
+                      if (isYouOwing) const SizedBox(height: 8),
+                      _RemindButton(onPressed: onRemind!),
+                    ],
                   ],
                 ),
               ),
@@ -172,6 +178,51 @@ class BalanceTile extends ConsumerWidget {
 
   String _displayName(String name, String currentUserId, String userId) =>
       userId == currentUserId ? 'You' : name;
+}
+
+class _RemindButton extends StatefulWidget {
+  final Future<void> Function() onPressed;
+
+  const _RemindButton({required this.onPressed});
+
+  @override
+  State<_RemindButton> createState() => _RemindButtonState();
+}
+
+class _RemindButtonState extends State<_RemindButton> {
+  bool _isSending = false;
+
+  Future<void> _sendReminder() async {
+    setState(() => _isSending = true);
+    try {
+      await widget.onPressed();
+    } finally {
+      if (mounted) setState(() => _isSending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return FilledButton.icon(
+      onPressed: _isSending ? null : _sendReminder,
+      icon: _isSending
+          ? SizedBox.square(
+              dimension: 16,
+              child: CircularProgressIndicator(
+                color: colorScheme.onPrimary,
+                strokeWidth: 2,
+              ),
+            )
+          : const Icon(Icons.notifications_active_outlined, size: 17),
+      label: Text(_isSending ? 'Sending...' : 'Remind'),
+      style: FilledButton.styleFrom(
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
+        minimumSize: const Size.fromHeight(40),
+      ),
+    );
+  }
 }
 
 class _UserPill extends StatelessWidget {

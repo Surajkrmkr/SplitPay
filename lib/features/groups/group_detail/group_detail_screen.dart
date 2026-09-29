@@ -623,6 +623,28 @@ class _BalancesTab extends ConsumerWidget {
                             ),
                           )
                       : null,
+                  onRemind: b.toUserId == currentUserId
+                      ? () async {
+                          try {
+                            await ref
+                                .read(groupApiServiceProvider)
+                                .remindGroupMember(groupId, b.fromUserId);
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Reminder sent to ${b.fromUserName}.'),
+                              ),
+                            );
+                          } catch (error) {
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(friendlyErrorMessage(error)),
+                              ),
+                            );
+                          }
+                        }
+                      : null,
                 ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.05),
               ),
               const SizedBox(height: 12),

@@ -54,6 +54,20 @@ export async function getGroups(userId: string): Promise<GroupWithMembers[]> {
   return groupsRepository.findUserGroups(userId);
 }
 
+export async function reorderGroups(userId: string, groupIds: string[]): Promise<void> {
+  const groups = await groupsRepository.findUserGroups(userId);
+  const currentIds = new Set(groups.map((group) => group.id));
+  const requestedIds = new Set(groupIds);
+  if (
+    requestedIds.size !== currentIds.size ||
+    [...currentIds].some((id) => !requestedIds.has(id))
+  ) {
+    throw new BadRequestError('Order must include every group you belong to exactly once');
+  }
+
+  await groupsRepository.reorderGroups(userId, groupIds);
+}
+
 export async function getGroup(groupId: string, userId: string): Promise<GroupWithMembers> {
   const group = await groupsRepository.findGroupById(groupId);
 

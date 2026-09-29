@@ -95,6 +95,10 @@ class BudgetApiService {
     await _dio.delete(ApiConstants.budgetById(id));
   }
 
+  Future<void> reorderActiveBudgets(List<String> budgetIds) async {
+    await _dio.patch(ApiConstants.budgetsOrder, data: {'budgetIds': budgetIds});
+  }
+
   static Map<String, dynamic> _toPayload(Budget budget) => {
         'title': budget.title,
         'amount': budget.amount,

@@ -1,0 +1,2 @@
+ALTER TABLE "budgets" ADD COLUMN "sort_order" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "group_members" ADD COLUMN "sort_order" INTEGER NOT NULL DEFAULT 0;
