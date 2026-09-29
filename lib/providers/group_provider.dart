@@ -90,8 +90,7 @@ final groupsProvider =
 // Single group detail
 // ──────────────────────────────────────────────
 
-class GroupDetailNotifier
-    extends FamilyAsyncNotifier<GroupModel, String> {
+class GroupDetailNotifier extends FamilyAsyncNotifier<GroupModel, String> {
   @override
   Future<GroupModel> build(String arg) async {
     return ref.read(groupApiServiceProvider).getGroup(arg);
@@ -106,8 +105,8 @@ class GroupDetailNotifier
 }
 
 final groupDetailProvider =
-    AsyncNotifierProviderFamily<GroupDetailNotifier, GroupModel,
-        String>(GroupDetailNotifier.new);
+    AsyncNotifierProviderFamily<GroupDetailNotifier, GroupModel, String>(
+        GroupDetailNotifier.new);
 
 // ──────────────────────────────────────────────
 // Group expenses
@@ -128,9 +127,7 @@ final groupBalancesProvider =
     FutureProvider.family<GroupBalanceSummary, String>(
   (ref, groupId) async {
     final userId = ref.watch(currentUserProvider)?.id ?? 'user_1';
-    return ref
-        .read(groupApiServiceProvider)
-        .getGroupBalances(groupId, userId);
+    return ref.read(groupApiServiceProvider).getGroupBalances(groupId, userId);
   },
 );
 

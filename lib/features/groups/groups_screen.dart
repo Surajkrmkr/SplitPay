@@ -79,9 +79,7 @@ class GroupsScreen extends ConsumerWidget {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: isDark
-                                ? cardBg
-                                : AppColors.lightCard,
+                            color: isDark ? cardBg : AppColors.lightCard,
                             borderRadius: BorderRadius.circular(13),
                             border: Border.all(
                               color: isDark
@@ -114,7 +112,10 @@ class GroupsScreen extends ConsumerWidget {
                             gradient: LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
-                              colors: [primary, primary.withValues(alpha: 0.85)],
+                              colors: [
+                                primary,
+                                primary.withValues(alpha: 0.85)
+                              ],
                             ),
                             borderRadius: BorderRadius.circular(13),
                             boxShadow: [

@@ -26,7 +26,9 @@ class GroupApiService {
     if (_useMock) return _mockGroups();
     final res = await _dio.get(ApiConstants.groups);
     final list = res.data['data'] as List<dynamic>;
-    return list.map((g) => GroupModel.fromJson(g as Map<String, dynamic>)).toList();
+    return list
+        .map((g) => GroupModel.fromJson(g as Map<String, dynamic>))
+        .toList();
   }
 
   Future<GroupModel> createGroup({
@@ -110,7 +112,8 @@ class GroupApiService {
     await _dio.delete(ApiConstants.groupById(groupId));
   }
 
-  Future<void> updateMemberRole(String groupId, String memberId, String role) async {
+  Future<void> updateMemberRole(
+      String groupId, String memberId, String role) async {
     await _dio.patch(
       ApiConstants.groupMember(groupId, memberId),
       data: {'role': role},
@@ -241,8 +244,8 @@ class GroupApiService {
         if (appIcon != null) 'appIcon': appIcon,
       },
     );
-    final created = GroupExpenseModel.fromJson(
-        res.data['data'] as Map<String, dynamic>);
+    final created =
+        GroupExpenseModel.fromJson(res.data['data'] as Map<String, dynamic>);
     // Preserve the chosen icon locally if backend doesn't echo it back.
     if (appIcon != null && created.appIcon == null) {
       return created.copyWithAppIcon(appIcon);
@@ -397,7 +400,8 @@ class GroupApiService {
         createdById: 'user_2',
         members: [
           _mockMember('user_1', 'You', 'you@email.com'),
-          _mockMember('user_2', 'Rahul Sharma', 'rahul@email.com', role: 'ADMIN'),
+          _mockMember('user_2', 'Rahul Sharma', 'rahul@email.com',
+              role: 'ADMIN'),
           _mockMember('user_5', 'Sneha Gupta', 'sneha@email.com'),
         ],
         createdAt: now.subtract(const Duration(days: 60)),
@@ -435,10 +439,14 @@ class GroupApiService {
           paidByName: 'You',
           splitType: 'EQUAL',
           participants: [
-            ExpenseParticipantModel(userId: 'user_1', userName: 'You', share: 3000),
-            ExpenseParticipantModel(userId: 'user_2', userName: 'Rahul Sharma', share: 3000),
-            ExpenseParticipantModel(userId: 'user_3', userName: 'Priya Patel', share: 3000),
-            ExpenseParticipantModel(userId: 'user_4', userName: 'Amit Kumar', share: 3000),
+            ExpenseParticipantModel(
+                userId: 'user_1', userName: 'You', share: 3000),
+            ExpenseParticipantModel(
+                userId: 'user_2', userName: 'Rahul Sharma', share: 3000),
+            ExpenseParticipantModel(
+                userId: 'user_3', userName: 'Priya Patel', share: 3000),
+            ExpenseParticipantModel(
+                userId: 'user_4', userName: 'Amit Kumar', share: 3000),
           ],
           date: now.subtract(const Duration(days: 10)),
           createdAt: now.subtract(const Duration(days: 10)),
@@ -452,9 +460,12 @@ class GroupApiService {
           paidByName: 'Rahul Sharma',
           splitType: 'EXACT',
           participants: [
-            ExpenseParticipantModel(userId: 'user_1', userName: 'You', share: 1200),
-            ExpenseParticipantModel(userId: 'user_2', userName: 'Rahul Sharma', share: 800),
-            ExpenseParticipantModel(userId: 'user_3', userName: 'Priya Patel', share: 1200),
+            ExpenseParticipantModel(
+                userId: 'user_1', userName: 'You', share: 1200),
+            ExpenseParticipantModel(
+                userId: 'user_2', userName: 'Rahul Sharma', share: 800),
+            ExpenseParticipantModel(
+                userId: 'user_3', userName: 'Priya Patel', share: 1200),
           ],
           date: now.subtract(const Duration(days: 9)),
           createdAt: now.subtract(const Duration(days: 9)),
@@ -468,9 +479,12 @@ class GroupApiService {
           paidByName: 'Priya Patel',
           splitType: 'EQUAL',
           participants: [
-            ExpenseParticipantModel(userId: 'user_1', userName: 'You', share: 1400),
-            ExpenseParticipantModel(userId: 'user_3', userName: 'Priya Patel', share: 2800),
-            ExpenseParticipantModel(userId: 'user_4', userName: 'Amit Kumar', share: 1400),
+            ExpenseParticipantModel(
+                userId: 'user_1', userName: 'You', share: 1400),
+            ExpenseParticipantModel(
+                userId: 'user_3', userName: 'Priya Patel', share: 2800),
+            ExpenseParticipantModel(
+                userId: 'user_4', userName: 'Amit Kumar', share: 1400),
           ],
           date: now.subtract(const Duration(days: 8)),
           createdAt: now.subtract(const Duration(days: 8)),
@@ -484,9 +498,12 @@ class GroupApiService {
           paidByName: 'You',
           splitType: 'EQUAL',
           participants: [
-            ExpenseParticipantModel(userId: 'user_1', userName: 'You', share: 600),
-            ExpenseParticipantModel(userId: 'user_2', userName: 'Rahul Sharma', share: 600),
-            ExpenseParticipantModel(userId: 'user_4', userName: 'Amit Kumar', share: 1200),
+            ExpenseParticipantModel(
+                userId: 'user_1', userName: 'You', share: 600),
+            ExpenseParticipantModel(
+                userId: 'user_2', userName: 'Rahul Sharma', share: 600),
+            ExpenseParticipantModel(
+                userId: 'user_4', userName: 'Amit Kumar', share: 1200),
           ],
           date: now.subtract(const Duration(days: 7)),
           createdAt: now.subtract(const Duration(days: 7)),
@@ -500,9 +517,12 @@ class GroupApiService {
           paidByName: 'Amit Kumar',
           splitType: 'EQUAL',
           participants: [
-            ExpenseParticipantModel(userId: 'user_2', userName: 'Rahul Sharma', share: 900),
-            ExpenseParticipantModel(userId: 'user_3', userName: 'Priya Patel', share: 450),
-            ExpenseParticipantModel(userId: 'user_4', userName: 'Amit Kumar', share: 450),
+            ExpenseParticipantModel(
+                userId: 'user_2', userName: 'Rahul Sharma', share: 900),
+            ExpenseParticipantModel(
+                userId: 'user_3', userName: 'Priya Patel', share: 450),
+            ExpenseParticipantModel(
+                userId: 'user_4', userName: 'Amit Kumar', share: 450),
           ],
           date: now.subtract(const Duration(days: 6)),
           createdAt: now.subtract(const Duration(days: 6)),
@@ -518,9 +538,12 @@ class GroupApiService {
           paidByName: 'Rahul Sharma',
           splitType: 'EQUAL',
           participants: [
-            ExpenseParticipantModel(userId: 'user_1', userName: 'You', share: 15000),
-            ExpenseParticipantModel(userId: 'user_2', userName: 'Rahul Sharma', share: 15000),
-            ExpenseParticipantModel(userId: 'user_5', userName: 'Sneha Gupta', share: 15000),
+            ExpenseParticipantModel(
+                userId: 'user_1', userName: 'You', share: 15000),
+            ExpenseParticipantModel(
+                userId: 'user_2', userName: 'Rahul Sharma', share: 15000),
+            ExpenseParticipantModel(
+                userId: 'user_5', userName: 'Sneha Gupta', share: 15000),
           ],
           date: now.subtract(const Duration(days: 2)),
           createdAt: now.subtract(const Duration(days: 2)),
@@ -534,9 +557,12 @@ class GroupApiService {
           paidByName: 'You',
           splitType: 'EQUAL',
           participants: [
-            ExpenseParticipantModel(userId: 'user_1', userName: 'You', share: 1200),
-            ExpenseParticipantModel(userId: 'user_2', userName: 'Rahul Sharma', share: 1200),
-            ExpenseParticipantModel(userId: 'user_5', userName: 'Sneha Gupta', share: 1200),
+            ExpenseParticipantModel(
+                userId: 'user_1', userName: 'You', share: 1200),
+            ExpenseParticipantModel(
+                userId: 'user_2', userName: 'Rahul Sharma', share: 1200),
+            ExpenseParticipantModel(
+                userId: 'user_5', userName: 'Sneha Gupta', share: 1200),
           ],
           date: now.subtract(const Duration(days: 5)),
           createdAt: now.subtract(const Duration(days: 5)),
@@ -550,9 +576,12 @@ class GroupApiService {
           paidByName: 'Sneha Gupta',
           splitType: 'EQUAL',
           participants: [
-            ExpenseParticipantModel(userId: 'user_1', userName: 'You', share: 933.33),
-            ExpenseParticipantModel(userId: 'user_2', userName: 'Rahul Sharma', share: 933.33),
-            ExpenseParticipantModel(userId: 'user_5', userName: 'Sneha Gupta', share: 933.34),
+            ExpenseParticipantModel(
+                userId: 'user_1', userName: 'You', share: 933.33),
+            ExpenseParticipantModel(
+                userId: 'user_2', userName: 'Rahul Sharma', share: 933.33),
+            ExpenseParticipantModel(
+                userId: 'user_5', userName: 'Sneha Gupta', share: 933.34),
           ],
           date: now.subtract(const Duration(days: 3)),
           createdAt: now.subtract(const Duration(days: 3)),
@@ -568,11 +597,16 @@ class GroupApiService {
           paidByName: 'You',
           splitType: 'EQUAL',
           participants: [
-            ExpenseParticipantModel(userId: 'user_1', userName: 'You', share: 900),
-            ExpenseParticipantModel(userId: 'user_3', userName: 'Priya Patel', share: 900),
-            ExpenseParticipantModel(userId: 'user_6', userName: 'Karan Mehta', share: 900),
-            ExpenseParticipantModel(userId: 'user_7', userName: 'Divya Nair', share: 900),
-            ExpenseParticipantModel(userId: 'user_8', userName: 'Vijay Reddy', share: 900),
+            ExpenseParticipantModel(
+                userId: 'user_1', userName: 'You', share: 900),
+            ExpenseParticipantModel(
+                userId: 'user_3', userName: 'Priya Patel', share: 900),
+            ExpenseParticipantModel(
+                userId: 'user_6', userName: 'Karan Mehta', share: 900),
+            ExpenseParticipantModel(
+                userId: 'user_7', userName: 'Divya Nair', share: 900),
+            ExpenseParticipantModel(
+                userId: 'user_8', userName: 'Vijay Reddy', share: 900),
           ],
           date: now.subtract(const Duration(days: 1)),
           createdAt: now.subtract(const Duration(days: 1)),
@@ -586,11 +620,16 @@ class GroupApiService {
           paidByName: 'Karan Mehta',
           splitType: 'EQUAL',
           participants: [
-            ExpenseParticipantModel(userId: 'user_1', userName: 'You', share: 150),
-            ExpenseParticipantModel(userId: 'user_3', userName: 'Priya Patel', share: 150),
-            ExpenseParticipantModel(userId: 'user_6', userName: 'Karan Mehta', share: 150),
-            ExpenseParticipantModel(userId: 'user_7', userName: 'Divya Nair', share: 150),
-            ExpenseParticipantModel(userId: 'user_8', userName: 'Vijay Reddy', share: 150),
+            ExpenseParticipantModel(
+                userId: 'user_1', userName: 'You', share: 150),
+            ExpenseParticipantModel(
+                userId: 'user_3', userName: 'Priya Patel', share: 150),
+            ExpenseParticipantModel(
+                userId: 'user_6', userName: 'Karan Mehta', share: 150),
+            ExpenseParticipantModel(
+                userId: 'user_7', userName: 'Divya Nair', share: 150),
+            ExpenseParticipantModel(
+                userId: 'user_8', userName: 'Vijay Reddy', share: 150),
           ],
           date: now.subtract(const Duration(hours: 5)),
           createdAt: now.subtract(const Duration(hours: 5)),
@@ -666,10 +705,12 @@ class GroupApiService {
     ],
   };
 
-  void _updateMockBalanceOnSettlement(String groupId, String payeeId, double amount) {
+  void _updateMockBalanceOnSettlement(
+      String groupId, String payeeId, double amount) {
     final list = _mockBalancesStore[groupId];
     if (list == null) return;
-    final index = list.indexWhere((b) => b.fromUserId == 'user_1' && b.toUserId == payeeId);
+    final index = list
+        .indexWhere((b) => b.fromUserId == 'user_1' && b.toUserId == payeeId);
     if (index != -1) {
       final existing = list[index];
       final newAmt = existing.amount - amount;

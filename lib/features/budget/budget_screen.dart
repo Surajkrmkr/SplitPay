@@ -56,7 +56,9 @@ class BudgetScreen extends ConsumerWidget {
                   const SizedBox(height: 16),
 
                   // ── Header ──
-                  _Header(onAdd: () => requireAuth(context, ref, () => _openAddSheet(context))),
+                  _Header(
+                      onAdd: () => requireAuth(
+                          context, ref, () => _openAddSheet(context))),
 
                   const SizedBox(height: 20),
 
@@ -104,7 +106,8 @@ class BudgetScreen extends ConsumerWidget {
                 child: _EmptyBudgets(
                   isArchived: showArchived,
                   hasArchivedBudgets: hasArchivedBudgets,
-                  onAdd: () => requireAuth(context, ref, () => _openAddSheet(context)),
+                  onAdd: () =>
+                      requireAuth(context, ref, () => _openAddSheet(context)),
                   onViewArchived: () => ref
                       .read(showArchivedBudgetsProvider.notifier)
                       .state = true,
@@ -163,8 +166,7 @@ class BudgetScreen extends ConsumerWidget {
                                         details.data != budget.id,
                                     onAcceptWithDetails: (details) => ref
                                         .read(budgetProvider.notifier)
-                                        .reorderActive(
-                                            details.data, budget.id),
+                                        .reorderActive(details.data, budget.id),
                                     builder: (context, candidates, rejected) {
                                       final isDropTarget =
                                           candidates.isNotEmpty;
@@ -174,8 +176,8 @@ class BudgetScreen extends ConsumerWidget {
                                             const Duration(milliseconds: 160),
                                         curve: Curves.easeOutBack,
                                         child: AnimatedContainer(
-                                          duration: const Duration(
-                                              milliseconds: 160),
+                                          duration:
+                                              const Duration(milliseconds: 160),
                                           foregroundDecoration: BoxDecoration(
                                             borderRadius:
                                                 BorderRadius.circular(18),

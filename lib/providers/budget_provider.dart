@@ -117,8 +117,8 @@ final budgetSearchQueryProvider = StateProvider<String>((_) => '');
 
 // ─── Derived budget lists ────────────────────────────────────────────────────
 
-final activeBudgetsProvider = Provider<List<Budget>>((ref) =>
-    ref.watch(budgetProvider).where((b) => !b.isArchived).toList());
+final activeBudgetsProvider = Provider<List<Budget>>(
+    (ref) => ref.watch(budgetProvider).where((b) => !b.isArchived).toList());
 
 final filteredBudgetsProvider = Provider<List<Budget>>((ref) {
   final budgets = ref.watch(budgetProvider);
@@ -138,7 +138,8 @@ final filteredBudgetsProvider = Provider<List<Budget>>((ref) {
       };
       if (match != null && b.period != match) return false;
     }
-    if (query.isNotEmpty && !b.title.toLowerCase().contains(query)) return false;
+    if (query.isNotEmpty && !b.title.toLowerCase().contains(query))
+      return false;
     return true;
   }).toList();
 });
@@ -156,24 +157,21 @@ final budgetSpentProvider = Provider.family<double, String>((ref, budgetId) {
   final range = budget.period.currentRange;
   final transactions = ref.watch(transactionProvider);
 
-  return transactions
-      .where((tx) {
-        if (tx.type != TransactionType.expense) return false;
-        if (tx.date.isBefore(range.start) || tx.date.isAfter(range.end)) {
-          return false;
-        }
-        if (budget.isGlobal) return true;
-        if (tx.customCategoryId == null) {
-          return budget.categoryIds.contains(tx.category.name);
-        }
-        return budget.categoryIds.contains(tx.customCategoryId);
-      })
-      .fold(0.0, (sum, tx) => sum + tx.amount);
+  return transactions.where((tx) {
+    if (tx.type != TransactionType.expense) return false;
+    if (tx.date.isBefore(range.start) || tx.date.isAfter(range.end)) {
+      return false;
+    }
+    if (budget.isGlobal) return true;
+    if (tx.customCategoryId == null) {
+      return budget.categoryIds.contains(tx.category.name);
+    }
+    return budget.categoryIds.contains(tx.customCategoryId);
+  }).fold(0.0, (sum, tx) => sum + tx.amount);
 });
 
 /// Spending ratio (0.0–unbounded; >1.0 means overspent).
-final budgetProgressProvider =
-    Provider.family<double, String>((ref, budgetId) {
+final budgetProgressProvider = Provider.family<double, String>((ref, budgetId) {
   final budget = ref
       .watch(budgetProvider)
       .cast<Budget?>()

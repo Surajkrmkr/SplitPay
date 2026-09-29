@@ -151,7 +151,9 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
           headerSliverBuilder: (context, _) => [
             SliverAppBar(
               pinned: true,
-              backgroundColor: isDark ? (Theme.of(context).cardTheme.color ?? AppColors.darkBg) : AppColors.lightBg,
+              backgroundColor: isDark
+                  ? (Theme.of(context).cardTheme.color ?? AppColors.darkBg)
+                  : AppColors.lightBg,
               leadingWidth: 56,
               leading: const Padding(
                 padding: EdgeInsets.only(left: 16),
@@ -545,7 +547,8 @@ class _BalancesTab extends ConsumerWidget {
       ),
       data: (summary) {
         final settlementsAsync = ref.watch(groupSettlementsProvider(groupId));
-        final hasSettlements = settlementsAsync.valueOrNull?.isNotEmpty ?? false;
+        final hasSettlements =
+            settlementsAsync.valueOrNull?.isNotEmpty ?? false;
 
         if (summary.balances.isEmpty) {
           if (hasSettlements || settlementsAsync.isLoading) {
@@ -632,7 +635,8 @@ class _BalancesTab extends ConsumerWidget {
                             if (!context.mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Reminder sent to ${b.fromUserName}.'),
+                                content:
+                                    Text('Reminder sent to ${b.fromUserName}.'),
                               ),
                             );
                           } catch (error) {
@@ -739,7 +743,8 @@ class _BalanceSummaryCard extends ConsumerWidget {
                     ),
                     if (!isSettled)
                       Text(
-                        CurrencyFormatter.formatAmountWithCommas(net.abs(), symbol: currency),
+                        CurrencyFormatter.formatAmountWithCommas(net.abs(),
+                            symbol: currency),
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.w800,
@@ -762,7 +767,9 @@ class _BalanceSummaryCard extends ConsumerWidget {
                 Expanded(
                   child: _StatChip(
                     label: 'Total Lent',
-                    value: CurrencyFormatter.formatAmountWithCommas((summary.totalLent as double), symbol: currency),
+                    value: CurrencyFormatter.formatAmountWithCommas(
+                        (summary.totalLent as double),
+                        symbol: currency),
                     color: AppColors.income,
                     icon: Icons.arrow_upward_rounded,
                     isDark: isDark,
@@ -772,7 +779,9 @@ class _BalanceSummaryCard extends ConsumerWidget {
                 Expanded(
                   child: _StatChip(
                     label: 'Total Borrowed',
-                    value: CurrencyFormatter.formatAmountWithCommas((summary.totalOwed as double), symbol: currency),
+                    value: CurrencyFormatter.formatAmountWithCommas(
+                        (summary.totalOwed as double),
+                        symbol: currency),
                     color: AppColors.expense,
                     icon: Icons.arrow_downward_rounded,
                     isDark: isDark,
@@ -982,8 +991,7 @@ class _ExpensesTabState extends ConsumerState<_ExpensesTab> {
 
     // Payer
     if (_payerFilter.isNotEmpty) {
-      result =
-          result.where((e) => _payerFilter.contains(e.paidById)).toList();
+      result = result.where((e) => _payerFilter.contains(e.paidById)).toList();
     }
 
     // Amount range
@@ -1711,8 +1719,8 @@ class _ActiveChip extends StatelessWidget {
             const SizedBox(width: 4),
             GestureDetector(
               onTap: onRemove,
-              child: Icon(Icons.close_rounded,
-                  size: 13, color: AppColors.primary),
+              child:
+                  Icon(Icons.close_rounded, size: 13, color: AppColors.primary),
             ),
           ],
         ),
@@ -2091,11 +2099,11 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
     final expensesAsync = ref.watch(groupExpensesProvider(widget.groupId));
 
     return expensesAsync.when(
-      loading: () => Center(
-          child: CircularProgressIndicator(color: primary)),
+      loading: () => Center(child: CircularProgressIndicator(color: primary)),
       error: (e, _) => RefreshIndicator(
         color: primary,
-        onRefresh: () async => ref.invalidate(groupExpensesProvider(widget.groupId)),
+        onRefresh: () async =>
+            ref.invalidate(groupExpensesProvider(widget.groupId)),
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
@@ -2111,14 +2119,16 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
         if (expenses.isEmpty) {
           return RefreshIndicator(
             color: primary,
-            onRefresh: () async => ref.invalidate(groupExpensesProvider(widget.groupId)),
+            onRefresh: () async =>
+                ref.invalidate(groupExpensesProvider(widget.groupId)),
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               children: const [
                 EmptyState(
                   icon: Icons.bar_chart_rounded,
                   title: 'Nothing to total yet',
-                  subtitle: 'Add an expense to see spending totals for this group.',
+                  subtitle:
+                      'Add an expense to see spending totals for this group.',
                 ),
               ],
             ),
@@ -2174,7 +2184,8 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: primary.withValues(alpha: 0.25), width: 1.5),
+                  border: Border.all(
+                      color: primary.withValues(alpha: 0.25), width: 1.5),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -2188,7 +2199,8 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
                             color: primary.withValues(alpha: 0.15),
                             shape: BoxShape.circle,
                           ),
-                          child: Icon(Icons.account_balance_wallet_rounded, color: primary, size: 20),
+                          child: Icon(Icons.account_balance_wallet_rounded,
+                              color: primary, size: 20),
                         ),
                         const SizedBox(width: 12),
                         Column(
@@ -2196,10 +2208,15 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
                           children: [
                             const Text(
                               'Total Group Expense',
-                              style: TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.w500),
                             ),
                             Text(
-                              CurrencyFormatter.formatAmountWithCommas(totalSpent, symbol: currency),
+                              CurrencyFormatter.formatAmountWithCommas(
+                                  totalSpent,
+                                  symbol: currency),
                               style: TextStyle(
                                 fontSize: 26,
                                 fontWeight: FontWeight.w800,
@@ -2232,8 +2249,11 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
                   final m = entry.value;
                   final userColor = userColors[idx % userColors.length];
                   final isYou = m.userId == currentUserId;
-                  final paid = expenses.where((e) => e.paidById == m.userId).fold<double>(0, (s, e) => s + e.amount);
-                  final share = expenses.fold<double>(0, (s, e) => s + e.shareForUser(m.userId));
+                  final paid = expenses
+                      .where((e) => e.paidById == m.userId)
+                      .fold<double>(0, (s, e) => s + e.amount);
+                  final share = expenses.fold<double>(
+                      0, (s, e) => s + e.shareForUser(m.userId));
                   final net = paid - share;
                   final isNetPositive = net >= 0.01;
                   final isNetNegative = net <= -0.01;
@@ -2251,17 +2271,20 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
 
                   return Container(
                     margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
                     decoration: BoxDecoration(
                       color: userColor.withValues(alpha: isDark ? 0.12 : 0.07),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: userColor.withValues(alpha: 0.35), width: 1),
+                      border: Border.all(
+                          color: userColor.withValues(alpha: 0.35), width: 1),
                     ),
                     child: Row(
                       children: [
                         Stack(
                           children: [
-                            AvatarWidget(name: m.name, imageUrl: m.avatar, size: 38),
+                            AvatarWidget(
+                                name: m.name, imageUrl: m.avatar, size: 38),
                             Positioned(
                               right: 0,
                               bottom: 0,
@@ -2272,7 +2295,9 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
                                   color: userColor,
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: isDark ? AppColors.darkCard : Colors.white,
+                                    color: isDark
+                                        ? AppColors.darkCard
+                                        : Colors.white,
                                     width: 2,
                                   ),
                                 ),
@@ -2290,23 +2315,31 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
-                                  color: isDark ? Colors.white : AppColors.textLight,
+                                  color: isDark
+                                      ? Colors.white
+                                      : AppColors.textLight,
                                 ),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 'Paid: ${CurrencyFormatter.formatAmountWithCommas(paid, symbol: currency)}  •  Share: ${CurrencyFormatter.formatAmountWithCommas(share, symbol: currency)}',
-                                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                                style: const TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.textSecondary,
+                                    fontWeight: FontWeight.w500),
                               ),
                             ],
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: badgeColor.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: badgeColor.withValues(alpha: 0.3), width: 0.8),
+                            border: Border.all(
+                                color: badgeColor.withValues(alpha: 0.3),
+                                width: 0.8),
                           ),
                           child: Text(
                             netText,
@@ -2359,7 +2392,8 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
                               ),
                             ),
                             Text(
-                              CurrencyFormatter.formatCompact(totalSpent, symbol: currency),
+                              CurrencyFormatter.formatCompact(totalSpent,
+                                  symbol: currency),
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
@@ -2377,12 +2411,15 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
                       spacing: 12,
                       runSpacing: 6,
                       children: [
-                        const _LegendBadge(color: AppColors.secondary, label: 'Total'),
+                        const _LegendBadge(
+                            color: AppColors.secondary, label: 'Total'),
                         ...members.asMap().entries.map((entry) {
                           final idx = entry.key;
                           final m = entry.value;
                           final color = _userColors[idx % _userColors.length];
-                          final label = m.userId == currentUserId ? 'You' : m.name.split(' ').first;
+                          final label = m.userId == currentUserId
+                              ? 'You'
+                              : m.name.split(' ').first;
                           return _LegendBadge(color: color, label: label);
                         }),
                       ],
@@ -2416,7 +2453,8 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
                             for (int idx = 0; idx < members.length; idx++) {
                               final m = members[idx];
                               final paidAmount = monthPMap[m.userId] ?? 0;
-                              final color = _userColors[idx % _userColors.length];
+                              final color =
+                                  _userColors[idx % _userColors.length];
                               rods.add(
                                 BarChartRodData(
                                   toY: paidAmount,
@@ -2433,7 +2471,6 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
                               barRods: rods,
                             );
                           }).toList(),
-
                           titlesData: FlTitlesData(
                             bottomTitles: AxisTitles(
                               sideTitles: SideTitles(
@@ -2448,7 +2485,9 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
                                     child: Text(
                                       DateFormat('MMM').format(recentMonths[i]),
                                       style: TextStyle(
-                                        color: isDark ? Colors.white70 : AppColors.textSecondary,
+                                        color: isDark
+                                            ? Colors.white70
+                                            : AppColors.textSecondary,
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -2466,7 +2505,8 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
                                     return const SizedBox.shrink();
                                   }
                                   return Text(
-                                    CurrencyFormatter.formatCompact(value, symbol: currency),
+                                    CurrencyFormatter.formatCompact(value,
+                                        symbol: currency),
                                     style: const TextStyle(
                                       color: AppColors.textTertiary,
                                       fontSize: 9,
@@ -2503,10 +2543,12 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
                           ),
                           barTouchData: BarTouchData(
                             touchTooltipData: BarTouchTooltipData(
-                              getTooltipColor: (_) =>
-                                  isDark ? AppColors.darkElevated : Colors.white,
+                              getTooltipColor: (_) => isDark
+                                  ? AppColors.darkElevated
+                                  : Colors.white,
                               tooltipRoundedRadius: 8,
-                              getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                              getTooltipItem:
+                                  (group, groupIndex, rod, rodIndex) {
                                 if (rodIndex == 0) {
                                   return BarTooltipItem(
                                     'Total: ${CurrencyFormatter.formatAmountWithCommas(rod.toY, symbol: currency)}',
@@ -2518,11 +2560,16 @@ class _TotalTabState extends ConsumerState<_TotalTab> {
                                   );
                                 }
                                 final memberIdx = rodIndex - 1;
-                                final m = memberIdx < members.length ? members[memberIdx] : null;
+                                final m = memberIdx < members.length
+                                    ? members[memberIdx]
+                                    : null;
                                 final name = m != null
-                                    ? (m.userId == currentUserId ? 'You' : m.name.split(' ').first)
+                                    ? (m.userId == currentUserId
+                                        ? 'You'
+                                        : m.name.split(' ').first)
                                     : 'Member';
-                                final color = _userColors[memberIdx % _userColors.length];
+                                final color =
+                                    _userColors[memberIdx % _userColors.length];
                                 return BarTooltipItem(
                                   '$name: ${CurrencyFormatter.formatAmountWithCommas(rod.toY, symbol: currency)}',
                                   TextStyle(
@@ -2573,7 +2620,10 @@ class _LegendBadge extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           label,
-          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.textTertiary),
+          style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textTertiary),
         ),
       ],
     );
@@ -2771,7 +2821,8 @@ class _SettlementTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                CurrencyFormatter.formatAmountWithCommas(settlement.amount, symbol: currency),
+                CurrencyFormatter.formatAmountWithCommas(settlement.amount,
+                    symbol: currency),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,

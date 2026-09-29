@@ -76,8 +76,7 @@ class BalanceTile extends ConsumerWidget {
                   child: Container(width: 3.5, color: accentColor),
                 ),
               Padding(
-                padding: EdgeInsets.fromLTRB(
-                    isInvolved ? 16 : 14, 14, 14, 14),
+                padding: EdgeInsets.fromLTRB(isInvolved ? 16 : 14, 14, 14, 14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -107,7 +106,9 @@ class BalanceTile extends ConsumerWidget {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                CurrencyFormatter.formatAmountWithCommas(balance.amount, symbol: currency),
+                                CurrencyFormatter.formatAmountWithCommas(
+                                    balance.amount,
+                                    symbol: currency),
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 15,
@@ -251,9 +252,8 @@ class _UserPill extends StatelessWidget {
           style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w600,
-            color: isDark
-                ? AppColors.textSecondary
-                : AppColors.textLightSecondary,
+            color:
+                isDark ? AppColors.textSecondary : AppColors.textLightSecondary,
           ),
           overflow: TextOverflow.ellipsis,
         ),
