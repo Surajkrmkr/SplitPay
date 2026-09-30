@@ -75,17 +75,28 @@ struct RecentTransactionsWidgetEntryView: View {
     }
 
     private var dataView: some View {
-        VStack(spacing: 8) {
-            VStack(spacing: 2) {
-                CaptionText(text: "Net This Week")
+        let accent = SharedStore.accentColor
+        return VStack(spacing: 8) {
+            VStack(spacing: 4) {
+                CaptionText(text: "Net This Week", color: accent)
                 Text(entry.netWeek)
                     .font(.system(size: 20, weight: .bold))
                     .foregroundColor(DimeColors.primaryText)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 2)
+                    .background(Capsule().fill(accent.opacity(0.18)))
             }
+
+            Rectangle()
+                .fill(accent.opacity(0.25))
+                .frame(height: 1)
 
             VStack(spacing: 6) {
                 ForEach(entry.transactions) { tx in
-                    HStack {
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(accent)
+                            .frame(width: 6, height: 6)
                         Text(tx.note)
                             .font(.system(size: 12, weight: .medium))
                             .foregroundColor(DimeColors.primaryText)

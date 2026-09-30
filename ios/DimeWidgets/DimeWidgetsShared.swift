@@ -89,12 +89,18 @@ struct WidgetCard<Content: View>: View {
         self.content = content()
     }
 
+    private var framed: some View {
+        content.overlay(alignment: .topTrailing) {
+            SplitPayLogo().padding(14)
+        }
+    }
+
     var body: some View {
         if #available(iOSApplicationExtension 17.0, *) {
-            content
+            framed
                 .containerBackground(DimeColors.cardBackground, for: .widget)
         } else {
-            content
+            framed
                 .padding()
                 .background(DimeColors.cardBackground)
         }
@@ -117,15 +123,15 @@ struct DimePillLabel: View {
     }
 }
 
-/// Small decorative outline-ring glyph used in the corner of the Overall
-/// Budget widget — purely cosmetic, not a data gauge.
-struct RingGlyph: View {
-    var diameter: CGFloat = 16
+/// SplitPay app logo shown in the top-right corner of every widget.
+struct SplitPayLogo: View {
+    var size: CGFloat = 18
 
     var body: some View {
-        Circle()
-            .strokeBorder(DimeColors.primaryText.opacity(0.6), lineWidth: 1.6)
-            .frame(width: diameter, height: diameter)
+        Image("SplitPayIcon")
+            .resizable()
+            .scaledToFit()
+            .frame(width: size, height: size)
     }
 }
 
@@ -134,11 +140,12 @@ struct RingGlyph: View {
 struct CaptionText: View {
     let text: String
     var size: CGFloat = 10
+    var color: Color = DimeColors.caption
 
     var body: some View {
         Text(text.uppercased())
             .font(.system(size: size, weight: .semibold))
-            .foregroundColor(DimeColors.caption)
+            .foregroundColor(color)
             .tracking(0.6)
     }
 }

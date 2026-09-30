@@ -118,7 +118,6 @@ struct OverallBudgetWidgetEntryView: View {
                     .font(.system(size: 13, weight: .bold))
                     .foregroundColor(DimeColors.primaryText)
                 Spacer()
-                RingGlyph()
             }
 
             CaptionText(text: "SPENT: \(entry.percent)%")

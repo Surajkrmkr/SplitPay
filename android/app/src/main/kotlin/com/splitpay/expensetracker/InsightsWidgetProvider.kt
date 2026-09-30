@@ -8,9 +8,20 @@ import android.net.Uri
 import android.view.View
 import android.widget.RemoteViews
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
+import es.antonborri.home_widget.HomeWidgetPlugin
 import es.antonborri.home_widget.HomeWidgetProvider
 
 class InsightsWidgetProvider : HomeWidgetProvider() {
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int,
+        newOptions: android.os.Bundle
+    ) {
+        super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
+        onUpdate(context, appWidgetManager, intArrayOf(appWidgetId), HomeWidgetPlugin.getData(context))
+    }
+
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
@@ -40,16 +51,6 @@ class InsightsWidgetProvider : HomeWidgetProvider() {
             context.getColor(R.color.w2_accent)
         }
 
-        val chartWidthPx = dpToPx(context, 220f)
-        val chartHeightPx = dpToPx(context, 70f)
-        val chartBitmap = WidgetChartRenderer.drawBarChart(
-            widthPx = chartWidthPx,
-            heightPx = chartHeightPx,
-            values = bucketValues,
-            trackColor = trackColor,
-            fillColor = fillColor,
-        )
-
         val pendingIntent = HomeWidgetLaunchIntent.getActivity(
             context,
             MainActivity::class.java,
@@ -57,6 +58,22 @@ class InsightsWidgetProvider : HomeWidgetProvider() {
         )
 
         appWidgetIds.forEach { widgetId ->
+            // Render at the chart area's real size so resizing never stretches the bars.
+            val options = appWidgetManager.getAppWidgetOptions(widgetId)
+            val widgetWidthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 150)
+            val widgetHeightDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 150)
+            // Subtract card padding, axis gutter, header and week-label rows.
+            val chartWidthDp = (widgetWidthDp - 44f).coerceAtLeast(60f)
+            val chartHeightDp = (widgetHeightDp - 86f).coerceAtLeast(40f)
+            val chartBitmap = WidgetChartRenderer.drawBarChart(
+                widthPx = dpToPx(context, chartWidthDp),
+                heightPx = dpToPx(context, chartHeightDp),
+                values = bucketValues,
+                trackColor = trackColor,
+                fillColor = fillColor,
+                maxBarWidthPx = dpToPx(context, 16f),
+            )
+
             val views = RemoteViews(context.packageName, R.layout.widget_insights).apply {
                 setOnClickPendingIntent(R.id.in_week_total, pendingIntent)
                 setTextViewText(R.id.in_week_total, "$currency$monthTotal")

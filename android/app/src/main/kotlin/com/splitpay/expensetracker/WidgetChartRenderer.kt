@@ -81,6 +81,7 @@ object WidgetChartRenderer {
         values: List<Double>,
         trackColor: Int,
         fillColor: Int,
+        maxBarWidthPx: Int = Int.MAX_VALUE,
     ): Bitmap {
         val width = max(widthPx, 1)
         val height = max(heightPx, 1)
@@ -100,7 +101,7 @@ object WidgetChartRenderer {
         val maxValue = values.maxOrNull()?.takeIf { it > 0.0 } ?: 1.0
 
         val slotWidth = width.toFloat() / count
-        val barWidth = slotWidth * 0.42f
+        val barWidth = min(slotWidth * 0.42f, maxBarWidthPx.toFloat())
         val cornerRadius = barWidth / 2f
         val minBarHeight = height * 0.06f
         val maxBarHeight = height.toFloat()

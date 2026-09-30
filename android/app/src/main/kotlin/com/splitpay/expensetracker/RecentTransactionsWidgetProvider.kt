@@ -3,6 +3,7 @@ package com.splitpay.expensetracker
 import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.SharedPreferences
+import android.graphics.Color
 import android.net.Uri
 import android.view.View
 import android.widget.RemoteViews
@@ -39,6 +40,13 @@ class RecentTransactionsWidgetProvider : HomeWidgetProvider() {
         val incomeColor = context.getColor(R.color.w2_accent)
         val expenseColor = context.getColor(R.color.w2_expense)
         val primaryColor = context.getColor(R.color.w2_text_primary)
+        val accentColor = try {
+            Color.parseColor(value("accent_color", "#00D09C"))
+        } catch (_: Exception) {
+            incomeColor
+        }
+        val softAccent = (accentColor and 0x00FFFFFF) or (0x2E shl 24)
+        val dividerColor = (accentColor and 0x00FFFFFF) or (0x40 shl 24)
 
         data class Tx(val note: String, val amount: String, val type: String)
 
@@ -61,11 +69,15 @@ class RecentTransactionsWidgetProvider : HomeWidgetProvider() {
             Triple(R.id.rt_tx2_row, R.id.rt_tx2_note, R.id.rt_tx2_amount),
             Triple(R.id.rt_tx3_row, R.id.rt_tx3_note, R.id.rt_tx3_amount),
         )
+        val dotIds = listOf(R.id.rt_tx1_dot, R.id.rt_tx2_dot, R.id.rt_tx3_dot)
 
         appWidgetIds.forEach { widgetId ->
             val views = RemoteViews(context.packageName, R.layout.widget_recent_transactions).apply {
                 setOnClickPendingIntent(R.id.rt_net_week, pendingIntent)
                 setTextViewText(R.id.rt_net_week, netFormatted)
+                setTextColor(R.id.rt_net_caption, accentColor)
+                setInt(R.id.rt_net_pill_bg, "setColorFilter", softAccent)
+                setInt(R.id.rt_divider, "setBackgroundColor", dividerColor)
                 setTextColor(
                     R.id.rt_net_week,
                     when {
@@ -83,6 +95,7 @@ class RecentTransactionsWidgetProvider : HomeWidgetProvider() {
                         val tx = txs.getOrNull(index)
                         if (tx != null) {
                             setViewVisibility(rowId, View.VISIBLE)
+                            setInt(dotIds[index], "setColorFilter", accentColor)
                             setTextViewText(noteId, tx.note)
                             setTextViewText(amountId, tx.amount)
                             setTextColor(amountId, if (tx.type == "income") incomeColor else expenseColor)

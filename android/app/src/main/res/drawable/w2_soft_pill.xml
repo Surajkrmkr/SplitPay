@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Card-colored base; accent tint is overlaid at runtime via setColorFilter. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/w2_card_bg" />
+    <corners android:radius="20dp" />
+</shape>

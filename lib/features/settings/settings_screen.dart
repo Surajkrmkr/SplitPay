@@ -84,7 +84,7 @@ class SettingsScreen extends ConsumerWidget {
                         onTap: () => requireAuth(
                           context,
                           ref,
-                          () => Navigator.of(context).push(
+                          () => Navigator.of(context, rootNavigator: true).push(
                             MaterialPageRoute<void>(
                               builder: (_) => const ImportDataScreen(),
                             ),
@@ -107,7 +107,8 @@ class SettingsScreen extends ConsumerWidget {
                           title: 'Sync SMS Transactions',
                           subtitle:
                               'Auto-detect bank & UPI transactions from SMS',
-                          onTap: () => Navigator.of(context, rootNavigator: true).push(
+                          onTap: () =>
+                              Navigator.of(context, rootNavigator: true).push(
                             MaterialPageRoute<void>(
                               builder: (_) => const SmsImportScreen(),
                             ),
@@ -328,8 +329,7 @@ void _showEditNameDialog(
                         const Spacer(),
                         IconButton(
                           icon: const Icon(Icons.close_rounded),
-                          onPressed:
-                              isSaving ? null : () => Navigator.pop(ctx),
+                          onPressed: isSaving ? null : () => Navigator.pop(ctx),
                           color: AppColors.textSecondary,
                         ),
                       ],
@@ -787,27 +787,24 @@ class _ThemeSelectorBottomSheet extends ConsumerWidget {
                 label: 'System',
                 icon: Icons.brightness_auto_rounded,
                 isSelected: themeState.mode == ThemeMode.system,
-                onTap: () => ref
-                    .read(themeProvider.notifier)
-                    .setMode(ThemeMode.system),
+                onTap: () =>
+                    ref.read(themeProvider.notifier).setMode(ThemeMode.system),
               ),
               const SizedBox(width: 8),
               _ModeChip(
                 label: 'Light',
                 icon: Icons.light_mode_rounded,
                 isSelected: themeState.mode == ThemeMode.light,
-                onTap: () => ref
-                    .read(themeProvider.notifier)
-                    .setMode(ThemeMode.light),
+                onTap: () =>
+                    ref.read(themeProvider.notifier).setMode(ThemeMode.light),
               ),
               const SizedBox(width: 8),
               _ModeChip(
                 label: 'Dark',
                 icon: Icons.dark_mode_rounded,
                 isSelected: themeState.mode == ThemeMode.dark,
-                onTap: () => ref
-                    .read(themeProvider.notifier)
-                    .setMode(ThemeMode.dark),
+                onTap: () =>
+                    ref.read(themeProvider.notifier).setMode(ThemeMode.dark),
               ),
             ],
           ),
@@ -838,8 +835,7 @@ class _ThemeSelectorBottomSheet extends ConsumerWidget {
               final preset = AppThemePreset.values[index];
               final isSelected = themeState.preset == preset;
               return GestureDetector(
-                onTap: () =>
-                    ref.read(themeProvider.notifier).setPreset(preset),
+                onTap: () => ref.read(themeProvider.notifier).setPreset(preset),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
                   padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -875,9 +871,8 @@ class _ThemeSelectorBottomSheet extends ConsumerWidget {
                           preset.displayName,
                           style: TextStyle(
                             fontSize: 11,
-                            fontWeight: isSelected
-                                ? FontWeight.w700
-                                : FontWeight.w500,
+                            fontWeight:
+                                isSelected ? FontWeight.w700 : FontWeight.w500,
                             color: isDark ? Colors.white : AppColors.textLight,
                           ),
                           maxLines: 1,
@@ -922,7 +917,8 @@ class _ThemeSelectorBottomSheet extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 8),
                       decoration: BoxDecoration(
-                        color: isDark ? AppColors.darkCard : AppColors.lightCard,
+                        color:
+                            isDark ? AppColors.darkCard : AppColors.lightCard,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isSelected
@@ -942,9 +938,7 @@ class _ThemeSelectorBottomSheet extends ConsumerWidget {
                               color: previewColor,
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: isDark
-                                    ? Colors.white38
-                                    : Colors.black26,
+                                color: isDark ? Colors.white38 : Colors.black26,
                                 width: 0.8,
                               ),
                             ),
@@ -957,7 +951,8 @@ class _ThemeSelectorBottomSheet extends ConsumerWidget {
                               fontWeight: isSelected
                                   ? FontWeight.w700
                                   : FontWeight.w500,
-                              color: isDark ? Colors.white : AppColors.textLight,
+                              color:
+                                  isDark ? Colors.white : AppColors.textLight,
                             ),
                           ),
                         ],
@@ -987,8 +982,8 @@ class _ThemeSelectorBottomSheet extends ConsumerWidget {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: themeState.preset.primaryColor
-                        .withValues(alpha: 0.18),
+                    color:
+                        themeState.preset.primaryColor.withValues(alpha: 0.18),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -1106,7 +1101,6 @@ class _ModeChip extends StatelessWidget {
   }
 }
 
-
 class _CurrencyTile extends StatelessWidget {
   final String currency;
   final WidgetRef ref;
@@ -1208,14 +1202,11 @@ class _CurrencyTile extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: isSelected
                               ? primary.withValues(alpha: 0.15)
-                              : (isDark
-                                  ? cardBg
-                                  : AppColors.lightCard),
+                              : (isDark ? cardBg : AppColors.lightCard),
                           borderRadius: BorderRadius.circular(12),
                           border: isSelected
                               ? Border.all(
-                                  color:
-                                      primary.withValues(alpha: 0.3))
+                                  color: primary.withValues(alpha: 0.3))
                               : null,
                         ),
                         child: Center(
@@ -1247,8 +1238,7 @@ class _CurrencyTile extends StatelessWidget {
                               width: 28,
                               height: 28,
                               decoration: BoxDecoration(
-                                color:
-                                    primary.withValues(alpha: 0.12),
+                                color: primary.withValues(alpha: 0.12),
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(Icons.check_rounded,
@@ -1603,7 +1593,8 @@ class _DeleteAccountTile extends StatelessWidget {
                 onPressed: () => Navigator.pop(ctx, true),
                 child: Text(
                   'Delete Account',
-                  style: TextStyle(color: AppColors.expense, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                      color: AppColors.expense, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -1628,7 +1619,6 @@ class _DeleteAccountTile extends StatelessWidget {
 }
 
 // ── Notifications nav tile ────────────────────────────────────────────────────
-
 
 class _NotificationsTile extends StatelessWidget {
   @override
