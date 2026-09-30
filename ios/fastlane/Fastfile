@@ -77,7 +77,6 @@ platform :ios do
       api_key: api_key,
       skip_metadata: true,
       skip_screenshots: true,
-      skip_waiting_for_build_processing: true,
       force: true
     )
   end
