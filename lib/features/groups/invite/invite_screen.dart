@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -13,16 +14,34 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../shared/widgets/app_back_button.dart';
 import '../../../data/services/group_api_service.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../providers/group_provider.dart';
 import '../../../shared/widgets/sp_button.dart';
 
-const _playStoreUrl =
-    'https://play.google.com/store/apps/details?id=com.splitpay.expensetracker';
+const _inviteLinkBaseUrl = String.fromEnvironment(
+  'INVITE_LINK_BASE_URL',
+  defaultValue: 'https://splitpay-c7905.web.app',
+);
+
+String _inviteCodeFromInput(String input) {
+  final value = input.trim();
+  final uri = Uri.tryParse(value);
+  if (uri == null) return value;
+  final segments = uri.pathSegments;
+  if (segments.length == 2 && segments.first == 'invite') {
+    return segments.last;
+  }
+  if (uri.scheme == 'dimeflow' && uri.host == 'join' && segments.length == 1) {
+    return segments.single;
+  }
+  return value;
+}
 
 class InviteScreen extends ConsumerStatefulWidget {
   // null when opened from Groups screen (join-only mode)
   final String? groupId;
-  const InviteScreen({super.key, this.groupId});
+  final String? inviteCode;
+  const InviteScreen({super.key, this.groupId, this.inviteCode});
 
   @override
   ConsumerState<InviteScreen> createState() => _InviteScreenState();
@@ -50,6 +69,13 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
       length: _joinOnly ? 1 : 2,
       vsync: this,
     );
+    if (widget.inviteCode != null) {
+      final code = widget.inviteCode!.trim().toUpperCase();
+      _codeController.text = code;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _previewInvite(code);
+      });
+    }
     if (!_joinOnly) _loadExistingCode();
   }
 
@@ -136,6 +162,9 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
       ? null
       : ref.read(groupDetailProvider(widget.groupId!)).valueOrNull?.name;
 
+  String _inviteUrl(String code) =>
+      '$_inviteLinkBaseUrl/invite/${Uri.encodeComponent(code)}';
+
   // iPad presents the share sheet as a popover anchored to this rect; without it
   // share_plus throws a PlatformException on iPad (sharePositionOrigin required).
   Rect? get _sharePositionOrigin {
@@ -149,8 +178,8 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
     final groupName = _groupName;
     final message =
         '${groupName != null ? 'Join "$groupName" on SplitPay' : 'Join my SplitPay group'} '
-        'with invite code: $_generatedCode\n\n'
-        'Download the app: $_playStoreUrl';
+        'with this invite link: ${_inviteUrl(_generatedCode!)}\n\n'
+        'Invite code: $_generatedCode';
     await Share.share(
       message,
       subject: 'Join my SplitPay group',
@@ -236,7 +265,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
 
     // QR code
     final painter = QrPainter(
-      data: 'dimeflow://join/$_generatedCode',
+      data: _inviteUrl(_generatedCode!),
       version: QrVersions.auto,
       eyeStyle: QrEyeStyle(
         eyeShape: QrEyeShape.square,
@@ -288,8 +317,8 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
     await Share.shareXFiles(
       [XFile(file.path, mimeType: 'image/png')],
       text: '${groupName != null ? 'Join "$groupName" on SplitPay!' : 'Join my SplitPay group!'}\n'
-          'Code: $_generatedCode\n\n'
-          'Download the app: $_playStoreUrl',
+          '${_inviteUrl(_generatedCode!)}\n\n'
+          'Invite code: $_generatedCode',
       subject: 'SplitPay Group Invite',
       sharePositionOrigin: _sharePositionOrigin,
     );
@@ -298,6 +327,8 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
   // ── Join ────────────────────────────────────────────────────
 
   Future<void> _previewInvite(String code) async {
+    code = _inviteCodeFromInput(code).toUpperCase();
+    if (_codeController.text != code) _codeController.text = code;
     if (code.length < 6) return;
     setState(() {
       _loadingPreview = true;
@@ -319,8 +350,14 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
   }
 
   Future<void> _joinGroup() async {
-    final code = _codeController.text.trim().toUpperCase();
+    final code = _inviteCodeFromInput(_codeController.text).toUpperCase();
+    if (_codeController.text != code) _codeController.text = code;
     if (code.isEmpty) return;
+    final auth = ref.read(authProvider).valueOrNull;
+    if (auth?.isAuthenticated != true) {
+      context.go('/login?redirect=${Uri.encodeComponent('/invite/$code')}');
+      return;
+    }
     setState(() => _joining = true);
     try {
       final group = await ref.read(groupApiServiceProvider).joinViaInvite(code);
@@ -334,7 +371,11 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ));
-        Navigator.of(context).pop();
+        if (widget.inviteCode != null) {
+          context.go('/groups/${group.id}');
+        } else {
+          Navigator.of(context).pop();
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -361,8 +402,9 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
       useRootNavigator: true,
       builder: (_) => _QrScannerSheet(
         onCodeDetected: (code) {
-          _codeController.text = code;
-          _previewInvite(code);
+          final inviteCode = _inviteCodeFromInput(code).toUpperCase();
+          _codeController.text = inviteCode;
+          _previewInvite(inviteCode);
         },
       ),
     );
@@ -400,6 +442,8 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
           : _GenerateTab(
               isDark: isDark,
               generatedCode: _generatedCode,
+              inviteUrl:
+                  _generatedCode == null ? null : _inviteUrl(_generatedCode!),
               expiresAt: _expiresAt,
               generating: _generating,
               loadingExisting: _loadingExisting,
@@ -417,6 +461,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
 class _GenerateTab extends StatelessWidget {
   final bool isDark;
   final String? generatedCode;
+  final String? inviteUrl;
   final DateTime? expiresAt;
   final bool generating;
   final bool loadingExisting;
@@ -428,6 +473,7 @@ class _GenerateTab extends StatelessWidget {
   const _GenerateTab({
     required this.isDark,
     required this.generatedCode,
+    required this.inviteUrl,
     required this.expiresAt,
     required this.generating,
     required this.loadingExisting,
@@ -512,7 +558,7 @@ class _GenerateTab extends StatelessWidget {
                       ],
                     ),
                     child: QrImageView(
-                      data: 'dimeflow://join/$generatedCode',
+                      data: inviteUrl!,
                       version: QrVersions.auto,
                       size: 180,
                       backgroundColor: Colors.white,

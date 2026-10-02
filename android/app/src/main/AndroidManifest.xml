@@ -36,6 +36,15 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="splitpay-c7905.web.app"
+                    android:pathPrefix="/invite/" />
+            </intent-filter>
         </activity>
         <!-- Default FCM notification icon (white silhouette) and accent color.
              Used when the FCM payload doesn't specify one — e.g. data-only or

@@ -46,11 +46,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // Login: only leave if we are definitively authenticated.
       // This prevents bouncing to /splash while Google sign-in is in progress.
       if (loc == '/login') {
+        final redirectPath = routerState.uri.queryParameters['redirect'];
+        final redirectUri =
+            redirectPath == null ? null : Uri.tryParse(redirectPath);
+        final isInviteRedirect = redirectUri != null &&
+            !redirectUri.hasScheme &&
+            !redirectUri.hasAuthority &&
+            redirectUri.path.startsWith('/invite/');
         if (authValue?.isAuthenticated == true) {
+          if (isInviteRedirect) {
+            return redirectPath;
+          }
           return onboardingDone ? '/home' : '/onboarding';
         }
         // Guest who tapped login from a prompt — send back to home
-        if (authValue?.isGuest == true) return '/home';
+        if (authValue?.isGuest == true && !isInviteRedirect) return '/home';
         return null;
       }
 
@@ -60,6 +70,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         if (!authValue.isAuthenticated) return '/login';
         return null;
       }
+
+      // Invite links can preview the invite before authentication is ready.
+      // Joining itself requires an authenticated account.
+      if (loc.startsWith('/invite/')) return null;
 
       // Protected shell routes: guard against unauthenticated / still-loading.
       if (authAsync.isLoading || authValue == null) return '/splash';
@@ -143,6 +157,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/groups/join',
         pageBuilder: (context, state) =>
             _detailPage(context, state, const InviteScreen()),
+      ),
+      GoRoute(
+        path: '/invite/:code',
+        pageBuilder: (context, state) => _detailPage(
+          context,
+          state,
+          InviteScreen(inviteCode: state.pathParameters['code']),
+        ),
       ),
       GoRoute(
         path: '/groups/:groupId',

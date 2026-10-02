@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "NJK933T45N.com.splitpay.expensetracker",
+        "paths": ["/invite/*"]
+      }
+    ]
+  }
+}

@@ -1,0 +1,14 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.splitpay.expensetracker",
+      "sha256_cert_fingerprints": [
+        "99:16:70:d5:df:5b:4a:1c:52:0e:91:f0:de:37:72:06:28:09:a9:ed:8d:ca:87:d2:39:f9:4a:88:ac:97:18:f3",
+        "c3:24:fd:e5:0b:9f:db:ae:1e:f0:0c:e5:c8:f7:33:3b:a6:2b:50:85:50:a9:8c:fd:a4:fd:03:3c:74:c5:46:b1",
+        "40:52:72:c6:a9:93:8f:9e:d6:c8:60:7c:3c:fa:79:1f:6a:de:11:d6:9f:d8:9b:f3:be:62:68:fa:3e:05:1b:10"
+      ]
+    }
+  }
+]
