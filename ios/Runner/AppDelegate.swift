@@ -1,6 +1,7 @@
 import Flutter
 import FirebaseMessaging
 import UIKit
+import UserNotifications
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
@@ -16,6 +17,9 @@ import UIKit
     // the device token flow (and FirebaseMessaging.getToken()) isn't dead on
     // arrival.
     application.registerForRemoteNotifications()
+    // Required for flutter_local_notifications to deliver scheduled reminders
+    // (Firebase later chains to this delegate for non-FCM notifications).
+    UNUserNotificationCenter.current().delegate = self
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 

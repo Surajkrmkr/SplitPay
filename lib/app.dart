@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'core/services/home_widget_launch_handler.dart';
 import 'core/theme/app_theme.dart';
+import 'providers/reminder_provider.dart';
 import 'providers/theme_provider.dart';
 import 'router/app_router.dart';
 import 'shared/widgets/in_app_notification_banner.dart';
@@ -16,6 +17,8 @@ class SplitPayApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeState = ref.watch(themeProvider);
     final router = ref.watch(appRouterProvider);
+    ref.watch(dailyReminderSyncProvider);
+    ref.watch(recurringReminderSyncProvider);
 
     return MaterialApp.router(
       title: 'SplitPay',

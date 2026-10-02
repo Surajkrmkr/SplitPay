@@ -211,15 +211,6 @@ class SettingsScreen extends ConsumerWidget {
   }
 }
 
-void _showComingSoon(BuildContext context) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(
-      content: Text('Coming soon!'),
-      duration: Duration(seconds: 2),
-    ),
-  );
-}
-
 Future<void> _exportData(BuildContext context, WidgetRef ref) async {
   final scaffoldMessenger = ScaffoldMessenger.of(context);
   try {
@@ -1627,8 +1618,8 @@ class _NotificationsTile extends StatelessWidget {
       icon: Icons.notifications_active_rounded,
       iconColor: AppColors.income,
       title: 'Reminders',
-      subtitle: 'Daily reminders and recurring alerts (coming soon)',
-      onTap: () => _showComingSoon(context),
+      subtitle: 'Daily reminders and recurring payment alerts',
+      onTap: () => context.push('/settings/notifications'),
     );
   }
 }

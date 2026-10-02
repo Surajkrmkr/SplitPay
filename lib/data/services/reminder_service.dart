@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz_data;
@@ -18,8 +20,15 @@ const _channelName = 'Reminders';
 const _channelDesc = 'Daily expense and payment reminders';
 const _tag = 'ReminderService';
 
-int _txNotificationId(String transactionId) =>
-    (transactionId.hashCode.abs() % 8000) + 2000;
+// djb2 — String.hashCode isn't guaranteed stable across app versions, which
+// would orphan previously scheduled notifications.
+int _txNotificationId(String transactionId) {
+  var h = 5381;
+  for (final c in transactionId.codeUnits) {
+    h = ((h * 33) ^ c) & 0x7fffffff;
+  }
+  return (h % 8000) + 2000;
+}
 
 class ReminderService {
   ReminderService._();
@@ -93,6 +102,66 @@ class ReminderService {
     }
 
     log.i('init() complete — tz.local=${tz.local.name}', tag: _tag);
+  }
+
+  // ── Permissions ──────────────────────────────────────────────────────────
+
+  /// Returns false when the user has denied notifications, in which case
+  /// nothing scheduled would ever be shown.
+  Future<bool> ensurePermissions() async {
+    final log = AppLogger.instance;
+    try {
+      if (Platform.isAndroid) {
+        final android = _plugin.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+        var granted = await android?.areNotificationsEnabled() ?? true;
+        if (!granted) {
+          granted = await android?.requestNotificationsPermission() ?? false;
+        }
+        if (!granted) return false;
+        // Exact alarms need a user-approved special permission on Android 13+;
+        // without it reminders fall back to inexact (a few minutes late).
+        final canExact = await android?.canScheduleExactNotifications() ?? true;
+        if (!canExact) await android?.requestExactAlarmsPermission();
+        return true;
+      }
+      if (Platform.isIOS) {
+        final ios = _plugin.resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>();
+        return await ios?.requestPermissions(
+              alert: true,
+              badge: true,
+              sound: true,
+            ) ??
+            false;
+      }
+    } catch (e) {
+      log.e('ensurePermissions failed: $e', tag: _tag);
+    }
+    return true;
+  }
+
+  /// Non-prompting check, safe to call from background syncs.
+  Future<bool> hasPermission() async {
+    try {
+      if (Platform.isAndroid) {
+        return await _plugin
+                .resolvePlatformSpecificImplementation<
+                    AndroidFlutterLocalNotificationsPlugin>()
+                ?.areNotificationsEnabled() ??
+            true;
+      }
+      if (Platform.isIOS) {
+        final options = await _plugin
+            .resolvePlatformSpecificImplementation<
+                IOSFlutterLocalNotificationsPlugin>()
+            ?.checkPermissions();
+        return options?.isEnabled ?? false;
+      }
+    } catch (e) {
+      AppLogger.instance.e('hasPermission failed: $e', tag: _tag);
+    }
+    return true;
   }
 
   // ── Generic scheduler ────────────────────────────────────────────────────
@@ -189,7 +258,7 @@ class ReminderService {
     final diffMin = next.difference(now).inMinutes;
     final whenStr = diffMin >= 0
         ? 'in ${diffMin}m (future)'
-        : 'PAST by ${diffMin.abs()}m — fires immediately, then repeats daily';
+        : 'PAST by ${diffMin.abs()}m';
     AppLogger.instance.i('Next fire time: $next  ($whenStr)', tag: _tag);
     await scheduleReminder(
       notificationId: _kDailyReminderId,
@@ -246,8 +315,12 @@ class ReminderService {
           matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
         );
       case RecurrenceType.monthly:
-        final targetDay =
-            (transaction.date.day - daysBefore).clamp(1, 28);
+        // Capped at 28 so the repeat exists in every month; a reminder that
+        // would land before the 1st wraps to the end of the previous month.
+        var targetDay = transaction.date.day.clamp(1, 28) - daysBefore;
+        while (targetDay < 1) {
+          targetDay += 28;
+        }
         await scheduleReminder(
           notificationId: id,
           title: title,
@@ -303,19 +376,21 @@ class ReminderService {
     final now = tz.TZDateTime.now(tz.local);
     final todayAt =
         tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
-    // If today's time has already passed, return it anyway — Android's
-    // AlarmManager fires a past trigger immediately and then repeats daily at
-    // this hour:minute. Do NOT add a day; that would silently delay the first
-    // notification until tomorrow.
-    return todayAt;
+    if (!todayAt.isBefore(now)) return todayAt;
+    // Day overflow is normalised by the constructor, so this is DST-safe.
+    return tz.TZDateTime(
+        tz.local, now.year, now.month, now.day + 1, hour, minute);
   }
 
   tz.TZDateTime _nextWeekdayInstance(int weekday, int hour, int minute) {
     final now = tz.TZDateTime.now(tz.local);
     var t =
         tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    var offset = 0;
     while (t.weekday != weekday || t.isBefore(now)) {
-      t = t.add(const Duration(days: 1));
+      offset++;
+      t = tz.TZDateTime(
+          tz.local, now.year, now.month, now.day + offset, hour, minute);
     }
     return t;
   }
@@ -324,9 +399,7 @@ class ReminderService {
     final now = tz.TZDateTime.now(tz.local);
     var t = tz.TZDateTime(tz.local, now.year, now.month, day, hour, minute);
     if (t.isBefore(now)) {
-      final nm = now.month == 12 ? 1 : now.month + 1;
-      final ny = now.month == 12 ? now.year + 1 : now.year;
-      t = tz.TZDateTime(tz.local, ny, nm, day, hour, minute);
+      t = tz.TZDateTime(tz.local, now.year, now.month + 1, day, hour, minute);
     }
     return t;
   }

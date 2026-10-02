@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../shared/widgets/app_back_button.dart';
@@ -18,6 +19,15 @@ void _openAddTransactionSheet(BuildContext context) {
     useRootNavigator: true,
     backgroundColor: Colors.transparent,
     builder: (_) => const AddTransactionSheet(),
+  );
+}
+
+void _showPermissionDenied(BuildContext context) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: const Text('Turn on notifications to receive reminders.'),
+      action: SnackBarAction(label: 'Settings', onPressed: openAppSettings),
+    ),
   );
 }
 
@@ -253,9 +263,14 @@ class _DailyReminderCard extends ConsumerWidget {
                     value: enabled,
                     onChanged: configAsync.isLoading
                         ? null
-                        : (v) => ref
-                            .read(dailyReminderProvider.notifier)
-                            .setEnabled(v),
+                        : (v) async {
+                            final ok = await ref
+                                .read(dailyReminderProvider.notifier)
+                                .setEnabled(v);
+                            if (!ok && v && context.mounted) {
+                              _showPermissionDenied(context);
+                            }
+                          },
                     activeThumbColor: AppColors.income,
                     activeTrackColor: AppColors.income.withValues(alpha: 0.4),
                   ),
@@ -471,9 +486,16 @@ class _RecurringReminderCard extends ConsumerWidget {
                   ),
                   Switch(
                     value: enabled,
-                    onChanged: (v) => ref
-                        .read(transactionRemindersProvider.notifier)
-                        .setEnabled(tx, v),
+                    onChanged: (v) async {
+                      final notifier =
+                          ref.read(transactionRemindersProvider.notifier);
+                      await notifier.setEnabled(tx, v);
+                      if (v &&
+                          !notifier.configFor(tx.id).enabled &&
+                          context.mounted) {
+                        _showPermissionDenied(context);
+                      }
+                    },
                     activeThumbColor: AppColors.warning,
                     activeTrackColor: AppColors.warning.withValues(alpha: 0.4),
                   ),

@@ -48,13 +48,19 @@ class DailyReminderNotifier extends AsyncNotifier<DailyReminderConfig> {
     );
   }
 
-  Future<void> setEnabled(bool value) async {
+  /// Returns false (and leaves the reminder off) if notification permission
+  /// was denied.
+  Future<bool> setEnabled(bool value) async {
     final log = AppLogger.instance;
     log.i('setEnabled($value) called', tag: _tag);
     final current = state.valueOrNull;
     if (current == null) {
       log.w('setEnabled: state not loaded yet, aborting', tag: _tag);
-      return;
+      return false;
+    }
+    if (value && !await ReminderService.instance.ensurePermissions()) {
+      log.w('Notification permission denied — not enabling', tag: _tag);
+      return false;
     }
     log.i('Current config: enabled=${current.enabled} '
         'time=${current.time.hour}:${current.time.minute.toString().padLeft(2, '0')}',
@@ -75,6 +81,7 @@ class DailyReminderNotifier extends AsyncNotifier<DailyReminderConfig> {
       await ReminderService.instance.cancelDailyReminder();
     }
     log.i('setEnabled($value) done', tag: _tag);
+    return true;
   }
 
   Future<void> setTime(TimeOfDay time) async {
@@ -195,6 +202,12 @@ class TransactionRemindersNotifier
     required Transaction transaction,
     required TransactionReminderConfig config,
   }) async {
+    final previous = configFor(transaction.id);
+    if (config.enabled &&
+        !previous.enabled &&
+        !await ReminderService.instance.ensurePermissions()) {
+      return;
+    }
     final current = Map<String, TransactionReminderConfig>.from(
       state.valueOrNull ?? {},
     );
@@ -220,6 +233,54 @@ class TransactionRemindersNotifier
       transaction: transaction,
       config: current.copyWith(enabled: value),
     );
+  }
+
+  /// Re-registers every enabled reminder, drops ones whose recurring
+  /// transaction no longer exists, and turns reminders on by default for
+  /// recurring transactions that have never had a choice made (existing
+  /// switches are respected).
+  Future<void> resync(List<Transaction> allTransactions) async {
+    final configs = Map<String, TransactionReminderConfig>.from(
+      state.valueOrNull ?? {},
+    );
+    final recurring = {
+      for (final t in allTransactions)
+        if (t.recurrence.isRecurring) t.id: t,
+    };
+    var changed = false;
+
+    // An empty list means transactions haven't loaded yet, not that they
+    // were all deleted.
+    if (allTransactions.isNotEmpty) {
+      for (final id in configs.keys.toList()) {
+        if (recurring.containsKey(id)) continue;
+        await ReminderService.instance.cancelTransactionReminder(id);
+        configs.remove(id);
+        changed = true;
+      }
+    }
+
+    final canNotify = recurring.isNotEmpty &&
+        await ReminderService.instance.hasPermission();
+    for (final tx in recurring.values) {
+      var config = configs[tx.id];
+      if (config == null) {
+        if (!canNotify) continue;
+        config = TransactionReminderConfig.defaultConfig
+            .copyWith(enabled: true);
+        configs[tx.id] = config;
+        changed = true;
+      }
+      if (config.enabled) {
+        await ReminderService.instance.scheduleTransactionReminder(
+          transaction: tx,
+          daysBefore: config.daysBefore,
+          hour: config.time.hour,
+          minute: config.time.minute,
+        );
+      }
+    }
+    if (changed) await _save(configs);
   }
 
   Future<void> setDaysBefore(Transaction transaction, int days) async {
@@ -262,4 +323,28 @@ final recurringReminderEntriesProvider =
             configs[t.id] ?? TransactionReminderConfig.defaultConfig,
           ))
       .toList();
+});
+
+// ── Startup / change sync ────────────────────────────────────────────────────
+
+/// Re-registers the daily reminder once per launch so it survives OS timezone
+/// changes and reinstalls that wipe scheduled alarms.
+final dailyReminderSyncProvider = FutureProvider<void>((ref) async {
+  final daily = await ref.read(dailyReminderProvider.future);
+  if (daily.enabled) {
+    await ReminderService.instance
+        .scheduleDailyReminder(daily.time.hour, daily.time.minute);
+  }
+});
+
+/// Keeps per-transaction reminders in step with the recurring transactions
+/// themselves (edited dates/recurrence, deletions).
+final recurringReminderSyncProvider = FutureProvider<void>((ref) async {
+  // Only re-run when something reminder-relevant changes, not on every edit.
+  ref.watch(transactionProvider.select((all) =>
+      '${all.length}|${all.where((t) => t.recurrence.isRecurring).map((t) => '${t.id}:${t.date.toIso8601String()}:${t.recurrence.name}').join(',')}'));
+  await ref.read(transactionRemindersProvider.future);
+  await ref
+      .read(transactionRemindersProvider.notifier)
+      .resync(ref.read(transactionProvider));
 });
