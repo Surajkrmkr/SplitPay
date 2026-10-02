@@ -24,14 +24,26 @@ export async function createGroup(
   userId: string,
   input: CreateGroupInput
 ): Promise<GroupWithMembers> {
+  const memberIds = [...new Set(input.memberIds ?? [])].filter((id) => id !== userId);
+  if (memberIds.length > 0) {
+    const existingGroupUsers = new Set(
+      (await groupsRepository.findUserGroups(userId)).flatMap((group) =>
+        group.members.map((member) => member.userId)
+      )
+    );
+    if (memberIds.some((memberId) => !existingGroupUsers.has(memberId))) {
+      throw new BadRequestError('You can only add users from your existing groups');
+    }
+  }
+
   // Create the group
   const group = await groupsRepository.createGroup({
-    ...input,
+    name: input.name,
+    description: input.description,
+    avatar: input.avatar,
     createdById: userId,
+    memberIds,
   });
-
-  // Add creator as ADMIN
-  await groupsRepository.addMember(group.id, userId, GroupRole.ADMIN);
 
   // Log GROUP_CREATED activity
   await activityRepository.createActivity({

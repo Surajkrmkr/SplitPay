@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,18 +8,59 @@ import '../../../core/constants/app_colors.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/notification_provider.dart';
 
-class GreetingHeader extends ConsumerWidget {
+String greetingForLocalTime(DateTime localTime) {
+  final hour = localTime.hour;
+  if (hour >= 5 && hour < 12) return 'Good Morning';
+  if (hour >= 12 && hour < 17) return 'Good Afternoon';
+  return 'Good Evening';
+}
+
+class GreetingHeader extends ConsumerStatefulWidget {
   const GreetingHeader({super.key});
 
-  String get _greeting {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good Morning';
-    if (hour < 17) return 'Good Afternoon';
-    return 'Good Evening';
+  @override
+  ConsumerState<GreetingHeader> createState() => _GreetingHeaderState();
+}
+
+class _GreetingHeaderState extends ConsumerState<GreetingHeader>
+    with WidgetsBindingObserver {
+  late DateTime _now;
+  Timer? _clockTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _now = DateTime.now().toLocal();
+    WidgetsBinding.instance.addObserver(this);
+    _clockTimer = Timer.periodic(
+      const Duration(minutes: 1),
+      (_) => _refreshLocalTime(),
+    );
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void dispose() {
+    _clockTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _refreshLocalTime();
+  }
+
+  void _refreshLocalTime() {
+    if (!mounted) return;
+    setState(() => _now = DateTime.now().toLocal());
+  }
+
+  String get _greeting {
+    return greetingForLocalTime(_now);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = Theme.of(context).colorScheme.primary;
     final user = ref.watch(currentUserProvider);
@@ -129,8 +171,8 @@ class _NotificationBellState extends ConsumerState<NotificationBell>
       child: AnimatedBuilder(
         animation: _shake,
         builder: (context, child) {
-          final angle = (_shake.value * 0.3) *
-              ((_shakeController.value < 0.5) ? 1 : -1);
+          final angle =
+              (_shake.value * 0.3) * ((_shakeController.value < 0.5) ? 1 : -1);
           return Transform.rotate(angle: angle, child: child);
         },
         child: Container(
@@ -165,10 +207,7 @@ class _NotificationBellState extends ConsumerState<NotificationBell>
           ),
         ),
       ),
-    )
-        .animate(delay: 300.ms)
-        .fadeIn()
-        .scale(curve: Curves.elasticOut);
+    ).animate(delay: 300.ms).fadeIn().scale(curve: Curves.elasticOut);
   }
 }
 
@@ -201,9 +240,7 @@ class _Badge extends StatelessWidget {
           ),
         ),
       ),
-    )
-        .animate()
-        .scale(
+    ).animate().scale(
           begin: const Offset(0, 0),
           end: const Offset(1, 1),
           curve: Curves.elasticOut,

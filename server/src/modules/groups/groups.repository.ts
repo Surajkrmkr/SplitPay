@@ -6,6 +6,7 @@ export interface CreateGroupData {
   description?: string;
   avatar?: string;
   createdById: string;
+  memberIds: string[];
 }
 
 export type GroupWithMembers = Group & {
@@ -21,7 +22,19 @@ export type GroupWithMembers = Group & {
 };
 
 export async function createGroup(data: CreateGroupData): Promise<Group> {
-  return prisma.group.create({ data });
+  const { memberIds, createdById, ...groupData } = data;
+  return prisma.group.create({
+    data: {
+      ...groupData,
+      createdById,
+      members: {
+        create: [
+          { userId: createdById, role: GroupRole.ADMIN },
+          ...memberIds.map((userId) => ({ userId, role: GroupRole.MEMBER })),
+        ],
+      },
+    },
+  });
 }
 
 export async function findGroupById(groupId: string): Promise<GroupWithMembers | null> {

@@ -3,12 +3,17 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/category_app_icons.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../data/models/group_expense_model.dart';
 import '../../../data/models/group_model.dart';
+import '../../../data/models/transaction_model.dart';
 import '../../../data/services/group_api_service.dart';
 import '../../../providers/group_provider.dart';
 import '../../../providers/settings_provider.dart';
+import '../../../shared/widgets/app_icon_picker.dart';
+import '../../../shared/widgets/category_dropdown_field.dart';
+import '../../../shared/widgets/recurrence_dropdown_field.dart';
 import '../../../shared/widgets/sp_button.dart';
 import 'add_expense_sheet.dart';
 
@@ -33,6 +38,10 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
   late TabController _splitTabController;
 
   late String _splitType;
+  late Category _category;
+  late String? _customCategoryId;
+  late RecurrenceType _recurrence;
+  late String? _appIcon;
   late String _paidById;
   late List<String> _selectedParticipantIds;
   late DateTime _selectedDate;
@@ -51,6 +60,13 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
     _titleController = TextEditingController(text: widget.expense.title);
     _noteController = TextEditingController(text: widget.expense.notes ?? '');
     _splitType = widget.expense.splitType;
+    _category = Category.values
+            .where((category) => category.name == widget.expense.categoryKey)
+            .firstOrNull ??
+        Category.other;
+    _customCategoryId = widget.expense.customCategoryId;
+    _recurrence = widget.expense.recurrence;
+    _appIcon = widget.expense.appIcon;
     _paidById = widget.expense.paidById;
     _selectedParticipantIds =
         widget.expense.participants.map((p) => p.userId).toList();
@@ -104,6 +120,18 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
 
   double get _totalAmount =>
       double.tryParse(_amountController.text.replaceAll(',', '').trim()) ?? 0;
+
+  String get _categoryLabel {
+    final customCategoryId = _customCategoryId;
+    if (customCategoryId != null) {
+      final customCategory = ref
+          .read(customCategoriesProvider)
+          .where((category) => category.id == customCategoryId)
+          .firstOrNull;
+      if (customCategory != null) return customCategory.label;
+    }
+    return _category.label;
+  }
 
   double get _equalShare {
     final count = _selectedParticipantIds.length;
@@ -167,6 +195,13 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
                 ? null
                 : _noteController.text.trim(),
             date: _selectedDate.toUtc().toIso8601String(),
+            categoryKey: _category.name,
+            categoryLabel: _categoryLabel,
+            customCategoryId: _customCategoryId,
+            clearCustomCategoryId: _customCategoryId == null,
+            appIcon: _appIcon,
+            clearAppIcon: _appIcon == null,
+            recurrence: _recurrence.serverValue,
           );
       ref.invalidate(groupExpensesProvider(widget.expense.groupId));
       ref.invalidate(groupBalancesProvider(widget.expense.groupId));
@@ -201,6 +236,12 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currency = ref.watch(currencyProvider);
+    final customCategories = ref.watch(customCategoriesProvider);
+    final selectedCustomCategory = _customCategoryId == null
+        ? null
+        : customCategories
+            .where((category) => category.id == _customCategoryId)
+            .firstOrNull;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.92,
@@ -237,6 +278,12 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
                       ),
                     ),
                     const Spacer(),
+                    RecurrenceDropdownField(
+                      compact: true,
+                      value: _recurrence,
+                      onChanged: (value) => setState(() => _recurrence = value),
+                    ),
+                    const SizedBox(width: 4),
                     IconButton(
                       icon: const Icon(Icons.close_rounded),
                       color: AppColors.textSecondary,
@@ -265,6 +312,39 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
                       hint: 'What was this for?',
                       isDark: isDark,
                       onChanged: (_) => setState(() {}),
+                    ),
+                    const SizedBox(height: 16),
+                    _label('Category', isDark),
+                    const SizedBox(height: 8),
+                    CategoryDropdownField(
+                      selectedCategory: _category,
+                      customCategoryId: _customCategoryId,
+                      type: TransactionType.expense,
+                      onChanged: (category, customCategoryId) {
+                        setState(() {
+                          _category = category;
+                          _customCategoryId = customCategoryId;
+                          final selectedCustom = customCategoryId == null
+                              ? null
+                              : customCategories
+                                  .where((item) => item.id == customCategoryId)
+                                  .firstOrNull;
+                          final availableIcons =
+                              selectedCustom?.suggestedApps ??
+                                  CategoryAppIcons.iconsFor(category);
+                          if (_appIcon != null &&
+                              !availableIcons.contains(_appIcon)) {
+                            _appIcon = null;
+                          }
+                        });
+                      },
+                    ),
+                    AppIconPicker(
+                      category: _category,
+                      customCategory: selectedCustomCategory,
+                      selected: _appIcon,
+                      onSelected: (icon) => setState(() => _appIcon = icon),
+                      isDark: isDark,
                     ),
                     const SizedBox(height: 16),
                     _label('Date & Time', isDark),
@@ -317,7 +397,10 @@ class _EditExpenseSheetState extends ConsumerState<EditExpenseSheet>
                           gradient: LinearGradient(
                             colors: [
                               Theme.of(context).colorScheme.primary,
-                              Theme.of(context).colorScheme.primary.withValues(alpha: 0.85),
+                              Theme.of(context)
+                                  .colorScheme
+                                  .primary
+                                  .withValues(alpha: 0.85),
                             ],
                           ),
                           borderRadius: BorderRadius.circular(10),
@@ -591,8 +674,7 @@ class _EditTimeTile extends StatelessWidget {
                 states.contains(WidgetState.selected)
                     ? Colors.white
                     : AppColors.primary),
-            dayPeriodBorderSide:
-                BorderSide(color: AppColors.primary, width: 1),
+            dayPeriodBorderSide: BorderSide(color: AppColors.primary, width: 1),
           ),
         ),
         child: child!,
@@ -623,8 +705,7 @@ class _EditTimeTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(Icons.access_time_rounded,
-                size: 16, color: AppColors.primary),
+            Icon(Icons.access_time_rounded, size: 16, color: AppColors.primary),
             const SizedBox(width: 8),
             Expanded(
               child: Text(

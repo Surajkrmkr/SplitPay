@@ -8,6 +8,11 @@ export interface CreateExpenseData {
   amount: number;
   paidById: string;
   splitType: SplitType;
+  categoryKey: string;
+  categoryLabel?: string | null;
+  customCategoryId?: string | null;
+  appIcon?: string | null;
+  recurrence: 'NONE' | 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
   notes?: string;
   date?: Date;
   participants: {
@@ -94,6 +99,11 @@ export async function updateExpense(
     amount?: number;
     paidById?: string;
     splitType?: string;
+    categoryKey?: string;
+    categoryLabel?: string | null;
+    customCategoryId?: string | null;
+    appIcon?: string | null;
+    recurrence?: 'NONE' | 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
     notes?: string | null;
     date?: Date;
     participants?: { userId: string; share?: number; percentage?: number }[];

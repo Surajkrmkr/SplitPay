@@ -12,7 +12,6 @@ import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/skeleton_loader.dart';
 import 'create_group/create_group_sheet.dart';
 import 'widgets/group_card.dart';
-import 'widgets/my_balance_summary.dart';
 import '../../shared/utils/guest_guard.dart';
 
 class GroupsScreen extends ConsumerWidget {
@@ -198,13 +197,7 @@ class GroupsScreen extends ConsumerWidget {
                   }
 
                   Widget buildItem(BuildContext context, int index) {
-                    if (!isSearching && index == 0) {
-                      return const KeyedSubtree(
-                        key: ValueKey('my-balance-summary'),
-                        child: MyBalanceSummary(),
-                      );
-                    }
-                    final groupIndex = index - (isSearching ? 0 : 1);
+                    final groupIndex = index;
                     final group = filteredGroups[groupIndex];
                     final card = GroupCard(
                       group: group,
@@ -229,12 +222,11 @@ class GroupsScreen extends ConsumerWidget {
                   }
 
                   return SliverReorderableList(
-                    itemCount: filteredGroups.length + 1,
+                    itemCount: filteredGroups.length,
                     itemBuilder: buildItem,
                     onReorder: (oldIndex, newIndex) => ref
                         .read(groupsProvider.notifier)
-                        .reorder(
-                            oldIndex - 1, newIndex <= 1 ? 0 : newIndex - 1),
+                        .reorder(oldIndex, newIndex),
                   );
                 },
               ),

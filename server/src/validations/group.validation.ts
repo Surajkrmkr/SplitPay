@@ -3,7 +3,13 @@ import { z } from 'zod';
 export const createGroupSchema = z.object({
   name: z.string().min(1, 'Group name is required').max(100, 'Group name too long'),
   description: z.string().max(500, 'Description too long').optional(),
-  avatar: z.string().url('Avatar must be a valid URL').optional(),
+  avatar: z
+    .union([
+      z.string().url('Avatar must be a valid URL'),
+      z.string().regex(/^app-icon:[a-z]+$/, 'Invalid group icon'),
+    ])
+    .optional(),
+  memberIds: z.array(z.string().uuid('Invalid user ID')).max(100).default([]),
 });
 
 export const addMemberSchema = z.object({
@@ -13,7 +19,7 @@ export const addMemberSchema = z.object({
 export const updateGroupSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   description: z.string().max(500).optional(),
-  avatar: z.string().url().optional(),
+  avatar: z.union([z.string().url(), z.string().regex(/^app-icon:[a-z]+$/)]).optional(),
 });
 
 export const updateMemberRoleSchema = z.object({

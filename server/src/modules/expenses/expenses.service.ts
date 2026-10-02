@@ -1,4 +1,4 @@
-import { SplitType } from '@prisma/client';
+import { SplitType, TxRecurrenceType } from '@prisma/client';
 import { ForbiddenError, BadRequestError, NotFoundError } from '../../utils/app-error';
 import * as expensesRepository from './expenses.repository';
 import { ExpenseWithDetails } from './expenses.repository';
@@ -29,6 +29,7 @@ export async function createExpense(
     groupId,
     amount,
     splitType: splitType as SplitType,
+    recurrence: rest.recurrence as TxRecurrenceType,
     date: date ? new Date(date) : undefined,
     participants: calculatedParticipants,
   });
@@ -163,6 +164,16 @@ export async function updateExpense(
     changes.push('Date/Time');
   if (input.splitType && input.splitType !== expense.splitType) changes.push('Split type');
   if (input.title && input.title !== expense.title) changes.push('Title');
+  if (
+    (input.categoryKey && input.categoryKey !== expense.categoryKey) ||
+    (input.categoryLabel !== undefined && input.categoryLabel !== expense.categoryLabel) ||
+    (input.customCategoryId !== undefined && input.customCategoryId !== expense.customCategoryId)
+  ) {
+    changes.push('Category');
+  }
+  if (input.recurrence && input.recurrence !== expense.recurrence) {
+    changes.push('Repeat');
+  }
   if (input.amount !== undefined && Number(input.amount) !== Number(expense.amount))
     changes.push('Amount');
 

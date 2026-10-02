@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/utils/group_icons.dart';
+import '../../../data/models/member_model.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../providers/group_provider.dart';
 import '../../../shared/widgets/sp_button.dart';
 
@@ -19,14 +21,21 @@ class CreateGroupSheet extends ConsumerStatefulWidget {
 class _CreateGroupSheetState extends ConsumerState<CreateGroupSheet> {
   final _nameController = TextEditingController();
   final _descController = TextEditingController();
+  final _memberSearchController = TextEditingController();
+  final _memberListScrollController = ScrollController();
+  final Set<String> _selectedMemberIds = {};
 
   String _selectedIconKey = GroupIcons.defaultKey;
+  String _memberSearchQuery = '';
+  bool _showSuggestedUsers = false;
   bool _creating = false;
 
   @override
   void dispose() {
     _nameController.dispose();
     _descController.dispose();
+    _memberSearchController.dispose();
+    _memberListScrollController.dispose();
     super.dispose();
   }
 
@@ -41,6 +50,7 @@ class _CreateGroupSheetState extends ConsumerState<CreateGroupSheet> {
                 ? null
                 : _descController.text.trim(),
             avatar: GroupIcons.encode(_selectedIconKey),
+            memberIds: _selectedMemberIds.toList(),
           );
       if (mounted) {
         Navigator.of(context).pop();
@@ -69,6 +79,24 @@ class _CreateGroupSheetState extends ConsumerState<CreateGroupSheet> {
     final isValid = _nameController.text.trim().isNotEmpty;
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final safeAreaBottom = MediaQuery.of(context).viewPadding.bottom;
+    final currentUserId = ref.watch(currentUserProvider)?.id;
+    final previousGroups = ref.watch(groupsProvider).valueOrNull ?? [];
+    final suggestionsById = <String, MemberModel>{};
+    for (final group in previousGroups) {
+      for (final member in group.members) {
+        if (member.userId != currentUserId) {
+          suggestionsById.putIfAbsent(member.userId, () => member);
+        }
+      }
+    }
+    final suggestedUsers = suggestionsById.values.toList()
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final filteredUsers = suggestedUsers.where((member) {
+      final query = _memberSearchQuery.trim().toLowerCase();
+      return query.isEmpty ||
+          member.name.toLowerCase().contains(query) ||
+          member.email.toLowerCase().contains(query);
+    }).toList();
 
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
@@ -173,6 +201,162 @@ class _CreateGroupSheetState extends ConsumerState<CreateGroupSheet> {
                       isDark: isDark,
                       maxLines: 2,
                     ),
+                    const SizedBox(height: 24),
+
+                    _SectionLabel(
+                      label: 'Suggested members (optional)',
+                      isDark: isDark,
+                    ),
+                    const SizedBox(height: 8),
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () => setState(
+                          () => _showSuggestedUsers = !_showSuggestedUsers,
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? AppColors.darkCard
+                                : AppColors.lightCard,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isDark
+                                  ? AppColors.darkBorder
+                                  : AppColors.lightBorder,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.group_add_rounded,
+                                size: 20,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  _selectedMemberIds.isEmpty
+                                      ? 'Select from previous group members'
+                                      : '${_selectedMemberIds.length} selected',
+                                  style: TextStyle(
+                                    color: isDark
+                                        ? Colors.white
+                                        : AppColors.textLight,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              Icon(
+                                _showSuggestedUsers
+                                    ? Icons.keyboard_arrow_up_rounded
+                                    : Icons.keyboard_arrow_down_rounded,
+                                color: AppColors.textSecondary,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (_showSuggestedUsers) ...[
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _memberSearchController,
+                        onChanged: (query) =>
+                            setState(() => _memberSearchQuery = query),
+                        decoration: InputDecoration(
+                          hintText: 'Search name or email',
+                          prefixIcon: const Icon(Icons.search_rounded),
+                          isDense: true,
+                          filled: true,
+                          fillColor:
+                              isDark ? AppColors.darkCard : AppColors.lightCard,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: isDark
+                                  ? AppColors.darkBorder
+                                  : AppColors.lightBorder,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      if (filteredUsers.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          child: Text(
+                            suggestedUsers.isEmpty
+                                ? 'Members from your groups will appear here.'
+                                : 'No matching users.',
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 13,
+                            ),
+                          ),
+                        )
+                      else
+                        SizedBox(
+                          height: 220,
+                          child: Scrollbar(
+                            controller: _memberListScrollController,
+                            thumbVisibility: true,
+                            child: ListView.builder(
+                              controller: _memberListScrollController,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
+                              itemCount: filteredUsers.length,
+                              itemBuilder: (context, index) {
+                                final member = filteredUsers[index];
+                                final selected =
+                                    _selectedMemberIds.contains(member.userId);
+                                return CheckboxListTile(
+                                  dense: true,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                  ),
+                                  value: selected,
+                                  title: Text(
+                                    member.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  subtitle: Text(
+                                    member.email,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  secondary: CircleAvatar(
+                                    radius: 17,
+                                    backgroundImage: member.avatar != null
+                                        ? NetworkImage(member.avatar!)
+                                        : null,
+                                    child: member.avatar == null
+                                        ? Text(member.initials)
+                                        : null,
+                                  ),
+                                  onChanged: (checked) {
+                                    setState(() {
+                                      if (checked ?? false) {
+                                        _selectedMemberIds.add(member.userId);
+                                      } else {
+                                        _selectedMemberIds
+                                            .remove(member.userId);
+                                      }
+                                    });
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                    ],
                     const SizedBox(height: 24),
 
                     // Invite hint
@@ -314,8 +498,10 @@ class _IconPicker extends StatelessWidget {
         itemBuilder: (_, i) {
           final e = entries[i];
           final selected = e.key == selectedKey;
-          final color = GroupIcons.colors[e.key] ?? Theme.of(context).colorScheme.primary;
-          final cardBg = Theme.of(context).cardTheme.color ?? AppColors.darkCard;
+          final color =
+              GroupIcons.colors[e.key] ?? Theme.of(context).colorScheme.primary;
+          final cardBg =
+              Theme.of(context).cardTheme.color ?? AppColors.darkCard;
           return GestureDetector(
             onTap: () => onSelect(e.key),
             child: AnimatedContainer(
@@ -411,7 +597,8 @@ class _StyledTextField extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
+          borderSide: BorderSide(
+              color: Theme.of(context).colorScheme.primary, width: 1.5),
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

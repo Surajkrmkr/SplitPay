@@ -8,7 +8,7 @@ import '../../providers/transaction_provider.dart';
 import '../../shared/widgets/app_ad_banner.dart';
 import '../../core/services/update_service.dart';
 import 'widgets/analytics_mini.dart';
-import 'widgets/balance_card.dart';
+import 'widgets/dashboard_cards_carousel.dart';
 import 'widgets/greeting_header.dart';
 import 'widgets/recent_transactions.dart';
 
@@ -52,7 +52,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           const SizedBox(height: 16),
                           const GreetingHeader(),
                           const SizedBox(height: 24),
-                          const BalanceCard(),
+                          const DashboardCardsCarousel(),
                           const SizedBox(height: 28),
                           const _SplitBanner(),
                           const AppAdBanner(

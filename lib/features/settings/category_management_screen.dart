@@ -8,7 +8,7 @@ import '../../providers/settings_provider.dart';
 import '../../shared/widgets/app_back_button.dart';
 import '../../shared/widgets/create_category_dialog.dart';
 
-enum _CategoryTab { all, custom, system }
+enum _CategoryTab { all, custom, category }
 
 class CategoryManagementScreen extends ConsumerStatefulWidget {
   const CategoryManagementScreen({super.key});
@@ -103,8 +103,8 @@ class _CategoryManagementScreenState
       if (_searchQuery.isEmpty) return true;
       final matchLabel = c.label.toLowerCase().contains(_searchQuery);
       final builtInApps = CategoryAppIcons.iconsFor(c);
-      final matchApps = builtInApps
-          .any((app) => app.toLowerCase().contains(_searchQuery));
+      final matchApps =
+          builtInApps.any((app) => app.toLowerCase().contains(_searchQuery));
       return matchLabel || matchApps;
     }).toList();
 
@@ -144,9 +144,8 @@ class _CategoryManagementScreenState
                     icon: Container(
                       padding: const EdgeInsets.all(7),
                       decoration: BoxDecoration(
-                        color: isDark
-                            ? AppColors.darkCard
-                            : AppColors.lightCard,
+                        color:
+                            isDark ? AppColors.darkCard : AppColors.lightCard,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: isDark
@@ -210,7 +209,8 @@ class _CategoryManagementScreenState
             // Content Area
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 children: [
                   // Overview Stats Banner
                   _CategoryStatsBanner(
@@ -269,7 +269,8 @@ class _CategoryManagementScreenState
                   Row(
                     children: [
                       _FilterTabChip(
-                        label: 'All (${customCategories.length + Category.values.length})',
+                        label:
+                            'All (${customCategories.length + Category.values.length})',
                         isSelected: _selectedTab == _CategoryTab.all,
                         onTap: () =>
                             setState(() => _selectedTab = _CategoryTab.all),
@@ -287,10 +288,10 @@ class _CategoryManagementScreenState
                       ),
                       const SizedBox(width: 8),
                       _FilterTabChip(
-                        label: 'System (${Category.values.length})',
-                        isSelected: _selectedTab == _CategoryTab.system,
-                        onTap: () =>
-                            setState(() => _selectedTab = _CategoryTab.system),
+                        label: 'Category (${Category.values.length})',
+                        isSelected: _selectedTab == _CategoryTab.category,
+                        onTap: () => setState(
+                            () => _selectedTab = _CategoryTab.category),
                         primary: primary,
                         isDark: isDark,
                       ),
@@ -328,7 +329,6 @@ class _CategoryManagementScreenState
                       ],
                     ),
                     const SizedBox(height: 10),
-
                     if (filteredCustom.isEmpty)
                       _EmptyCategoryCard(
                         title: _searchQuery.isNotEmpty
@@ -337,7 +337,8 @@ class _CategoryManagementScreenState
                         subtitle: _searchQuery.isNotEmpty
                             ? 'Try searching for a different term.'
                             : 'Tap below to create your first custom spend category.',
-                        buttonLabel: _searchQuery.isEmpty ? 'Add Category' : null,
+                        buttonLabel:
+                            _searchQuery.isEmpty ? 'Add Category' : null,
                         onButtonTap: () => _openCreateCategorySheet(context),
                         isDark: isDark,
                       )
@@ -371,8 +372,7 @@ class _CategoryManagementScreenState
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: filteredCustom.length,
-                        separatorBuilder: (_, __) =>
-                            const SizedBox(height: 10),
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
                         itemBuilder: (context, index) {
                           final cat = filteredCustom[index];
                           return _CustomCategoryListTile(
@@ -389,11 +389,11 @@ class _CategoryManagementScreenState
                     const SizedBox(height: 24),
                   ],
 
-                  // System Categories Section
+                  // Built-in Categories Section
                   if (_selectedTab == _CategoryTab.all ||
-                      _selectedTab == _CategoryTab.system) ...[
+                      _selectedTab == _CategoryTab.category) ...[
                     Text(
-                      'SYSTEM CATEGORIES (${filteredSystem.length})',
+                      'CATEGORIES (${filteredSystem.length})',
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
@@ -402,11 +402,11 @@ class _CategoryManagementScreenState
                       ),
                     ),
                     const SizedBox(height: 10),
-
                     if (filteredSystem.isEmpty)
                       _EmptyCategoryCard(
-                        title: 'No system categories match',
-                        subtitle: 'Check your search query or clear the filter.',
+                        title: 'No categories match',
+                        subtitle:
+                            'Check your search query or clear the filter.',
                         isDark: isDark,
                       )
                     else if (_isGridView)
@@ -425,8 +425,7 @@ class _CategoryManagementScreenState
                           final sysCat = filteredSystem[index];
                           final isHidden =
                               hiddenCategories.contains(sysCat.name);
-                          final builtInApps =
-                              CategoryAppIcons.iconsFor(sysCat);
+                          final builtInApps = CategoryAppIcons.iconsFor(sysCat);
 
                           return _SystemCategoryGridTile(
                             sysCat: sysCat,
@@ -446,14 +445,12 @@ class _CategoryManagementScreenState
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: filteredSystem.length,
-                        separatorBuilder: (_, __) =>
-                            const SizedBox(height: 10),
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
                         itemBuilder: (context, index) {
                           final sysCat = filteredSystem[index];
                           final isHidden =
                               hiddenCategories.contains(sysCat.name);
-                          final builtInApps =
-                              CategoryAppIcons.iconsFor(sysCat);
+                          final builtInApps = CategoryAppIcons.iconsFor(sysCat);
 
                           return _SystemCategoryListTile(
                             sysCat: sysCat,
@@ -520,7 +517,7 @@ class _CategoryStatsBanner extends StatelessWidget {
           ),
           _StatDivider(isDark: isDark),
           _StatItem(
-            label: 'Active System',
+            label: 'Active Categories',
             value: '$visibleSystem / $totalSystem',
             color: const Color(0xFF3B82F6),
           ),
@@ -631,9 +628,7 @@ class _FilterTabChip extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-            color: isSelected
-                ? primary
-                : AppColors.textSecondary,
+            color: isSelected ? primary : AppColors.textSecondary,
           ),
         ),
       ),
@@ -972,7 +967,8 @@ class _SystemCategoryListTile extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: AppColors.textSecondary.withValues(alpha: 0.15),
+                          color:
+                              AppColors.textSecondary.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: const Text(
@@ -1014,7 +1010,7 @@ class _SystemCategoryListTile extends StatelessWidget {
                   )
                 else
                   Text(
-                    'Default system category',
+                    'Default category',
                     style: TextStyle(
                       fontSize: 11,
                       color: AppColors.textSecondary.withValues(alpha: 0.6),
@@ -1148,7 +1144,7 @@ class _SystemCategoryGridTile extends StatelessWidget {
             )
           else
             Text(
-              'System',
+              'Category',
               style: TextStyle(
                 fontSize: 10,
                 color: AppColors.textSecondary.withValues(alpha: 0.5),

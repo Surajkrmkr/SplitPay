@@ -36,7 +36,7 @@ class GroupCard extends ConsumerWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isDark ? cardBg : Colors.white,

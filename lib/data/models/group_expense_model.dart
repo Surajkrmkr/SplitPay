@@ -1,4 +1,5 @@
 import 'expense_participant_model.dart';
+import 'transaction_model.dart';
 
 class GroupExpenseModel {
   final String id;
@@ -9,6 +10,10 @@ class GroupExpenseModel {
   final String paidByName;
   final String? paidByAvatar;
   final String splitType;
+  final String categoryKey;
+  final String? categoryLabel;
+  final String? customCategoryId;
+  final RecurrenceType recurrence;
   final List<ExpenseParticipantModel> participants;
   final String? notes;
   final String? appIcon;
@@ -24,6 +29,10 @@ class GroupExpenseModel {
     required this.paidByName,
     this.paidByAvatar,
     required this.splitType,
+    this.categoryKey = 'other',
+    this.categoryLabel,
+    this.customCategoryId,
+    this.recurrence = RecurrenceType.none,
     required this.participants,
     this.notes,
     this.appIcon,
@@ -42,6 +51,12 @@ class GroupExpenseModel {
       paidByName: (paidBy?['name'] ?? json['paidByName']) as String,
       paidByAvatar: (paidBy?['avatar'] ?? json['paidByAvatar']) as String?,
       splitType: json['splitType'] as String? ?? 'EQUAL',
+      categoryKey: json['categoryKey'] as String? ?? 'other',
+      categoryLabel: json['categoryLabel'] as String?,
+      customCategoryId: json['customCategoryId'] as String?,
+      recurrence: RecurrenceType.values.byName(
+        (json['recurrence'] as String? ?? 'NONE').toLowerCase(),
+      ),
       participants: (json['participants'] as List<dynamic>? ?? [])
           .map((p) =>
               ExpenseParticipantModel.fromJson(p as Map<String, dynamic>))
@@ -63,6 +78,10 @@ class GroupExpenseModel {
       'paidByName': paidByName,
       'paidByAvatar': paidByAvatar,
       'splitType': splitType,
+      'categoryKey': categoryKey,
+      'categoryLabel': categoryLabel,
+      'customCategoryId': customCategoryId,
+      'recurrence': recurrence.serverValue,
       'participants': participants.map((p) => p.toJson()).toList(),
       'notes': notes,
       'appIcon': appIcon,
@@ -72,7 +91,8 @@ class GroupExpenseModel {
   }
 
   double shareForUser(String userId) {
-    final participant = participants.where((p) => p.userId == userId).firstOrNull;
+    final participant =
+        participants.where((p) => p.userId == userId).firstOrNull;
     if (participant != null) {
       if (participant.share > 0) return participant.share;
       if (participant.percentage != null && participant.percentage! > 0) {
@@ -95,6 +115,10 @@ class GroupExpenseModel {
         paidByName: paidByName,
         paidByAvatar: paidByAvatar,
         splitType: splitType,
+        categoryKey: categoryKey,
+        categoryLabel: categoryLabel,
+        customCategoryId: customCategoryId,
+        recurrence: recurrence,
         participants: participants,
         notes: notes,
         appIcon: appIcon,

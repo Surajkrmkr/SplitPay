@@ -164,9 +164,13 @@ Returns `{ accessToken, refreshToken, user }`.
 {
   "name": "Goa Trip 2024",
   "description": "Annual trip expenses",
-  "avatar": "https://example.com/avatar.png"
+  "avatar": "https://example.com/avatar.png",
+  "memberIds": ["uuid-of-a-member-from-an-existing-group"]
 }
 ```
+
+`memberIds` is optional. Each selected user must already share one of the
+creator's groups. Group icons may also be supplied as `app-icon:<key>`.
 
 **POST /groups/:id/members**
 ```json
@@ -189,6 +193,9 @@ Returns `{ accessToken, refreshToken, user }`.
   "amount": 1200.00,
   "paidById": "user-uuid",
   "splitType": "EQUAL",
+  "categoryKey": "food",
+  "categoryLabel": "Food",
+  "recurrence": "NONE",
   "participants": [
     { "userId": "user-1-uuid" },
     { "userId": "user-2-uuid" },
@@ -196,6 +203,11 @@ Returns `{ accessToken, refreshToken, user }`.
   ]
 }
 ```
+
+`categoryKey` and `recurrence` are optional; they default to `other` and
+`NONE`. For custom categories, include `customCategoryId` and the selected
+`categoryLabel`. An optional `appIcon` stores the selected suggested app.
+Recurrence values are `NONE`, `DAILY`, `WEEKLY`, `MONTHLY`, and `YEARLY`.
 
 **POST /expenses** — Percentage split
 ```json
@@ -257,7 +269,7 @@ users           — User accounts (linked to Google OAuth)
 sessions        — Refresh token sessions
 groups          — Expense groups
 group_members   — Group membership with roles (ADMIN/MEMBER)
-expenses        — Group expenses with split type
+expenses        — Group expenses with split type, category, and recurrence
 expense_participants — Per-user share of each expense
 settlements     — Recorded payments between users
 activities      — Audit log / activity feed

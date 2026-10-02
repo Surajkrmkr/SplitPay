@@ -10,6 +10,7 @@ import '../models/group_model.dart';
 import '../models/activity_model.dart';
 import '../models/member_model.dart';
 import '../models/settlement_model.dart';
+import '../models/transaction_model.dart';
 
 const _useMock = false;
 
@@ -178,6 +179,11 @@ class GroupApiService {
     String? date,
     String? appIcon,
     bool clearAppIcon = false,
+    String? categoryKey,
+    String? categoryLabel,
+    String? customCategoryId,
+    bool clearCustomCategoryId = false,
+    String? recurrence,
   }) async {
     final res = await _dio.patch(
       ApiConstants.expenseById(expenseId),
@@ -191,6 +197,11 @@ class GroupApiService {
         if (date != null) 'date': date,
         if (appIcon != null) 'appIcon': appIcon,
         if (clearAppIcon) 'appIcon': null,
+        if (categoryKey != null) 'categoryKey': categoryKey,
+        if (categoryLabel != null) 'categoryLabel': categoryLabel,
+        if (customCategoryId != null) 'customCategoryId': customCategoryId,
+        if (clearCustomCategoryId) 'customCategoryId': null,
+        if (recurrence != null) 'recurrence': recurrence,
       },
     );
     return GroupExpenseModel.fromJson(res.data['data'] as Map<String, dynamic>);
@@ -210,6 +221,10 @@ class GroupApiService {
     String? notes,
     String? date,
     String? appIcon,
+    required String categoryKey,
+    required String categoryLabel,
+    String? customCategoryId,
+    String recurrence = 'NONE',
   }) async {
     if (_useMock) {
       final now = DateTime.now();
@@ -221,6 +236,11 @@ class GroupApiService {
         paidById: paidById,
         paidByName: 'You',
         splitType: splitType,
+        categoryKey: categoryKey,
+        categoryLabel: categoryLabel,
+        customCategoryId: customCategoryId,
+        recurrence: RecurrenceType.values.byName(recurrence.toLowerCase()),
+        appIcon: appIcon,
         participants: participants
             .map((p) => ExpenseParticipantModel.fromJson(p))
             .toList(),
@@ -242,6 +262,10 @@ class GroupApiService {
         if (notes != null) 'notes': notes,
         if (date != null) 'date': date,
         if (appIcon != null) 'appIcon': appIcon,
+        'categoryKey': categoryKey,
+        'categoryLabel': categoryLabel,
+        if (customCategoryId != null) 'customCategoryId': customCategoryId,
+        'recurrence': recurrence,
       },
     );
     final created =

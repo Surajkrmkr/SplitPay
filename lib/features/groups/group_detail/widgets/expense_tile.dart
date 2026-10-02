@@ -6,6 +6,7 @@ import '../../../../core/utils/category_app_icons.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../data/models/expense_participant_model.dart';
 import '../../../../data/models/group_expense_model.dart';
+import '../../../../data/models/transaction_model.dart';
 import '../../../../providers/auth_provider.dart';
 import '../../../../providers/settings_provider.dart';
 import '../../../../shared/widgets/avatar_widget.dart';
@@ -33,36 +34,52 @@ class _ExpenseTileState extends ConsumerState<ExpenseTile> {
 
   static IconData _iconFor(String title) {
     final t = title.toLowerCase();
-    if (t.contains('food') || t.contains('lunch') || t.contains('dinner') ||
-        t.contains('breakfast') || t.contains('restaurant') ||
-        t.contains('shack') || t.contains('cafe')) {
+    if (t.contains('food') ||
+        t.contains('lunch') ||
+        t.contains('dinner') ||
+        t.contains('breakfast') ||
+        t.contains('restaurant') ||
+        t.contains('shack') ||
+        t.contains('cafe')) {
       return Icons.restaurant_rounded;
     }
-    if (t.contains('hotel') || t.contains('stay') || t.contains('resort') ||
+    if (t.contains('hotel') ||
+        t.contains('stay') ||
+        t.contains('resort') ||
         t.contains('airbnb')) {
       return Icons.hotel_rounded;
     }
-    if (t.contains('travel') || t.contains('taxi') || t.contains('uber') ||
-        t.contains('cab') || t.contains('fuel') || t.contains('petrol') ||
+    if (t.contains('travel') ||
+        t.contains('taxi') ||
+        t.contains('uber') ||
+        t.contains('cab') ||
+        t.contains('fuel') ||
+        t.contains('petrol') ||
         t.contains('flight')) {
       return Icons.directions_car_rounded;
     }
-    if (t.contains('drink') || t.contains('beer') || t.contains('wine') ||
+    if (t.contains('drink') ||
+        t.contains('beer') ||
+        t.contains('wine') ||
         t.contains('alcohol')) {
       return Icons.local_bar_rounded;
     }
     if (t.contains('coffee') || t.contains('tea')) {
       return Icons.local_cafe_rounded;
     }
-    if (t.contains('groceri') || t.contains('supermarket') ||
+    if (t.contains('groceri') ||
+        t.contains('supermarket') ||
         t.contains('market')) {
       return Icons.shopping_cart_rounded;
     }
-    if (t.contains('bill') || t.contains('electric') || t.contains('rent') ||
+    if (t.contains('bill') ||
+        t.contains('electric') ||
+        t.contains('rent') ||
         t.contains('utility')) {
       return Icons.receipt_long_rounded;
     }
-    if (t.contains('movie') || t.contains('cinema') ||
+    if (t.contains('movie') ||
+        t.contains('cinema') ||
         t.contains('entertain')) {
       return Icons.movie_rounded;
     }
@@ -74,13 +91,21 @@ class _ExpenseTileState extends ConsumerState<ExpenseTile> {
 
   static Color _colorFor(String title) {
     final t = title.toLowerCase();
-    if (t.contains('food') || t.contains('lunch') || t.contains('dinner') ||
-        t.contains('restaurant') || t.contains('shack')) {
+    if (t.contains('food') ||
+        t.contains('lunch') ||
+        t.contains('dinner') ||
+        t.contains('restaurant') ||
+        t.contains('shack')) {
       return AppColors.catFood;
     }
-    if (t.contains('hotel') || t.contains('stay') || t.contains('resort') ||
-        t.contains('travel') || t.contains('taxi') || t.contains('fuel') ||
-        t.contains('cab') || t.contains('flight')) {
+    if (t.contains('hotel') ||
+        t.contains('stay') ||
+        t.contains('resort') ||
+        t.contains('travel') ||
+        t.contains('taxi') ||
+        t.contains('fuel') ||
+        t.contains('cab') ||
+        t.contains('flight')) {
       return AppColors.catTravel;
     }
     if (t.contains('drink') || t.contains('coffee') || t.contains('tea')) {
@@ -146,6 +171,11 @@ class _ExpenseTileState extends ConsumerState<ExpenseTile> {
     final isPaidByMe = expense.paidById == currentUserId;
     final myShare = expense.shareForUser(currentUserId);
     final accentColor = _colorFor(expense.title);
+    final category = Category.values
+            .where((item) => item.name == expense.categoryKey)
+            .firstOrNull ??
+        Category.other;
+    final categoryLabel = expense.categoryLabel ?? category.label;
 
     final String statusLabel;
     final Color statusColor;
@@ -153,7 +183,8 @@ class _ExpenseTileState extends ConsumerState<ExpenseTile> {
       statusLabel = 'you paid';
       statusColor = primary;
     } else if (myShare > 0) {
-      statusLabel = 'owe ${CurrencyFormatter.formatAmountWithCommas(myShare, symbol: currency)}';
+      statusLabel =
+          'owe ${CurrencyFormatter.formatAmountWithCommas(myShare, symbol: currency)}';
       statusColor = AppColors.expense;
     } else {
       statusLabel = 'not involved';
@@ -187,8 +218,7 @@ class _ExpenseTileState extends ConsumerState<ExpenseTile> {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color:
-                      Colors.black.withValues(alpha: isDark ? 0.25 : 0.06),
+                  color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.06),
                   blurRadius: 12,
                   offset: const Offset(0, 2),
                 ),
@@ -213,9 +243,8 @@ class _ExpenseTileState extends ConsumerState<ExpenseTile> {
                                 ? Container(
                                     padding: const EdgeInsets.all(3),
                                     decoration: BoxDecoration(
-                                      color: isDark
-                                          ? cardBg
-                                          : AppColors.lightCard,
+                                      color:
+                                          isDark ? cardBg : AppColors.lightCard,
                                       borderRadius: BorderRadius.circular(10),
                                       border: Border.all(
                                         color: isDark
@@ -225,8 +254,7 @@ class _ExpenseTileState extends ConsumerState<ExpenseTile> {
                                       ),
                                     ),
                                     child: ClipRRect(
-                                      borderRadius:
-                                          BorderRadius.circular(7),
+                                      borderRadius: BorderRadius.circular(7),
                                       child: Image.asset(
                                         CategoryAppIcons.pathFor(
                                             expense.appIcon!),
@@ -310,20 +338,23 @@ class _ExpenseTileState extends ConsumerState<ExpenseTile> {
                                         size: 10,
                                         color: AppColors.textTertiary),
                                     const SizedBox(width: 3),
-                                    Text(
-                                      _formatDate(expense.date),
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        color: AppColors.textTertiary,
+                                    Flexible(
+                                      child: Text(
+                                        '${_formatDate(expense.date)} · $categoryLabel${expense.recurrence.isRecurring ? ' · ${expense.recurrence.label}' : ''}',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          color: AppColors.textTertiary,
+                                        ),
                                       ),
                                     ),
                                     const SizedBox(width: 8),
                                     Flexible(
                                       child: _SplitTypeChip(
-                                        icon:
-                                            _splitTypeIcon(expense.splitType),
-                                        label: _splitTypeLabel(
-                                            expense.splitType),
+                                        icon: _splitTypeIcon(expense.splitType),
+                                        label:
+                                            _splitTypeLabel(expense.splitType),
                                       ),
                                     ),
                                   ],
@@ -340,7 +371,9 @@ class _ExpenseTileState extends ConsumerState<ExpenseTile> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                CurrencyFormatter.formatAmountWithCommas(expense.amount, symbol: currency),
+                                CurrencyFormatter.formatAmountWithCommas(
+                                    expense.amount,
+                                    symbol: currency),
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
@@ -590,10 +623,10 @@ class _MemberRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final secondaryLabel = splitType == 'PERCENTAGE' &&
-            participant.percentage != null
-        ? '${participant.percentage!.toStringAsFixed(1)}%'
-        : '${pct.toStringAsFixed(0)}%';
+    final secondaryLabel =
+        splitType == 'PERCENTAGE' && participant.percentage != null
+            ? '${participant.percentage!.toStringAsFixed(1)}%'
+            : '${pct.toStringAsFixed(0)}%';
 
     return Row(
       children: [

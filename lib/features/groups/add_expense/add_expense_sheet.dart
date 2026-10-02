@@ -3,17 +3,23 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/category_app_icons.dart';
 import '../../../core/utils/currency_formatter.dart';
+import '../../../data/models/custom_category.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../data/models/group_model.dart';
 import '../../../data/models/member_model.dart';
+import '../../../data/models/transaction_model.dart';
 import '../../../data/services/group_api_service.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/group_provider.dart';
 import '../../../providers/settings_provider.dart';
 import '../../../shared/widgets/animated_amount_field.dart';
+import '../../../shared/widgets/app_icon_picker.dart';
 import '../../../shared/widgets/avatar_widget.dart';
 import '../../../shared/widgets/bill_scan_button.dart';
+import '../../../shared/widgets/category_dropdown_field.dart';
+import '../../../shared/widgets/recurrence_dropdown_field.dart';
 import '../../../shared/widgets/sp_button.dart';
 
 class AddExpenseSheet extends ConsumerStatefulWidget {
@@ -35,6 +41,10 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
   late TabController _splitTabController;
 
   String _splitType = 'EQUAL';
+  Category? _category;
+  String? _customCategoryId;
+  String? _appIcon;
+  RecurrenceType _recurrence = RecurrenceType.none;
   late String _paidById;
   late String _currentUserId;
   late List<String> _selectedParticipantIds;
@@ -93,6 +103,24 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
   double get _totalAmount =>
       double.tryParse(_amountController.text.replaceAll(',', '').trim()) ?? 0;
 
+  String get _categoryLabel {
+    final customCategoryId = _customCategoryId;
+    if (customCategoryId != null) {
+      final customCategory = ref
+          .read(customCategoriesProvider)
+          .where((category) => category.id == customCategoryId)
+          .firstOrNull;
+      if (customCategory != null) return customCategory.label;
+    }
+    return _category?.label ?? Category.other.label;
+  }
+
+  CustomCategory? _selectedCustomCategory(List<CustomCategory> categories) {
+    final id = _customCategoryId;
+    if (id == null) return null;
+    return categories.where((category) => category.id == id).firstOrNull;
+  }
+
   double get _equalShare {
     final count = _selectedParticipantIds.length;
     if (count == 0) return 0;
@@ -114,6 +142,7 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
   bool get _isValid {
     if (_titleController.text.trim().isEmpty) return false;
     if (_totalAmount <= 0) return false;
+    if (_category == null && _customCategoryId == null) return false;
     if (_selectedParticipantIds.isEmpty) return false;
     if (_splitType == 'PERCENTAGE') {
       return (_percentSum - 100).abs() < 0.01;
@@ -172,6 +201,11 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
             paidById: _paidById,
             splitType: _splitType,
             participants: _buildParticipants(),
+            categoryKey: _category?.name ?? 'other',
+            categoryLabel: _categoryLabel,
+            customCategoryId: _customCategoryId,
+            appIcon: _appIcon,
+            recurrence: _recurrence.serverValue,
             notes: _noteController.text.trim().isEmpty
                 ? null
                 : _noteController.text.trim(),
@@ -213,6 +247,8 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currency = ref.watch(currencyProvider);
+    final customCategories = ref.watch(customCategoriesProvider);
+    final selectedCustomCategory = _selectedCustomCategory(customCategories);
 
     return DraggableScrollableSheet(
       initialChildSize: 0.92,
@@ -251,6 +287,12 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
                     const Spacer(),
                     BillScanButton(onApply: _applyScannedBill),
                     const SizedBox(width: 4),
+                    RecurrenceDropdownField(
+                      compact: true,
+                      value: _recurrence,
+                      onChanged: (value) => setState(() => _recurrence = value),
+                    ),
+                    const SizedBox(width: 4),
                     IconButton(
                       icon: const Icon(Icons.close_rounded),
                       color: AppColors.textSecondary,
@@ -284,6 +326,40 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
                       hint: 'What was this for?',
                       isDark: isDark,
                       onChanged: (_) => setState(() {}),
+                    ),
+                    const SizedBox(height: 16),
+
+                    _label('Category', isDark),
+                    const SizedBox(height: 8),
+                    CategoryDropdownField(
+                      selectedCategory: _category,
+                      customCategoryId: _customCategoryId,
+                      type: TransactionType.expense,
+                      onChanged: (category, customCategoryId) {
+                        setState(() {
+                          _category = category;
+                          _customCategoryId = customCategoryId;
+                          final selectedCustom = customCategoryId == null
+                              ? null
+                              : customCategories
+                                  .where((item) => item.id == customCategoryId)
+                                  .firstOrNull;
+                          final availableIcons =
+                              selectedCustom?.suggestedApps ??
+                                  CategoryAppIcons.iconsFor(category);
+                          if (_appIcon != null &&
+                              !availableIcons.contains(_appIcon)) {
+                            _appIcon = null;
+                          }
+                        });
+                      },
+                    ),
+                    AppIconPicker(
+                      category: _category,
+                      customCategory: selectedCustomCategory,
+                      selected: _appIcon,
+                      onSelected: (icon) => setState(() => _appIcon = icon),
+                      isDark: isDark,
                     ),
                     const SizedBox(height: 16),
 
@@ -343,7 +419,10 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
                           gradient: LinearGradient(
                             colors: [
                               Theme.of(context).colorScheme.primary,
-                              Theme.of(context).colorScheme.primary.withValues(alpha: 0.85),
+                              Theme.of(context)
+                                  .colorScheme
+                                  .primary
+                                  .withValues(alpha: 0.85),
                             ],
                           ),
                           borderRadius: BorderRadius.circular(10),
@@ -513,7 +592,8 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
+          borderSide: BorderSide(
+              color: Theme.of(context).colorScheme.primary, width: 1.5),
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -571,40 +651,40 @@ class AmountDisplay extends StatelessWidget {
             FittedBox(
               fit: BoxFit.scaleDown,
               child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  currency,
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w700,
-                    color: primary,
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    currency,
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
+                      color: primary,
+                    ),
                   ),
-                ),
-                AnimatedAmountField(
-                  controller: controller,
-                  focusNode: focusNode,
-                  autofocus: autofocus,
-                  onChanged: onChanged,
-                  cursorColor: primary,
-                  inputFormatters: [
-                    LengthLimitingTextInputFormatter(50),
-                    CurrencyInputFormatter(),
-                  ],
-                  style: TextStyle(
-                    fontSize: 40,
-                    fontWeight: FontWeight.w800,
-                    color: isDark ? Colors.white : AppColors.textLight,
+                  AnimatedAmountField(
+                    controller: controller,
+                    focusNode: focusNode,
+                    autofocus: autofocus,
+                    onChanged: onChanged,
+                    cursorColor: primary,
+                    inputFormatters: [
+                      LengthLimitingTextInputFormatter(50),
+                      CurrencyInputFormatter(),
+                    ],
+                    style: TextStyle(
+                      fontSize: 40,
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? Colors.white : AppColors.textLight,
+                    ),
+                    hintStyle: const TextStyle(
+                      fontSize: 40,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textTertiary,
+                    ),
                   ),
-                  hintStyle: const TextStyle(
-                    fontSize: 40,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textTertiary,
-                  ),
-                ),
-              ],
+                ],
               ),
             ),
           ],
@@ -731,8 +811,7 @@ class _TimePickerTile extends StatelessWidget {
                 states.contains(WidgetState.selected)
                     ? Colors.white
                     : AppColors.primary),
-            dayPeriodBorderSide:
-                BorderSide(color: AppColors.primary, width: 1),
+            dayPeriodBorderSide: BorderSide(color: AppColors.primary, width: 1),
           ),
         ),
         child: child!,
