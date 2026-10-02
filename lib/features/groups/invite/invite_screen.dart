@@ -82,8 +82,9 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
   Future<void> _loadExistingCode() async {
     setState(() => _loadingExisting = true);
     try {
-      final result =
-          await ref.read(groupApiServiceProvider).getActiveInvite(widget.groupId!);
+      final result = await ref
+          .read(groupApiServiceProvider)
+          .getActiveInvite(widget.groupId!);
       if (result != null) {
         setState(() {
           _generatedCode = result['code'] as String?;
@@ -173,103 +174,88 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
     return box.localToGlobal(Offset.zero) & box.size;
   }
 
-  Future<void> _shareCode() async {
-    if (_generatedCode == null) return;
-    final groupName = _groupName;
-    final message =
-        '${groupName != null ? 'Join "$groupName" on SplitPay' : 'Join my SplitPay group'} '
-        'with this invite link: ${_inviteUrl(_generatedCode!)}\n\n'
-        'Invite code: $_generatedCode';
-    await Share.share(
-      message,
-      subject: 'Join my SplitPay group',
-      sharePositionOrigin: _sharePositionOrigin,
-    );
-  }
-
   Future<void> _shareQrCode() async {
     if (_generatedCode == null) return;
     final groupName = _groupName;
 
+    const width = 720.0;
+    const height = 880.0;
+    const cardRadius = 48.0;
     const qrSize = 360.0;
-    const sidePadding = 44.0;
-    const headerH = 96.0;
-    const footerH = 90.0;
-    const width = qrSize + sidePadding * 2;
-    const height = headerH + qrSize + footerH;
+    const qrTileSize = 420.0;
+    const qrTop = 250.0;
+    const qrLeft = (width - qrTileSize) / 2;
+    final primary = AppColors.primary;
 
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
 
-    // Card background
     const cardRect = Rect.fromLTWH(0, 0, width, height);
+    final cardRRect =
+        RRect.fromRectAndRadius(cardRect, const Radius.circular(cardRadius));
     canvas.drawRRect(
-      RRect.fromRectAndRadius(cardRect, const Radius.circular(28)),
-      Paint()..color = Colors.white,
+      cardRRect,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF211D16), Color(0xFF151923)],
+        ).createShader(cardRect),
+    );
+    canvas.drawRRect(
+      cardRRect,
+      Paint()
+        ..color = primary.withValues(alpha: 0.72)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2,
     );
 
-    // Header band with app icon + name
-    final headerPaint = Paint()
-      ..shader = LinearGradient(
-        colors: [AppColors.primary, AppColors.secondary],
-        begin: Alignment.centerLeft,
-        end: Alignment.centerRight,
-      ).createShader(const Rect.fromLTWH(0, 0, width, headerH));
-    canvas.save();
-    canvas.clipRRect(RRect.fromRectAndCorners(
-      cardRect,
-      topLeft: const Radius.circular(28),
-      topRight: const Radius.circular(28),
-    ));
-    canvas.drawRect(const Rect.fromLTWH(0, 0, width, headerH), headerPaint);
-    canvas.restore();
-
-    try {
-      final iconBytes = await rootBundle.load('assets/icon/app_icon.png');
-      final iconCodec = await ui.instantiateImageCodec(
-        iconBytes.buffer.asUint8List(),
-        targetWidth: 96,
-        targetHeight: 96,
-      );
-      final iconFrame = await iconCodec.getNextFrame();
-      const iconSize = 48.0;
-      final iconRect = Rect.fromLTWH(
-          sidePadding, (headerH - iconSize) / 2, iconSize, iconSize);
-      canvas.save();
-      canvas.clipRRect(
-          RRect.fromRectAndRadius(iconRect, const Radius.circular(12)));
-      canvas.drawImageRect(
-        iconFrame.image,
-        Rect.fromLTWH(0, 0, iconFrame.image.width.toDouble(),
-            iconFrame.image.height.toDouble()),
-        iconRect,
-        Paint(),
-      );
-      canvas.restore();
-    } catch (_) {
-      // Icon is optional decoration — skip silently if it can't be loaded.
-    }
-
-    final titlePainter = TextPainter(
-      text: const TextSpan(
-        text: 'SplitPay',
+    final codePainter = TextPainter(
+      text: TextSpan(
+        text: _generatedCode!,
         style: TextStyle(
-            color: Colors.white, fontSize: 28, fontWeight: FontWeight.w800),
+          color: primary,
+          fontSize: 68,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 12,
+        ),
       ),
       textDirection: TextDirection.ltr,
-    )..layout();
-    titlePainter.paint(
+    )..layout(maxWidth: width - 64);
+    codePainter.paint(
       canvas,
-      Offset(sidePadding + 48 + 16, (headerH - titlePainter.height) / 2),
+      Offset((width - codePainter.width) / 2, 56),
     );
 
-    // QR code
+    final expiryPainter = TextPainter(
+      text: TextSpan(
+        text: _expiresAt == null
+            ? 'Invite code · valid for 7 days'
+            : 'Expires ${_formatInviteExpiry(_expiresAt!)}',
+        style: const TextStyle(
+          color: Color(0xFF9A9AA7),
+          fontSize: 24,
+          fontWeight: FontWeight.w400,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: width - 64);
+    expiryPainter.paint(
+      canvas,
+      Offset((width - expiryPainter.width) / 2, 145),
+    );
+
+    final qrTileRect = Rect.fromLTWH(qrLeft, qrTop, qrTileSize, qrTileSize);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(qrTileRect, const Radius.circular(32)),
+      Paint()..color = Colors.white,
+    );
     final painter = QrPainter(
       data: _inviteUrl(_generatedCode!),
       version: QrVersions.auto,
       eyeStyle: QrEyeStyle(
         eyeShape: QrEyeShape.square,
-        color: AppColors.primary,
+        color: primary,
       ),
       dataModuleStyle: const QrDataModuleStyle(
         dataModuleShape: QrDataModuleShape.square,
@@ -277,33 +263,87 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
       ),
     );
     canvas.save();
-    canvas.translate(sidePadding, headerH + 24);
-    painter.paint(canvas, const Size(qrSize, qrSize - 24));
+    canvas.translate(
+        qrLeft + (qrTileSize - qrSize) / 2, qrTop + (qrTileSize - qrSize) / 2);
+    painter.paint(canvas, const Size(qrSize, qrSize));
     canvas.restore();
 
-    // Footer — group name + caption
-    final footerLines = [
-      if (groupName != null) groupName,
-      'Scan to join · Code: $_generatedCode',
-    ];
-    double footerY = headerH + qrSize + 14;
-    for (var i = 0; i < footerLines.length; i++) {
-      final isTitle = i == 0 && groupName != null;
-      final linePainter = TextPainter(
+    final scanPainter = TextPainter(
+      text: const TextSpan(
+        text: 'Scan to join',
+        style: TextStyle(
+          color: Color(0xFF9A9AA7),
+          fontSize: 23,
+          fontWeight: FontWeight.w400,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    scanPainter.paint(
+      canvas,
+      Offset((width - scanPainter.width) / 2, qrTop + qrTileSize + 18),
+    );
+
+    if (groupName != null) {
+      final groupPainter = TextPainter(
         text: TextSpan(
-          text: footerLines[i],
+          text: groupName,
           style: TextStyle(
-            color: isTitle ? const Color(0xFF1A1A2E) : const Color(0xFF8A8A9E),
-            fontSize: isTitle ? 20 : 14,
-            fontWeight: isTitle ? FontWeight.w700 : FontWeight.w500,
+            color: Colors.white.withValues(alpha: 0.82),
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
           ),
         ),
         textDirection: TextDirection.ltr,
-      )..layout(maxWidth: width - sidePadding * 2);
-      linePainter.paint(
-          canvas, Offset((width - linePainter.width) / 2, footerY));
-      footerY += linePainter.height + 6;
+      )..layout(maxWidth: width - 64);
+      groupPainter.paint(
+        canvas,
+        Offset(
+          (width - groupPainter.width) / 2,
+          qrTop + qrTileSize + 60,
+        ),
+      );
     }
+
+    final logoBytes = await rootBundle.load('assets/icon/app_icon.png');
+    final logoCodec = await ui.instantiateImageCodec(
+      logoBytes.buffer.asUint8List(),
+      targetWidth: 48,
+      targetHeight: 48,
+    );
+    final logoFrame = await logoCodec.getNextFrame();
+    const logoSize = 30.0;
+    const brandY = 816.0;
+    final brandTextPainter = TextPainter(
+      text: const TextSpan(
+        text: 'SPLITPAY',
+        style: TextStyle(
+          color: Color(0xFF9A9AA7),
+          fontSize: 17,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 3,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    final brandWidth = logoSize + 10 + brandTextPainter.width;
+    final brandLeft = (width - brandWidth) / 2;
+    final logoRect = Rect.fromLTWH(brandLeft, brandY, logoSize, logoSize);
+    canvas.drawImageRect(
+      logoFrame.image,
+      Rect.fromLTWH(
+        0,
+        0,
+        logoFrame.image.width.toDouble(),
+        logoFrame.image.height.toDouble(),
+      ),
+      logoRect,
+      Paint(),
+    );
+    brandTextPainter.paint(
+      canvas,
+      Offset(brandLeft + logoSize + 10, brandY + 6),
+    );
 
     final picture = recorder.endRecording();
     final image = await picture.toImage(width.toInt(), height.toInt());
@@ -316,12 +356,24 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
 
     await Share.shareXFiles(
       [XFile(file.path, mimeType: 'image/png')],
-      text: '${groupName != null ? 'Join "$groupName" on SplitPay!' : 'Join my SplitPay group!'}\n'
+      text:
+          '${groupName != null ? 'Join "$groupName" on SplitPay!' : 'Join my SplitPay group!'}\n'
           '${_inviteUrl(_generatedCode!)}\n\n'
           'Invite code: $_generatedCode',
       subject: 'SplitPay Group Invite',
       sharePositionOrigin: _sharePositionOrigin,
     );
+  }
+
+  String _formatInviteExpiry(DateTime dateTime) {
+    final remaining = dateTime.difference(DateTime.now());
+    if (remaining.inDays > 0) {
+      return 'in ${remaining.inDays} day${remaining.inDays == 1 ? '' : 's'}';
+    }
+    if (remaining.inHours > 0) {
+      return 'in ${remaining.inHours} hour${remaining.inHours == 1 ? '' : 's'}';
+    }
+    return 'soon';
   }
 
   // ── Join ────────────────────────────────────────────────────
@@ -449,8 +501,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
               loadingExisting: _loadingExisting,
               onGenerate: _generateCode,
               onCopy: _copyCode,
-              onShare: _shareCode,
-              onShareQr: _shareQrCode,
+              onShare: _shareQrCode,
             ),
     );
   }
@@ -468,7 +519,6 @@ class _GenerateTab extends StatelessWidget {
   final VoidCallback onGenerate;
   final VoidCallback onCopy;
   final VoidCallback onShare;
-  final VoidCallback onShareQr;
 
   const _GenerateTab({
     required this.isDark,
@@ -480,7 +530,6 @@ class _GenerateTab extends StatelessWidget {
     required this.onGenerate,
     required this.onCopy,
     required this.onShare,
-    required this.onShareQr,
   });
 
   @override
@@ -520,8 +569,7 @@ class _GenerateTab extends StatelessWidget {
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(20),
-                border:
-                    Border.all(color: primary.withValues(alpha: 0.3)),
+                border: Border.all(color: primary.withValues(alpha: 0.3)),
               ),
               child: Column(
                 children: [
@@ -598,25 +646,13 @@ class _GenerateTab extends StatelessWidget {
                       Expanded(
                         child: FilledButton.icon(
                           onPressed: onShare,
-                          icon: const Icon(Icons.share_rounded, size: 16),
-                          label: const Text('Share'),
-                          style: FilledButton.styleFrom(
-                              backgroundColor: primary),
+                          icon: const Icon(Icons.ios_share_rounded, size: 16),
+                          label: const Text('Share invite'),
+                          style:
+                              FilledButton.styleFrom(backgroundColor: primary),
                         ),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: onShareQr,
-                      icon: const Icon(Icons.qr_code_rounded, size: 16),
-                      label: const Text('Share QR Code'),
-                      style: OutlinedButton.styleFrom(
-                          foregroundColor: primary,
-                          side: BorderSide(color: primary)),
-                    ),
                   ),
                 ],
               ),
@@ -751,8 +787,7 @@ class _JoinTab extends StatelessWidget {
                   borderSide: BorderSide.none),
               focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide:
-                      BorderSide(color: AppColors.primary, width: 2)),
+                  borderSide: BorderSide(color: AppColors.primary, width: 2)),
               contentPadding: const EdgeInsets.symmetric(vertical: 20),
             ),
             onChanged: onCodeChanged,

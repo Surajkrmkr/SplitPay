@@ -38,9 +38,8 @@ deferred deep links require a separate provider/service.
    team `NJK933T45N` and bundle ID `com.splitpay.expensetracker`.
 
 4. Ensure the SplitPay listing is published in the relevant stores. The iOS
-   fallback currently opens App Store search for “SplitPay”; replace
-   `appStoreUrl` in `hosting/public/index.html` with the app’s direct App Store
-   product URL once its numeric listing ID is available.
+   fallback uses the direct listing URL
+   `https://apps.apple.com/us/app/splitpay-bills-expenses/id6787626074`.
 
 The public Android certificate fingerprint and Apple team/bundle identifiers
 are association metadata, not signing credentials. Never commit signing keys

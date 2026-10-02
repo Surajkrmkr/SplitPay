@@ -265,6 +265,10 @@
           <p class="card-subheading">Use this code to join your group</p>
           <div class="invite-code" id="invite-code" aria-label="Invite code"></div>
           <div class="actions">
+            <button class="button" id="share-invite" type="button" hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.7 10.7 6.6-4.4m-6.6 7 6.6 4.4"/></svg>
+              Share SplitPay invite
+            </button>
             <button class="button secondary" id="copy-link" type="button">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>
               Copy invite link
@@ -292,7 +296,7 @@
         code = "";
       }
 
-      const appStoreUrl = "https://apps.apple.com/search?term=SplitPay";
+      const appStoreUrl = "https://apps.apple.com/us/app/splitpay-bills-expenses/id6787626074";
       const playStoreUrl = "https://play.google.com/store/apps/details?id=com.splitpay.expensetracker";
       const isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       const isAndroid = /Android/i.test(navigator.userAgent);
@@ -317,6 +321,21 @@
       } else {
         openLink.href = inviteUrl;
         openLink.hidden = !(isIos || isAndroid);
+        const shareButton = document.getElementById("share-invite");
+        shareButton.hidden = typeof navigator.share !== "function";
+        shareButton.addEventListener("click", async () => {
+          try {
+            await navigator.share({
+              title: "Join my SplitPay group",
+              text: `Join my group on SplitPay with invite code ${code}.`,
+              url: inviteUrl,
+            });
+          } catch (error) {
+            if (error.name !== "AbortError") {
+              statusElement.textContent = "Sharing didn’t work. Copy the invite link instead.";
+            }
+          }
+        });
         document.getElementById("copy-link").addEventListener("click", async () => {
           try {
             await navigator.clipboard.writeText(inviteUrl);
