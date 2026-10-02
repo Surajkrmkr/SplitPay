@@ -539,53 +539,39 @@ class _CategoryPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Only show expense-relevant categories
     final builtIn = Category.values.where((c) => c != Category.salary).toList();
-    final total = builtIn.length + customCats.length;
-
-    // Two fixed rows, scrolling horizontally — icon-only tiles so more
-    // categories fit on screen at once.
-    return SizedBox(
-      height: 100,
-      child: GridView.builder(
-        scrollDirection: Axis.horizontal,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          mainAxisSpacing: 8,
-          crossAxisSpacing: 8,
-          childAspectRatio: 1,
-        ),
-        itemCount: total,
-        itemBuilder: (context, i) {
-          if (i < builtIn.length) {
-            final cat = builtIn[i];
-            final isSelected = selectedIds.contains(cat.name);
-            return _CategoryIconTile(
-              label: cat.label,
-              icon: cat.icon,
-              color: cat.color,
-              isSelected: isSelected,
-              isDark: isDark,
-              onTap: () => onToggle(cat.name),
-            );
-          }
-          final cat = customCats[i - builtIn.length];
-          final isSelected = selectedIds.contains(cat.id);
-          return _CategoryIconTile(
-            label: cat.label,
-            icon: cat.icon,
-            color: cat.color,
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        ...builtIn.map((category) {
+          final isSelected = selectedIds.contains(category.name);
+          return _CategoryChip(
+            label: category.label,
+            icon: category.icon,
+            color: category.color,
             isSelected: isSelected,
             isDark: isDark,
-            onTap: () => onToggle(cat.id),
+            onTap: () => onToggle(category.name),
           );
-        },
-      ),
+        }),
+        ...customCats.map((category) {
+          final isSelected = selectedIds.contains(category.id);
+          return _CategoryChip(
+            label: category.label,
+            icon: category.icon,
+            color: category.color,
+            isSelected: isSelected,
+            isDark: isDark,
+            onTap: () => onToggle(category.id),
+          );
+        }),
+      ],
     );
   }
 }
 
-class _CategoryIconTile extends StatelessWidget {
+class _CategoryChip extends StatelessWidget {
   final String label;
   final IconData icon;
   final Color color;
@@ -593,7 +579,7 @@ class _CategoryIconTile extends StatelessWidget {
   final bool isDark;
   final VoidCallback onTap;
 
-  const _CategoryIconTile({
+  const _CategoryChip({
     required this.label,
     required this.icon,
     required this.color,
@@ -610,7 +596,10 @@ class _CategoryIconTile extends StatelessWidget {
         onTap: onTap,
         child: AnimatedContainer(
           duration: 200.ms,
-          width: 44,
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.sizeOf(context).width - 64,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
           decoration: BoxDecoration(
             color: isSelected
                 ? color.withValues(alpha: 0.15)
@@ -627,21 +616,31 @@ class _CategoryIconTile extends StatelessWidget {
               width: isSelected ? 1.5 : 0.5,
             ),
           ),
-          child: Stack(
-            alignment: Alignment.center,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 icon,
                 color: isSelected ? color : AppColors.textTertiary,
-                size: 20,
+                size: 16,
               ),
-              if (isSelected)
-                Positioned(
-                  top: 3,
-                  right: 3,
-                  child: Icon(Icons.check_circle_rounded,
-                      color: color, size: 12),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: isSelected ? color : AppColors.textSecondary,
+                    fontSize: 12,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  ),
                 ),
+              ),
+              if (isSelected) ...[
+                const SizedBox(width: 4),
+                Icon(Icons.check_circle_rounded, color: color, size: 13),
+              ],
             ],
           ),
         ),

@@ -44,6 +44,19 @@ class SettingsScreen extends ConsumerWidget {
                   const SizedBox(height: 24),
                   _ProfileCard(isDark: isDark),
                   const SizedBox(height: 24),
+                  _SectionLabel(label: 'Subscription'),
+                  const SizedBox(height: 12),
+                  _SettingsGroup(
+                    children: [
+                      _SettingsTile(
+                        icon: Icons.workspace_premium_rounded,
+                        iconColor: AppColors.primary,
+                        title: 'SplitPay Pro',
+                        subtitle: 'Coming soon',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
                   _SectionLabel(label: 'Preferences'),
                   const SizedBox(height: 12),
                   _SettingsGroup(
