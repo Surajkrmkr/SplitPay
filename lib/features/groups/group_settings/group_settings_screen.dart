@@ -1,12 +1,19 @@
+import 'dart:io';
+
+import 'package:csv/csv.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../shared/widgets/app_back_button.dart';
 import '../../../data/models/group_model.dart';
 import '../../../data/models/member_model.dart';
+import '../../../data/models/group_expense_model.dart';
 import '../../../data/services/group_api_service.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/group_provider.dart';
@@ -23,6 +30,84 @@ class GroupSettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
+  bool _exportingGroupData = false;
+
+  Future<void> _exportGroupData(GroupModel group) async {
+    if (_exportingGroupData) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final renderObject = context.findRenderObject();
+    final shareOrigin = renderObject is RenderBox &&
+            renderObject.hasSize &&
+            renderObject.size.width > 0 &&
+            renderObject.size.height > 0
+        ? renderObject.localToGlobal(Offset.zero) & renderObject.size
+        : Offset.zero & MediaQuery.sizeOf(context);
+
+    setState(() => _exportingGroupData = true);
+    try {
+      ref.invalidate(groupExpensesProvider(group.id));
+      final expenses = await ref.read(groupExpensesProvider(group.id).future);
+      if (expenses.isEmpty) {
+        messenger.showSnackBar(
+          const SnackBar(
+              content: Text('This group has no expenses to export.')),
+        );
+        return;
+      }
+
+      final rows = <List<dynamic>>[
+        [
+          'Date',
+          'Expense',
+          'Amount',
+          'Paid By',
+          'Split Type',
+          'Participants',
+          'Notes',
+        ],
+        for (final expense in expenses)
+          [
+            DateFormat('yyyy-MM-dd HH:mm').format(expense.date),
+            expense.title,
+            expense.amount.toStringAsFixed(2),
+            expense.paidByName,
+            expense.splitType,
+            _formatParticipants(expense),
+            expense.notes ?? '',
+          ],
+      ];
+      final csv = const ListToCsvConverter().convert(rows);
+      final tempDir = await getTemporaryDirectory();
+      final safeGroupName = group.name
+          .replaceAll(RegExp(r'[^A-Za-z0-9_-]+'), '_')
+          .replaceAll(RegExp(r'^_+|_+$'), '');
+      final fileName = safeGroupName.isEmpty ? 'group' : safeGroupName;
+      final dateStamp = DateFormat('yyyyMMdd').format(DateTime.now());
+      final file = File('${tempDir.path}/${fileName}_expenses_$dateStamp.csv');
+      await file.writeAsString(csv, flush: true);
+
+      await Share.shareXFiles(
+        [XFile(file.path, mimeType: 'text/csv')],
+        text: 'Expenses for ${group.name}',
+        sharePositionOrigin: shareOrigin,
+      );
+    } catch (error) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Could not export group data: $error')),
+      );
+    } finally {
+      if (mounted) setState(() => _exportingGroupData = false);
+    }
+  }
+
+  String _formatParticipants(GroupExpenseModel expense) {
+    return expense.participants
+        .map((participant) =>
+            '${participant.userName} (${participant.share.toStringAsFixed(2)})')
+        .join('; ');
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -74,6 +159,48 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                 _RenameGroupTile(group: group, isDark: isDark, ref: ref),
                 const Divider(height: 1, indent: 16, endIndent: 16),
               ],
+              _SectionHeader('Data', isDark),
+              ListTile(
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.file_download_outlined,
+                    color: AppColors.secondary,
+                    size: 20,
+                  ),
+                ),
+                title: Text(
+                  'Export Group Data',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? Colors.white : AppColors.textLight,
+                  ),
+                ),
+                subtitle: const Text(
+                  'Share all group expenses as CSV',
+                  style:
+                      TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                ),
+                trailing: _exportingGroupData
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppColors.textSecondary,
+                      ),
+                onTap:
+                    _exportingGroupData ? null : () => _exportGroupData(group),
+              ),
+              const Divider(height: 1, indent: 16, endIndent: 16),
               _SectionHeader('Members (${group.members.length})', isDark),
               ...group.members.map((m) => _MemberTile(
                     member: m,
@@ -143,8 +270,7 @@ class _RenameGroupTile extends StatelessWidget {
           color: AppColors.primary.withValues(alpha: 0.12),
           shape: BoxShape.circle,
         ),
-        child:
-            Icon(Icons.edit_rounded, color: AppColors.primary, size: 20),
+        child: Icon(Icons.edit_rounded, color: AppColors.primary, size: 20),
       ),
       title: Text('Rename Group',
           style: TextStyle(
@@ -205,7 +331,8 @@ class _RenameGroupTile extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
-                              color: isDark ? Colors.white : AppColors.textLight,
+                              color:
+                                  isDark ? Colors.white : AppColors.textLight,
                             ),
                           ),
                           const Spacer(),
@@ -292,11 +419,10 @@ class _RenameGroupTile extends StatelessWidget {
                                         .updateGroup(
                                           group.id,
                                           name: name,
-                                          description: descController.text
-                                                  .trim()
-                                                  .isEmpty
-                                              ? null
-                                              : descController.text.trim(),
+                                          description:
+                                              descController.text.trim().isEmpty
+                                                  ? null
+                                                  : descController.text.trim(),
                                         );
                                     ref.invalidate(
                                         groupDetailProvider(group.id));
@@ -306,11 +432,9 @@ class _RenameGroupTile extends StatelessWidget {
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
                                         SnackBar(
-                                          content:
-                                              const Text('Group updated'),
+                                          content: const Text('Group updated'),
                                           backgroundColor: AppColors.income,
-                                          behavior:
-                                              SnackBarBehavior.floating,
+                                          behavior: SnackBarBehavior.floating,
                                           shape: RoundedRectangleBorder(
                                               borderRadius:
                                                   BorderRadius.circular(12)),
@@ -322,8 +446,7 @@ class _RenameGroupTile extends StatelessWidget {
                                     if (context.mounted) {
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(SnackBar(
-                                        content:
-                                            Text(friendlyErrorMessage(e)),
+                                        content: Text(friendlyErrorMessage(e)),
                                         backgroundColor: AppColors.expense,
                                         behavior: SnackBarBehavior.floating,
                                         shape: RoundedRectangleBorder(

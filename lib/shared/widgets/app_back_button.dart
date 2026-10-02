@@ -9,6 +9,9 @@ class AppBackButton extends StatelessWidget {
   /// that need to confirm before leaving.
   final VoidCallback? onTap;
 
+  /// Show this action when there is no route to pop.
+  final VoidCallback? onCannotPop;
+
   /// When true, returns `SizedBox.shrink()` instead of nothing if there's no
   /// route to pop. Useful inside Rows where you want the layout consistent.
   final bool keepSpaceWhenHidden;
@@ -16,6 +19,7 @@ class AppBackButton extends StatelessWidget {
   const AppBackButton({
     super.key,
     this.onTap,
+    this.onCannotPop,
     this.keepSpaceWhenHidden = false,
   });
 
@@ -24,14 +28,15 @@ class AppBackButton extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final canPop = Navigator.of(context).canPop();
 
-    if (!canPop) {
+    if (!canPop && onCannotPop == null) {
       return keepSpaceWhenHidden
           ? const SizedBox(width: 36, height: 36)
           : const SizedBox.shrink();
     }
 
     return GestureDetector(
-      onTap: onTap ?? () => Navigator.of(context).pop(),
+      onTap:
+          canPop ? (onTap ?? () => Navigator.of(context).pop()) : onCannotPop,
       behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.all(8),

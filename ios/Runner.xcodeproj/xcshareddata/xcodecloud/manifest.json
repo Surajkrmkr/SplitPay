@@ -1,0 +1,9 @@
+{
+  "id" : "28097fd2-455a-4a6f-b31e-b3fbbbe7da00",
+  "targets" : [
+    {
+      "id" : "A4D68201-8B8E-4765-ACE5-99B796BDCB84",
+      "name" : "SplitPay"
+    }
+  ]
+}

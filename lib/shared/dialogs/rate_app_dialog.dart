@@ -25,6 +25,10 @@ class _RateAppDialogState extends State<RateAppDialog> {
   int _selectedStars = 5;
 
   Future<void> _onRatePressed() async {
+    final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
+    final storeUrl = isIOS
+        ? 'https://apps.apple.com/us/app/splitpay-bills-expenses/id6787626074?action=write-review'
+        : 'https://play.google.com/store/apps/details?id=com.splitpay.expensetracker';
     await PreferencesService.set('user_has_rated_app', true);
     if (!mounted) return;
     Navigator.of(context).pop();
@@ -40,13 +44,14 @@ class _RateAppDialogState extends State<RateAppDialog> {
 
     // Launch store review URL if possible
     try {
-      final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
-      final storeUrl = isIOS
-          ? 'https://apps.apple.com/app/id6400000000'
-          : 'https://play.google.com/store/apps/details?id=com.splitpay.expensetracker';
       final uri = Uri.parse(storeUrl);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched) {
+        AppLogger.instance
+            .e('Could not launch store review URL: $uri', tag: 'RateApp');
       }
     } catch (e) {
       AppLogger.instance.e('Error launching store URL: $e', tag: 'RateApp');

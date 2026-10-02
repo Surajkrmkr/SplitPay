@@ -147,19 +147,7 @@ class SettingsScreen extends ConsumerWidget {
                         iconColor: AppColors.warning,
                         title: 'Rate SplitPay',
                         subtitle: 'Love the app? Leave a review',
-                        onTap: () async {
-                          final isIos =
-                              Theme.of(context).platform == TargetPlatform.iOS;
-                          final url = Uri.parse(
-                            isIos
-                                ? 'https://apps.apple.com/app/id6470000000'
-                                : 'https://play.google.com/store/apps/details?id=com.splitpay.expensetracker',
-                          );
-                          if (await canLaunchUrl(url)) {
-                            await launchUrl(url,
-                                mode: LaunchMode.externalApplication);
-                          }
-                        },
+                        onTap: () => _openStoreRating(context),
                       ),
                       _Divider(),
                       _SettingsTile(
@@ -183,9 +171,7 @@ class SettingsScreen extends ConsumerWidget {
                         iconColor: AppColors.primary,
                         title: 'Share SplitPay',
                         subtitle: 'Invite friends to track expenses together',
-                        onTap: () => Share.share(
-                          'Check out SplitPay — the smart expense tracker for individuals and groups! 💸\nhttps://play.google.com/store/apps/details?id=com.splitpay.expensetracker',
-                        ),
+                        onTap: () => _shareSplitPay(context),
                       ),
                     ],
                   ),
@@ -211,8 +197,67 @@ class SettingsScreen extends ConsumerWidget {
   }
 }
 
+Future<void> _openStoreRating(BuildContext context) async {
+  final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
+  final url = Uri.parse(
+    isIOS
+        ? 'https://apps.apple.com/us/app/splitpay-bills-expenses/id6787626074?action=write-review'
+        : 'https://play.google.com/store/apps/details?id=com.splitpay.expensetracker',
+  );
+  try {
+    final launched = await launchUrl(
+      url,
+      mode: LaunchMode.externalApplication,
+    );
+    if (!launched && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open the app store.')),
+      );
+    }
+  } catch (error) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Could not open the app store: $error')),
+    );
+  }
+}
+
+Future<void> _shareSplitPay(BuildContext context) async {
+  final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
+  final storeUrl = isIOS
+      ? 'https://apps.apple.com/us/app/splitpay-bills-expenses/id6787626074'
+      : 'https://play.google.com/store/apps/details?id=com.splitpay.expensetracker';
+  final renderObject = context.findRenderObject();
+  final shareOrigin = renderObject is RenderBox &&
+          renderObject.hasSize &&
+          renderObject.size.width > 0 &&
+          renderObject.size.height > 0
+      ? renderObject.localToGlobal(Offset.zero) & renderObject.size
+      : Offset.zero & MediaQuery.sizeOf(context);
+
+  try {
+    await Share.share(
+      'Check out SplitPay — the smart expense tracker for individuals and groups!\n$storeUrl',
+      subject: 'SplitPay — Expense Tracker',
+      sharePositionOrigin: shareOrigin,
+    );
+  } catch (error) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Could not share SplitPay: $error')),
+    );
+  }
+}
+
 Future<void> _exportData(BuildContext context, WidgetRef ref) async {
   final scaffoldMessenger = ScaffoldMessenger.of(context);
+  final renderObject = context.findRenderObject();
+  final screenOrigin = renderObject is RenderBox &&
+          renderObject.hasSize &&
+          renderObject.size.width > 0 &&
+          renderObject.size.height > 0
+      ? renderObject.localToGlobal(Offset.zero) & renderObject.size
+      : Offset.zero & MediaQuery.sizeOf(context);
   try {
     final now = DateTime.now();
     final cutoffDate = DateTime(now.year, now.month - 2, now.day);
@@ -252,8 +297,9 @@ Future<void> _exportData(BuildContext context, WidgetRef ref) async {
     await file.writeAsString(buffer.toString());
 
     await Share.shareXFiles(
-      [XFile(file.path)],
+      [XFile(file.path, mimeType: 'text/csv')],
       text: 'SplitPay Transactions Export (Last 2 Months)',
+      sharePositionOrigin: screenOrigin,
     );
   } catch (e) {
     scaffoldMessenger.showSnackBar(

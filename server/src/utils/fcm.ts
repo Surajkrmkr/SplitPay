@@ -20,6 +20,7 @@ export interface FcmPayload {
   tokens: string[];
   title: string;
   body: string;
+  badge: number;
   data?: Record<string, string>;
 }
 
@@ -44,7 +45,7 @@ export async function sendPushNotification(payload: FcmPayload): Promise<number>
       },
       apns: {
         payload: {
-          aps: { sound: 'default', badge: 1 },
+          aps: { sound: 'default', badge: payload.badge },
         },
       },
     });

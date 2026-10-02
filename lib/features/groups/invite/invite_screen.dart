@@ -471,9 +471,13 @@ class _InviteScreenState extends ConsumerState<InviteScreen>
       appBar: AppBar(
         backgroundColor: isDark ? AppColors.darkBg : AppColors.lightBg,
         leadingWidth: 56,
-        leading: const Padding(
-          padding: EdgeInsets.only(left: 16),
-          child: Center(child: AppBackButton()),
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 16),
+          child: Center(
+            child: AppBackButton(
+              onCannotPop: () => context.go('/groups'),
+            ),
+          ),
         ),
         title: Text(
           _joinOnly ? 'Join a Group' : 'Invite Members',

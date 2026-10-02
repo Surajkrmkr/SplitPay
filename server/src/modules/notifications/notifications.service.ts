@@ -4,7 +4,25 @@ import {
   RegisterTokenInput,
   GetNotificationsQuery,
 } from '../../validations/notification.validation';
-import { NotFoundError } from '../../utils/app-error';
+
+async function sendPushNotificationsToUsers(
+  userIds: string[],
+  title: string,
+  body: string,
+  data: Record<string, string>
+): Promise<void> {
+  await Promise.all(
+    [...new Set(userIds)].map(async (userId) => {
+      const [tokens, badge] = await Promise.all([
+        notificationsRepository.getUserFcmTokens(userId),
+        notificationsRepository.countUnreadNotifications(userId),
+      ]);
+      if (tokens.length === 0) return;
+
+      sendPushNotification({ tokens, title, body, data, badge }).catch(() => {});
+    })
+  );
+}
 
 // ── Token Management ──────────────────────────────────────────────────────────
 
@@ -85,7 +103,6 @@ export async function notifyGroupExpenseAdded(opts: {
   const body = `${actorName} added ${currency}${amount} for "${expenseTitle}"`;
 
   const recipientIds = recipientUserIds.filter((id) => id !== actorId);
-  const tokens = await notificationsRepository.getUserFcmTokensFor(recipientIds);
 
   // Persist in-app notifications for each recipient
   await notificationsRepository.createNotifications(
@@ -101,15 +118,11 @@ export async function notifyGroupExpenseAdded(opts: {
     }))
   );
 
-  // Fire FCM (best-effort, non-blocking)
-  if (tokens.length > 0) {
-    sendPushNotification({
-      tokens,
-      title,
-      body,
-      data: { type: 'GROUP_EXPENSE_ADDED', groupId, actorName },
-    }).catch(() => {});
-  }
+  await sendPushNotificationsToUsers(recipientIds, title, body, {
+    type: 'GROUP_EXPENSE_ADDED',
+    groupId,
+    actorName,
+  });
 }
 
 /**
@@ -130,8 +143,6 @@ export async function notifySettlementReceived(opts: {
   const title = groupName;
   const body = `${payerName} settled ${currency}${amount} with you`;
 
-  const tokens = await notificationsRepository.getUserFcmTokens(payeeId);
-
   await notificationsRepository.createNotification({
     userId: payeeId,
     type: 'SETTLEMENT_RECEIVED',
@@ -143,14 +154,11 @@ export async function notifySettlementReceived(opts: {
     data: { type: 'SETTLEMENT_RECEIVED', groupId, payerId },
   });
 
-  if (tokens.length > 0) {
-    sendPushNotification({
-      tokens,
-      title,
-      body,
-      data: { type: 'SETTLEMENT_RECEIVED', groupId, actorName: payerName },
-    }).catch(() => {});
-  }
+  await sendPushNotificationsToUsers([payeeId], title, body, {
+    type: 'SETTLEMENT_RECEIVED',
+    groupId,
+    actorName: payerName,
+  });
 }
 
 /**
@@ -166,8 +174,6 @@ export async function notifyAddedToGroup(opts: {
   const title = 'Added to a group';
   const body = `${addedByName} added you to "${groupName}"`;
 
-  const tokens = await notificationsRepository.getUserFcmTokens(userId);
-
   await notificationsRepository.createNotification({
     userId,
     type: 'ADDED_TO_GROUP',
@@ -178,14 +184,11 @@ export async function notifyAddedToGroup(opts: {
     data: { type: 'ADDED_TO_GROUP', groupId },
   });
 
-  if (tokens.length > 0) {
-    sendPushNotification({
-      tokens,
-      title,
-      body,
-      data: { type: 'ADDED_TO_GROUP', groupId, actorName: addedByName },
-    }).catch(() => {});
-  }
+  await sendPushNotificationsToUsers([userId], title, body, {
+    type: 'ADDED_TO_GROUP',
+    groupId,
+    actorName: addedByName,
+  });
 }
 
 /**
@@ -201,8 +204,6 @@ export async function notifyMemberJoined(opts: {
   const title = 'New member joined';
   const body = `${joinerName} joined "${groupName}" via your invite`;
 
-  const tokens = await notificationsRepository.getUserFcmTokens(inviterId);
-
   await notificationsRepository.createNotification({
     userId: inviterId,
     type: 'GROUP_ACTIVITY',
@@ -213,14 +214,11 @@ export async function notifyMemberJoined(opts: {
     data: { type: 'GROUP_ACTIVITY', groupId },
   });
 
-  if (tokens.length > 0) {
-    sendPushNotification({
-      tokens,
-      title,
-      body,
-      data: { type: 'GROUP_ACTIVITY', groupId, actorName: joinerName },
-    }).catch(() => {});
-  }
+  await sendPushNotificationsToUsers([inviterId], title, body, {
+    type: 'GROUP_ACTIVITY',
+    groupId,
+    actorName: joinerName,
+  });
 }
 
 /**
@@ -240,8 +238,6 @@ export async function notifyGroupDeleted(opts: {
   const recipientIds = recipientUserIds.filter((id) => id !== actorId);
   if (recipientIds.length === 0) return;
 
-  const tokens = await notificationsRepository.getUserFcmTokensFor(recipientIds);
-
   await notificationsRepository.createNotifications(
     recipientIds.map((userId) => ({
       userId,
@@ -254,14 +250,11 @@ export async function notifyGroupDeleted(opts: {
     }))
   );
 
-  if (tokens.length > 0) {
-    await sendPushNotification({
-      tokens,
-      title,
-      body,
-      data: { type: 'GROUP_DELETED', groupId, actorName },
-    }).catch(() => {});
-  }
+  await sendPushNotificationsToUsers(recipientIds, title, body, {
+    type: 'GROUP_DELETED',
+    groupId,
+    actorName,
+  });
 }
 
 /**
@@ -295,8 +288,6 @@ export async function notifyGroupExpenseDeleted(opts: {
   const recipientIds = recipientUserIds.filter((id) => id !== actorId);
   if (recipientIds.length === 0) return;
 
-  const tokens = await notificationsRepository.getUserFcmTokensFor(recipientIds);
-
   await notificationsRepository.createNotifications(
     recipientIds.map((userId) => ({
       userId,
@@ -310,14 +301,11 @@ export async function notifyGroupExpenseDeleted(opts: {
     }))
   );
 
-  if (tokens.length > 0) {
-    sendPushNotification({
-      tokens,
-      title,
-      body,
-      data: { type: 'GROUP_ACTIVITY', groupId, actorName },
-    }).catch(() => {});
-  }
+  await sendPushNotificationsToUsers(recipientIds, title, body, {
+    type: 'GROUP_ACTIVITY',
+    groupId,
+    actorName,
+  });
 }
 
 export async function notifyPaymentReminder(opts: {
@@ -331,8 +319,6 @@ export async function notifyPaymentReminder(opts: {
   const { groupId, groupName, senderId, senderName, senderAvatar, recipientId } = opts;
   const title = groupName;
   const body = `${senderName} reminded you to settle your balance.`;
-  const tokens = await notificationsRepository.getUserFcmTokens(recipientId);
-
   await notificationsRepository.createNotification({
     userId: recipientId,
     type: 'PAYMENT_REMINDER',
@@ -344,14 +330,11 @@ export async function notifyPaymentReminder(opts: {
     data: { type: 'PAYMENT_REMINDER', groupId, senderId },
   });
 
-  if (tokens.length > 0) {
-    sendPushNotification({
-      tokens,
-      title,
-      body,
-      data: { type: 'PAYMENT_REMINDER', groupId, senderId },
-    }).catch(() => {});
-  }
+  await sendPushNotificationsToUsers([recipientId], title, body, {
+    type: 'PAYMENT_REMINDER',
+    groupId,
+    senderId,
+  });
 }
 
 /**
@@ -388,8 +371,6 @@ export async function notifyGroupExpenseUpdated(opts: {
   const recipientIds = recipientUserIds.filter((id) => id !== actorId);
   if (recipientIds.length === 0) return;
 
-  const tokens = await notificationsRepository.getUserFcmTokensFor(recipientIds);
-
   await notificationsRepository.createNotifications(
     recipientIds.map((userId) => ({
       userId,
@@ -403,12 +384,9 @@ export async function notifyGroupExpenseUpdated(opts: {
     }))
   );
 
-  if (tokens.length > 0) {
-    sendPushNotification({
-      tokens,
-      title,
-      body,
-      data: { type: 'GROUP_ACTIVITY', groupId, actorName },
-    }).catch(() => {});
-  }
+  await sendPushNotificationsToUsers(recipientIds, title, body, {
+    type: 'GROUP_ACTIVITY',
+    groupId,
+    actorName,
+  });
 }

@@ -198,16 +198,17 @@ class GroupsScreen extends ConsumerWidget {
                   }
 
                   Widget buildItem(BuildContext context, int index) {
-                    if (index == 0) {
+                    if (!isSearching && index == 0) {
                       return const KeyedSubtree(
                         key: ValueKey('my-balance-summary'),
                         child: MyBalanceSummary(),
                       );
                     }
-                    final group = filteredGroups[index - 1];
+                    final groupIndex = index - (isSearching ? 0 : 1);
+                    final group = filteredGroups[groupIndex];
                     final card = GroupCard(
                       group: group,
-                      index: index - 1,
+                      index: groupIndex,
                       onTap: () => context.push('/groups/${group.id}'),
                     );
                     if (isSearching) return card;
@@ -222,7 +223,7 @@ class GroupsScreen extends ConsumerWidget {
                     return SliverList(
                       delegate: SliverChildBuilderDelegate(
                         buildItem,
-                        childCount: filteredGroups.length + 1,
+                        childCount: filteredGroups.length,
                       ),
                     );
                   }

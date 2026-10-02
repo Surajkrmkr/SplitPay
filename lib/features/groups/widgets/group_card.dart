@@ -3,6 +3,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../data/models/activity_model.dart';
+import '../../../data/models/member_model.dart';
 import '../../../data/models/group_model.dart';
 import '../../../providers/group_provider.dart';
 import '../../../providers/settings_provider.dart';
@@ -29,6 +31,7 @@ class GroupCard extends ConsumerWidget {
 
     final currency = ref.watch(currencyProvider);
     final balancesAsync = ref.watch(groupBalancesProvider(group.id));
+    final activityAsync = ref.watch(groupActivityProvider(group.id));
 
     return GestureDetector(
       onTap: onTap,
@@ -78,22 +81,31 @@ class GroupCard extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 3),
-                  Text(
-                    '${group.memberCount} member${group.memberCount == 1 ? '' : 's'}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isDark
-                          ? AppColors.textSecondary
-                          : AppColors.textLightSecondary,
-                    ),
+                  _MemberAvatarStack(
+                    members: group.members,
+                    isDark: isDark,
                   ),
                   const SizedBox(height: 6),
-                  Text(
-                    'Updated ${_timeAgo(group.updatedAt)}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textTertiary,
-                    ),
+                  activityAsync.when(
+                    data: (activities) {
+                      if (activities.isEmpty) {
+                        return const _ActivityLabel(text: 'No activity yet');
+                      }
+                      final latest = activities.reduce(
+                        (current, activity) =>
+                            activity.createdAt.isAfter(current.createdAt)
+                                ? activity
+                                : current,
+                      );
+                      return _ActivityLabel(
+                        text:
+                            '${_activityLabel(latest.type)} · ${_timeAgo(latest.createdAt)}',
+                      );
+                    },
+                    loading: () =>
+                        const _ActivityLabel(text: 'Loading activity…'),
+                    error: (_, __) =>
+                        const _ActivityLabel(text: 'Activity unavailable'),
                   ),
                 ],
               ),
@@ -113,18 +125,108 @@ class GroupCard extends ConsumerWidget {
           ],
         ),
       ),
-    )
-        .animate(delay: (index * 60).ms)
-        .fadeIn(duration: 350.ms)
-        .slideX(begin: 0.1, duration: 350.ms, curve: Curves.easeOut);
+    ).animate(delay: (index * 60).ms).fadeIn(duration: 350.ms);
   }
 
   String _timeAgo(DateTime dt) {
     final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 1) return 'just now';
     if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
     if (diff.inHours < 24) return '${diff.inHours}h ago';
     if (diff.inDays < 7) return '${diff.inDays}d ago';
     return DateFormat('d MMM').format(dt);
+  }
+
+  String _activityLabel(ActivityType type) {
+    return switch (type) {
+      ActivityType.expenseAdded => 'Expense added',
+      ActivityType.expenseUpdated => 'Expense updated',
+      ActivityType.expenseDeleted => 'Expense removed',
+      ActivityType.settlementCompleted => 'Settled',
+      ActivityType.memberJoined => 'Member joined',
+      ActivityType.memberRemoved => 'Member left',
+      ActivityType.groupCreated => 'Group created',
+    };
+  }
+}
+
+class _ActivityLabel extends StatelessWidget {
+  const _ActivityLabel({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: const TextStyle(
+        fontSize: 11,
+        color: AppColors.textTertiary,
+      ),
+    );
+  }
+}
+
+class _MemberAvatarStack extends StatelessWidget {
+  const _MemberAvatarStack({
+    required this.members,
+    required this.isDark,
+  });
+
+  final List<MemberModel> members;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    const avatarSize = 22.0;
+    const overlap = 7.0;
+    final visibleMembers = members.take(3).toList();
+    final stackWidth = visibleMembers.isEmpty
+        ? 0.0
+        : avatarSize + (visibleMembers.length - 1) * (avatarSize - overlap);
+
+    return Row(
+      children: [
+        if (visibleMembers.isNotEmpty)
+          SizedBox(
+            width: stackWidth,
+            height: avatarSize,
+            child: Stack(
+              children: [
+                for (var index = 0; index < visibleMembers.length; index++)
+                  Positioned(
+                    left: index * (avatarSize - overlap),
+                    child: Container(
+                      width: avatarSize,
+                      height: avatarSize,
+                      padding: const EdgeInsets.all(1.5),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkCard : Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: AvatarWidget(
+                        imageUrl: visibleMembers[index].avatar,
+                        name: visibleMembers[index].name,
+                        size: avatarSize - 3,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        if (visibleMembers.isNotEmpty) const SizedBox(width: 7),
+        Text(
+          '${members.length} ${members.length == 1 ? 'member' : 'members'}',
+          style: TextStyle(
+            fontSize: 11,
+            color:
+                isDark ? AppColors.textSecondary : AppColors.textLightSecondary,
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -133,7 +235,8 @@ class _BalanceChip extends StatelessWidget {
   final double lent;
   final String currency;
 
-  const _BalanceChip({required this.owed, required this.lent, required this.currency});
+  const _BalanceChip(
+      {required this.owed, required this.lent, required this.currency});
 
   @override
   Widget build(BuildContext context) {
