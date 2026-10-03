@@ -230,3 +230,14 @@ jobs:
           IOS_APP_STORE_PROFILE_NAME: ${{ secrets.IOS_APP_STORE_PROFILE_NAME }}
           IOS_WIDGET_APP_STORE_PROFILE_NAME: ${{ secrets.IOS_WIDGET_APP_STORE_PROFILE_NAME }}
         run: bundle exec fastlane ${{ inputs.track == 'internal' && 'beta' || 'release' }}
+
+      - name: Upload iOS build failure logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-failure-logs
+          path: |
+            ~/Library/Logs/gym/*.log
+            ios/fastlane/report.xml
+          if-no-files-found: warn
+          retention-days: 7
