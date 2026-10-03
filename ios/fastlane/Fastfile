@@ -32,7 +32,6 @@ platform :ios do
 
     team_id = ENV["APPLE_TEAM_ID"]
     xcode_api_key_args = [
-      "-allowProvisioningUpdates",
       "-authenticationKeyPath #{Shellwords.escape(key_path)}",
       "-authenticationKeyID #{Shellwords.escape(key_id)}",
       "-authenticationKeyIssuerID #{Shellwords.escape(issuer_id)}"
@@ -41,11 +40,25 @@ platform :ios do
     xcargs_flags = xcode_api_key_args.dup
     xcargs_flags += " DEVELOPMENT_TEAM=#{Shellwords.escape(team_id)}" if team_id && !team_id.empty?
 
-    # Always export with the installed App Store profiles for the app and widget.
     app_profile_name = ENV["IOS_APP_STORE_PROFILE_NAME"]
     widget_profile_name = ENV["IOS_WIDGET_APP_STORE_PROFILE_NAME"]
     UI.user_error!("IOS_APP_STORE_PROFILE_NAME is not set") if app_profile_name.to_s.empty?
     UI.user_error!("IOS_WIDGET_APP_STORE_PROFILE_NAME is not set") if widget_profile_name.to_s.empty?
+
+    {
+      "Runner" => app_profile_name,
+      "SplitPayWidgets" => widget_profile_name
+    }.each do |target_name, profile_name|
+      update_code_signing_settings(
+        path: "Runner.xcodeproj",
+        targets: [target_name],
+        build_configurations: ["Release"],
+        use_automatic_signing: false,
+        code_sign_identity: "Apple Distribution",
+        sdk: "iphoneos*",
+        profile_name: profile_name
+      )
+    end
 
     export_opts = {
       method: "app-store",
@@ -57,10 +70,10 @@ platform :ios do
     }
     export_opts[:teamID] = team_id if team_id && !team_id.empty?
 
-    # Let Xcode manage signing during archive and export using the API key.
     build_app(
       workspace: "Runner.xcworkspace",
       scheme: "Runner",
+      configuration: "Release",
       export_method: "app-store",
       export_team_id: team_id,
       export_options: export_opts,
