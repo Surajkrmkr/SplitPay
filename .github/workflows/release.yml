@@ -162,8 +162,11 @@ jobs:
         env:
           APP_PROFILE_BASE64: ${{ secrets.IOS_APP_STORE_PROFILE_BASE64 }}
           WIDGET_PROFILE_BASE64: ${{ secrets.IOS_WIDGET_APP_STORE_PROFILE_BASE64 }}
+          SHARE_EXTENSION_PROFILE_BASE64: ${{ secrets.IOS_SHARE_EXTENSION_APP_STORE_PROFILE_BASE64 }}
           APP_PROFILE_NAME: ${{ secrets.IOS_APP_STORE_PROFILE_NAME }}
           WIDGET_PROFILE_NAME: ${{ secrets.IOS_WIDGET_APP_STORE_PROFILE_NAME }}
+          SHARE_EXTENSION_PROFILE_NAME: ${{ secrets.IOS_SHARE_EXTENSION_APP_STORE_PROFILE_NAME }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           set -euo pipefail
           profile_dir="$HOME/Library/MobileDevice/Provisioning Profiles"
@@ -172,7 +175,8 @@ jobs:
           install_profile() {
             local encoded_profile="$1"
             local expected_name="$2"
-            local profile_file plist_file profile_name profile_uuid
+            local expected_bundle_id="$3"
+            local profile_file plist_file profile_name profile_uuid app_identifier
             profile_file="$(mktemp)"
             plist_file="$(mktemp)"
 
@@ -184,6 +188,12 @@ jobs:
               exit 1
             fi
 
+            app_identifier=$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:application-identifier' "$plist_file")
+            if [[ "$app_identifier" != "$APPLE_TEAM_ID.$expected_bundle_id" ]]; then
+              echo "Provisioning profile bundle ID mismatch: expected '$APPLE_TEAM_ID.$expected_bundle_id', got '$app_identifier'" >&2
+              exit 1
+            fi
+
             profile_uuid=$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$plist_file")
             cp "$profile_file" "$profile_dir/$profile_uuid.mobileprovision"
             rm "$profile_file" "$plist_file"
@@ -191,10 +201,14 @@ jobs:
 
           : "${APP_PROFILE_BASE64:?Missing IOS_APP_STORE_PROFILE_BASE64 secret}"
           : "${WIDGET_PROFILE_BASE64:?Missing IOS_WIDGET_APP_STORE_PROFILE_BASE64 secret}"
+          : "${SHARE_EXTENSION_PROFILE_BASE64:?Missing IOS_SHARE_EXTENSION_APP_STORE_PROFILE_BASE64 secret}"
           : "${APP_PROFILE_NAME:?Missing IOS_APP_STORE_PROFILE_NAME secret}"
           : "${WIDGET_PROFILE_NAME:?Missing IOS_WIDGET_APP_STORE_PROFILE_NAME secret}"
-          install_profile "$APP_PROFILE_BASE64" "$APP_PROFILE_NAME"
-          install_profile "$WIDGET_PROFILE_BASE64" "$WIDGET_PROFILE_NAME"
+          : "${SHARE_EXTENSION_PROFILE_NAME:?Missing IOS_SHARE_EXTENSION_APP_STORE_PROFILE_NAME secret}"
+          : "${APPLE_TEAM_ID:?Missing APPLE_TEAM_ID secret}"
+          install_profile "$APP_PROFILE_BASE64" "$APP_PROFILE_NAME" "com.splitpay.expensetracker"
+          install_profile "$WIDGET_PROFILE_BASE64" "$WIDGET_PROFILE_NAME" "com.splitpay.expensetracker.DimeWidgets"
+          install_profile "$SHARE_EXTENSION_PROFILE_BASE64" "$SHARE_EXTENSION_PROFILE_NAME" "com.splitpay.expensetracker.ShareExtension"
 
       - name: Decode App Store Connect API key
         run: |
@@ -229,6 +243,7 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           IOS_APP_STORE_PROFILE_NAME: ${{ secrets.IOS_APP_STORE_PROFILE_NAME }}
           IOS_WIDGET_APP_STORE_PROFILE_NAME: ${{ secrets.IOS_WIDGET_APP_STORE_PROFILE_NAME }}
+          IOS_SHARE_EXTENSION_APP_STORE_PROFILE_NAME: ${{ secrets.IOS_SHARE_EXTENSION_APP_STORE_PROFILE_NAME }}
         run: bundle exec fastlane ${{ inputs.track == 'internal' && 'beta' || 'release' }}
 
       - name: Upload iOS build failure logs

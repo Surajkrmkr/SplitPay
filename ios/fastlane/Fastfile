@@ -42,12 +42,15 @@ platform :ios do
 
     app_profile_name = ENV["IOS_APP_STORE_PROFILE_NAME"]
     widget_profile_name = ENV["IOS_WIDGET_APP_STORE_PROFILE_NAME"]
+    share_extension_profile_name = ENV["IOS_SHARE_EXTENSION_APP_STORE_PROFILE_NAME"]
     UI.user_error!("IOS_APP_STORE_PROFILE_NAME is not set") if app_profile_name.to_s.empty?
     UI.user_error!("IOS_WIDGET_APP_STORE_PROFILE_NAME is not set") if widget_profile_name.to_s.empty?
+    UI.user_error!("IOS_SHARE_EXTENSION_APP_STORE_PROFILE_NAME is not set") if share_extension_profile_name.to_s.empty?
 
     {
       "Runner" => app_profile_name,
-      "SplitPayWidgets" => widget_profile_name
+      "SplitPayWidgets" => widget_profile_name,
+      "SplitPayShareExtension" => share_extension_profile_name
     }.each do |target_name, profile_name|
       update_code_signing_settings(
         path: "Runner.xcodeproj",
@@ -65,7 +68,8 @@ platform :ios do
       signingStyle: "manual",
       provisioningProfiles: {
         "com.splitpay.expensetracker" => app_profile_name,
-        "com.splitpay.expensetracker.DimeWidgets" => widget_profile_name
+        "com.splitpay.expensetracker.DimeWidgets" => widget_profile_name,
+        "com.splitpay.expensetracker.ShareExtension" => share_extension_profile_name
       }
     }
     export_opts[:teamID] = team_id if team_id && !team_id.empty?
