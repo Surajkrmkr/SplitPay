@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Added
+- **UPI screenshot import:** Receive shared payment screenshots on Android and iOS, run on-device ML Kit OCR, review/edit extracted transaction details, and prefill the existing personal or group expense form.
+- **Image privacy:** Shared screenshots are staged in platform cache/App Group cache only, deleted after OCR, and never uploaded for recognition.
+
 ## [1.0.7+8] — 2026-07-26 — Major Features & Backend Release
 
 ### 🚀 Added

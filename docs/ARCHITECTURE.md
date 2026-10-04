@@ -190,7 +190,13 @@ This reduces $N(N-1)$ potential debt pairs down to at most $N-1$ transactions.
    - Picks maximum matching monetary value as the primary transaction amount.
 4. **Title Suggestion:** Extracts top line vendor name or merchant header text.
 
-### 2. SMS Parser Pipeline (`lib/data/services/sms_parser_service.dart`)
+### 2. Shared UPI Screenshot Import (`lib/data/services/upi_image_import_service.dart`)
+1. **Platform Intake:** Android copies granted `content://` / `file://` image URIs into app cache from `ACTION_SEND` or `ACTION_SEND_MULTIPLE`. iOS's lightweight Share Extension copies up to five images into the existing App Group cache and stores only their cache filenames for the Flutter app. iOS does not permit a Share Extension to launch its containing app; users continue by opening SplitPay after the extension confirms the handoff.
+2. **Local OCR:** Flutter runs Google ML Kit Text Recognition on-device and parses amount, merchant, date/time, and UPI reference. OCR text and the source image are not logged or uploaded.
+3. **Temporary File Cleanup:** Images are deleted after OCR; cache leftovers older than 24 hours are removed on the next app launch. Android pending paths and iOS App Group filenames allow the app to retry if it is terminated before OCR completes.
+4. **User Confirmation:** The review form lets users edit the extracted details and choose Personal or Group. Saving opens the established transaction or group-expense form; only its normal explicit save action sends transaction fields to the backend.
+
+### 3. SMS Parser Pipeline (`lib/data/services/sms_parser_service.dart`)
 1. **SMS Body Input:** Reads incoming or pasted bank SMS alert text.
 2. **Pattern Matching:**
    - Detects debit triggers: `debited`, `spent`, `paid to`, `transferred`.

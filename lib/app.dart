@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'core/services/home_widget_launch_handler.dart';
 import 'core/theme/app_theme.dart';
+import 'features/transactions/upi_transaction_import_screen.dart';
 import 'providers/reminder_provider.dart';
 import 'data/services/subscription_service.dart';
 import 'providers/theme_provider.dart';
@@ -31,9 +32,11 @@ class SplitPayApp extends ConsumerWidget {
       routerConfig: router,
       builder: (context, child) => _HomeWidgetLaunchWatcher(
         router: router,
-        child: NetworkStatusBannerListener(
-          child: InAppNotificationListener(
-            child: child ?? const SizedBox.shrink(),
+        child: SharedImageImportHandler(
+          child: NetworkStatusBannerListener(
+            child: InAppNotificationListener(
+              child: child ?? const SizedBox.shrink(),
+            ),
           ),
         ),
       ),

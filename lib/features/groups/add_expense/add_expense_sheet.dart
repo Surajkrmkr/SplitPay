@@ -24,8 +24,21 @@ import '../../../shared/widgets/sp_button.dart';
 
 class AddExpenseSheet extends ConsumerStatefulWidget {
   final GroupModel group;
+  final double? initialAmount;
+  final String? initialTitle;
+  final String? initialNotes;
+  final DateTime? initialDateTime;
+  final Category? initialCategory;
 
-  const AddExpenseSheet({super.key, required this.group});
+  const AddExpenseSheet({
+    super.key,
+    required this.group,
+    this.initialAmount,
+    this.initialTitle,
+    this.initialNotes,
+    this.initialDateTime,
+    this.initialCategory,
+  });
 
   @override
   ConsumerState<AddExpenseSheet> createState() => _AddExpenseSheetState();
@@ -60,6 +73,13 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
   @override
   void initState() {
     super.initState();
+    if (widget.initialAmount != null) {
+      _amountController.text = widget.initialAmount!.toStringAsFixed(2);
+    }
+    _titleController.text = widget.initialTitle ?? '';
+    _noteController.text = widget.initialNotes ?? '';
+    _selectedDate = widget.initialDateTime ?? _selectedDate;
+    _category = widget.initialCategory;
     _splitTabController = TabController(length: 3, vsync: this);
     _splitTabController.addListener(() {
       setState(() {
@@ -215,7 +235,7 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet>
       ref.invalidate(groupBalancesProvider(widget.group.id));
 
       if (mounted) {
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(true);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Expense added!'),

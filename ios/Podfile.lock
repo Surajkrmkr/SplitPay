@@ -108,7 +108,7 @@ PODS:
     - Flutter
   - flutter_secure_storage (6.0.0):
     - Flutter
-  - Google-Mobile-Ads-SDK (13.3.0):
+  - Google-Mobile-Ads-SDK (13.9.0):
     - GoogleUserMessagingPlatform (>= 1.1)
   - google_mlkit_commons (0.11.1):
     - Flutter
@@ -117,9 +117,9 @@ PODS:
     - Flutter
     - google_mlkit_commons
     - GoogleMLKit/TextRecognition (~> 9.0.0)
-  - google_mobile_ads (9.0.0):
+  - google_mobile_ads (9.1.0):
     - Flutter
-    - Google-Mobile-Ads-SDK (~> 13.3.0)
+    - Google-Mobile-Ads-SDK (~> 13.7)
     - webview_flutter_wkwebview
   - google_sign_in_ios (0.0.1):
     - AppAuth (>= 1.7.4)
@@ -185,7 +185,7 @@ PODS:
   - in_app_purchase_storekit (0.0.1):
     - Flutter
     - FlutterMacOS
-  - in_app_update_flutter (3.0.0):
+  - in_app_update_flutter (3.0.1):
     - Flutter
   - integration_test (0.0.1):
     - Flutter
@@ -403,13 +403,13 @@ SPEC CHECKSUMS:
   FirebaseCoreInternal: 9afa45b1159304c963da48addb78275ef701c6b4
   FirebaseInstallations: 317270fec08a5d418fdbc8429282238cab3ac843
   FirebaseMessaging: 3b26e2cee503815e01c3701236b020aa9b576f09
-  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  Flutter: 71a624a5bc0c04062bf19101d501e466baf2fb47
   flutter_local_notifications: df98d66e515e1ca797af436137b4459b160ad8c9
   flutter_secure_storage: d33dac7ae2ea08509be337e775f6b59f1ff45f12
-  Google-Mobile-Ads-SDK: 7692126a35ed859f20635af281c50a2162be8bea
+  Google-Mobile-Ads-SDK: cec761d0da669c462bcc19cd16c747498b9f39f7
   google_mlkit_commons: 1e6ef6605d7281f35baf2b355e6049b9984fd624
   google_mlkit_text_recognition: 309a3a493765ea17c7368cadb4a710391e73902c
-  google_mobile_ads: e0c300fcd472c3fa5a00d6cca8b0c65bbbb15faf
+  google_mobile_ads: 8c61669fb8e2ba987b0b7116b5265ba647cdca0c
   google_sign_in_ios: 7411fab6948df90490dc4620ecbcabdc3ca04017
   GoogleDataTransport: aae35b7ea0c09004c3797d53c8c41f66f219d6a7
   GoogleMLKit: b1eee21a41c57704fe72483b15c85cb2c0cd7444
@@ -422,7 +422,7 @@ SPEC CHECKSUMS:
   home_widget: fdbbfaa90f06f3022cb57f79678d4d58b9c5e140
   image_picker_ios: 4f2f91b01abdb52842a8e277617df877e40f905b
   in_app_purchase_storekit: 2342c0a5da86593124d08dd13d920f39a52b273a
-  in_app_update_flutter: f34e5134b73f1815d75d2e73adf59c63423b33a6
+  in_app_update_flutter: deb48cb84c1095d3fe83f557837bcaadde11e7b1
   integration_test: 252f60fa39af5e17c3aa9899d35d908a0721b573
   local_auth_darwin: 63c73d6d28cc3e239be2b6aa460ea6e317cd5100
   MLImage: 0de5c6c2bf9e93b80ef752e2797f0836f03b58c0

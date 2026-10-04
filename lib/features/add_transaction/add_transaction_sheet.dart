@@ -22,10 +22,18 @@ import '../../shared/widgets/quick_capture_button.dart';
 
 class AddTransactionSheet extends ConsumerStatefulWidget {
   final TransactionType initialType;
+  final double? initialAmount;
+  final String? initialNote;
+  final DateTime? initialDateTime;
+  final Category? initialCategory;
 
   const AddTransactionSheet({
     super.key,
     this.initialType = TransactionType.expense,
+    this.initialAmount,
+    this.initialNote,
+    this.initialDateTime,
+    this.initialCategory,
   });
 
   @override
@@ -50,6 +58,17 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
     return amount != null &&
         amount > 0 &&
         (_category != null || _customCategoryId != null);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialAmount != null) {
+      _amountController.text = widget.initialAmount!.toStringAsFixed(2);
+    }
+    _noteController.text = widget.initialNote ?? '';
+    _date = widget.initialDateTime ?? _date;
+    _category = widget.initialCategory;
   }
 
   @override
@@ -120,7 +139,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
             ),
           );
       if (mounted) {
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(true);
         RateAppService.checkAndPromptRating();
       }
     } finally {

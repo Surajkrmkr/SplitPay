@@ -81,6 +81,14 @@
 - **ML Kit Bill Scanner:** Uses `google_mlkit_text_recognition` to scan camera images or receipts. Extracts total currency values (e.g., `₹354.00`) and vendor headers automatically.
 - **SMS Transaction Parser:** Regex parsing engine that extracts debit/credit amounts, dates, and vendor names from bank SMS text, providing a 1-tap *"Autofill from bill or SMS"* button on the add expense sheet.
 
+### Import a UPI transaction from a shared screenshot
+- Share an image from an Android payment app to open SplitPay's transaction review flow. On iOS, the Share Extension stages it safely and confirms when it is ready; Apple does not allow a Share Extension to launch its containing app, so open SplitPay to continue.
+- Google ML Kit performs OCR on-device; amount, merchant, date/time, and UPI reference are best-effort suggestions and remain editable.
+- Choose Personal or Group. Group imports select a group and preview the default equal split, then open the existing expense form with the detected fields filled in.
+- Multiple shared images are queued and reviewed one at a time (up to five per share).
+- Shared images are copied only to app cache (Android) or the shared App Group cache (iOS), deleted after OCR, and are never sent to the backend. The expense is submitted through the existing API only after the user saves it.
+- Android receives `image/*` shares, including multiple images, through `ACTION_SEND` / `ACTION_SEND_MULTIPLE`. iOS uses the `SplitPayShareExtension` target and the existing `group.com.splitpay.expensetracker` App Group to hand off images to Flutter when SplitPay is opened.
+
 ---
 
 ## 5. Group Bill Splitting & Shared Expenses
