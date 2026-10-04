@@ -68,6 +68,7 @@
 - **Type Selector:** Toggle between Income, Expense, and Transfer modes.
 - **App Icons & Brands:** Pre-built brand shortcuts (e.g. Zomato, Swiggy, Swish, Blinkit, Zepto) for instant visual identifier assignment.
 - **Categories Grid:** 15+ default categories (Food, Shopping, Bills, Travel, Salary, Entertainment, Subscriptions, Rent, etc.) plus custom user-created categories with icon and color customization.
+- **iOS App Shortcuts:** Add New Expense opens the personal expense form; Add New Group Expense lets you choose a group and opens its split-expense form. Available through Siri and Spotlight on iOS 18+.
 
 ---
 

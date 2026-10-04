@@ -91,39 +91,46 @@ class GroupOverviewCard extends ConsumerWidget {
                         : Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    'Group Overview',
-                                    style: TextStyle(
-                                      color: isDark
-                                          ? primary.withValues(alpha: 0.8)
-                                          : AppColors.textLightSecondary,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                      letterSpacing: 0.5,
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 9,
-                                      vertical: 5,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: primary.withValues(alpha: 0.12),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Text(
-                                      '${groups.length} ${groups.length == 1 ? 'group' : 'groups'}',
-                                      style: TextStyle(
-                                        color: primary,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
+                              SizedBox(
+                                height: 28,
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        'Group Overview',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: isDark
+                                              ? primary.withValues(alpha: 0.8)
+                                              : AppColors.textLightSecondary,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500,
+                                          letterSpacing: 0.5,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 9,
+                                        vertical: 5,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: primary.withValues(alpha: 0.12),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        '${groups.length} ${groups.length == 1 ? 'group' : 'groups'}',
+                                        style: TextStyle(
+                                          color: primary,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                               const SizedBox(height: 12),
                               Text(
@@ -132,22 +139,28 @@ class GroupOverviewCard extends ConsumerWidget {
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   color: netColor,
-                                  fontSize: 34,
+                                  fontSize: 38,
                                   fontWeight: FontWeight.w800,
-                                  letterSpacing: -1.2,
+                                  letterSpacing: -1.5,
                                   height: 1,
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              Text(
-                                net > 0.005
-                                    ? 'You are owed overall'
-                                    : net < -0.005
-                                        ? 'You owe overall'
-                                        : 'All group balances are settled',
-                                style: const TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 12,
+                              SizedBox(
+                                height: 18,
+                                child: Text(
+                                  net > 0.005
+                                      ? 'You are owed overall'
+                                      : net < -0.005
+                                          ? 'You owe overall'
+                                          : 'All group balances are settled',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                               const Spacer(),
@@ -157,37 +170,41 @@ class GroupOverviewCard extends ConsumerWidget {
                                     ? Colors.white.withValues(alpha: 0.1)
                                     : AppColors.lightBorder,
                               ),
-                              const SizedBox(height: 16),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _GroupBalanceMetric(
-                                      label: 'You owe',
-                                      value: totalOwed,
-                                      currency: currency,
-                                      color: AppColors.expense,
-                                    ),
-                                  ),
-                                  Container(
-                                    width: 0.5,
-                                    height: 40,
-                                    color: isDark
-                                        ? Colors.white.withValues(alpha: 0.1)
-                                        : AppColors.lightBorder,
-                                  ),
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(left: 20),
+                              const SizedBox(height: 20),
+                              SizedBox(
+                                height: 40,
+                                child: Row(
+                                  children: [
+                                    Expanded(
                                       child: _GroupBalanceMetric(
-                                        label: "You're owed",
-                                        value: totalLent,
+                                        label: 'You owe',
+                                        value: totalOwed,
                                         currency: currency,
-                                        color: primary,
-                                        alignRight: true,
+                                        color: AppColors.expense,
                                       ),
                                     ),
-                                  ),
-                                ],
+                                    Container(
+                                      width: 0.5,
+                                      height: 40,
+                                      color: isDark
+                                          ? Colors.white.withValues(alpha: 0.1)
+                                          : AppColors.lightBorder,
+                                    ),
+                                    Expanded(
+                                      child: Padding(
+                                        padding:
+                                            const EdgeInsets.only(left: 20),
+                                        child: _GroupBalanceMetric(
+                                          label: "You're owed",
+                                          value: totalLent,
+                                          currency: currency,
+                                          color: primary,
+                                          alignRight: true,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
@@ -244,12 +261,15 @@ class _GroupBalanceMetric extends StatelessWidget {
       children: [
         Text(
           label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: const TextStyle(
             color: AppColors.textSecondary,
-            fontSize: 12,
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 2),
         FittedBox(
           fit: BoxFit.scaleDown,
           alignment: alignRight ? Alignment.centerRight : Alignment.centerLeft,
@@ -258,7 +278,7 @@ class _GroupBalanceMetric extends StatelessWidget {
             maxLines: 1,
             style: TextStyle(
               color: color,
-              fontSize: 17,
+              fontSize: 15,
               fontWeight: FontWeight.w700,
             ),
           ),

@@ -10,6 +10,7 @@ import UserNotifications
 {
   private let sharedImagesGroup = "group.com.splitpay.expensetracker"
   private let pendingSharedImagesKey = "pendingSharedImageNames"
+  private let pendingAppShortcutKey = "pendingAppShortcut"
   private var sharedImagesEventSink: FlutterEventSink?
 
   override func application(
@@ -69,6 +70,30 @@ import UserNotifications
       } else {
         result(FlutterMethodNotImplemented)
       }
+    }
+
+    let appShortcutsChannel = FlutterMethodChannel(
+      name: "com.splitpay.expensetracker/app_shortcuts",
+      binaryMessenger: engineBridge.applicationRegistrar.messenger()
+    )
+    appShortcutsChannel.setMethodCallHandler { [weak self] call, result in
+      guard call.method == "takePendingShortcut" else {
+        result(FlutterMethodNotImplemented)
+        return
+      }
+      guard let self,
+            let defaults = UserDefaults(suiteName: self.sharedImagesGroup)
+      else {
+        result(FlutterError(
+          code: "shortcut_storage_unavailable",
+          message: "Shortcut launch storage is unavailable.",
+          details: nil
+        ))
+        return
+      }
+      let shortcut = defaults.string(forKey: self.pendingAppShortcutKey)
+      defaults.removeObject(forKey: self.pendingAppShortcutKey)
+      result(shortcut)
     }
 
     let sharedImagesChannel = FlutterMethodChannel(

@@ -58,13 +58,21 @@ class _DashboardCardsCarouselState extends State<DashboardCardsCarousel> {
     return Column(
       children: [
         SizedBox(
-          height: 250,
+          // Keep the cards 250px tall while reserving room for their shadows.
+          height: 282,
           child: PageView(
+            clipBehavior: Clip.none,
             controller: _pageController,
             onPageChanged: (page) => setState(() => _currentPage = page),
             children: const [
-              BalanceCard(),
-              GroupOverviewCard(),
+              Padding(
+                padding: EdgeInsets.only(top: 8, bottom: 24),
+                child: BalanceCard(),
+              ),
+              Padding(
+                padding: EdgeInsets.only(top: 8, bottom: 24),
+                child: GroupOverviewCard(),
+              ),
             ],
           ),
         ),

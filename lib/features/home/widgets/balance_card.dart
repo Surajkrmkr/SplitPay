@@ -1,6 +1,5 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
@@ -68,46 +67,54 @@ class BalanceCard extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Total Balance',
-                          style: TextStyle(
-                            color: isDark
-                                ? primary.withValues(alpha: 0.8)
-                                : AppColors.textLightSecondary,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: 0.5,
+                    SizedBox(
+                      height: 28,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Total Balance',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: isDark
+                                    ? primary.withValues(alpha: 0.8)
+                                    : AppColors.textLightSecondary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
                           ),
-                        ),
-                        _MonthSelector(selectedMonth: selectedMonth),
-                      ],
+                          const SizedBox(width: 8),
+                          _MonthSelector(selectedMonth: selectedMonth),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 12),
-                    TweenAnimationBuilder<double>(
-                      duration: 1200.ms,
-                      tween: Tween(begin: 0, end: balance),
-                      curve: Curves.easeOutCubic,
-                      builder: (context, value, _) => Text(
-                        CurrencyFormatter.format(value, symbol: currency),
-                        style: TextStyle(
-                          color: isDark ? Colors.white : AppColors.textLight,
-                          fontSize: 38,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -1.5,
-                          height: 1.0,
-                        ),
+                    Text(
+                      CurrencyFormatter.format(balance, symbol: currency),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: isDark ? Colors.white : AppColors.textLight,
+                        fontSize: 38,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -1.5,
+                        height: 1.0,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    _MoMDelta(
-                      current: expense,
-                      previous: prevExpense,
-                      currency: currency,
+                    SizedBox(
+                      height: 18,
+                      child: _MoMDelta(
+                        current: expense,
+                        previous: prevExpense,
+                        currency: currency,
+                      ),
                     ),
-                    const SizedBox(height: 20),
+                    const Spacer(),
                     Container(
                       height: 0.5,
                       color: isDark
@@ -115,51 +122,54 @@ class BalanceCard extends ConsumerWidget {
                           : AppColors.lightBorder,
                     ),
                     const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(12),
-                              onTap: () => _openSheet(
-                                  context, TransactionType.income),
-                              child: _MiniStat(
-                                label: 'Income',
-                                amount: income,
-                                currency: currency,
-                                icon: Icons.arrow_downward_rounded,
-                                color: AppColors.income,
+                    SizedBox(
+                      height: 40,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(12),
+                                onTap: () =>
+                                    _openSheet(context, TransactionType.income),
+                                child: _MiniStat(
+                                  label: 'Income',
+                                  amount: income,
+                                  currency: currency,
+                                  icon: Icons.arrow_downward_rounded,
+                                  color: AppColors.income,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        Container(
-                          width: 0.5,
-                          height: 40,
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.1)
-                              : AppColors.lightBorder,
-                        ),
-                        Expanded(
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(12),
-                              onTap: () => _openSheet(
-                                  context, TransactionType.expense),
-                              child: _MiniStat(
-                                label: 'Expenses',
-                                amount: expense,
-                                currency: currency,
-                                icon: Icons.arrow_upward_rounded,
-                                color: AppColors.expense,
-                                alignRight: true,
+                          Container(
+                            width: 0.5,
+                            height: 40,
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.1)
+                                : AppColors.lightBorder,
+                          ),
+                          Expanded(
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(12),
+                                onTap: () => _openSheet(
+                                    context, TransactionType.expense),
+                                child: _MiniStat(
+                                  label: 'Expenses',
+                                  amount: expense,
+                                  currency: currency,
+                                  icon: Icons.arrow_upward_rounded,
+                                  color: AppColors.expense,
+                                  alignRight: true,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -168,8 +178,7 @@ class BalanceCard extends ConsumerWidget {
           ),
         ),
       ),
-    ).animate().fadeIn(duration: 600.ms).slideY(
-        begin: 0.2, end: 0, duration: 600.ms, curve: Curves.easeOutCubic);
+    );
   }
 }
 
@@ -213,8 +222,7 @@ class _MonthSelector extends ConsumerWidget {
             onTap: () => _shift(ref, -1),
             child: Padding(
               padding: const EdgeInsets.all(4),
-              child: Icon(Icons.chevron_left_rounded,
-                  size: 16, color: primary),
+              child: Icon(Icons.chevron_left_rounded, size: 16, color: primary),
             ),
           ),
           GestureDetector(
@@ -239,9 +247,7 @@ class _MonthSelector extends ConsumerWidget {
               child: Icon(
                 Icons.chevron_right_rounded,
                 size: 16,
-                color: canForward
-                    ? primary
-                    : primary.withValues(alpha: 0.3),
+                color: canForward ? primary : primary.withValues(alpha: 0.3),
               ),
             ),
           ),
@@ -260,8 +266,9 @@ class _MonthSelector extends ConsumerWidget {
       initialDatePickerMode: DatePickerMode.year,
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
-          colorScheme:
-              Theme.of(ctx).colorScheme.copyWith(primary: Theme.of(ctx).colorScheme.primary),
+          colorScheme: Theme.of(ctx)
+              .colorScheme
+              .copyWith(primary: Theme.of(ctx).colorScheme.primary),
         ),
         child: child!,
       ),
@@ -357,33 +364,45 @@ class _MiniStat extends StatelessWidget {
             ),
             const SizedBox(width: 10),
           ],
-          Column(
-            crossAxisAlignment:
-                alignRight ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-            children: [
-              Builder(builder: (context) {
-                final isDark = Theme.of(context).brightness == Brightness.dark;
-                return Text(
-                  label,
-                  style: TextStyle(
-                    color: isDark
-                        ? AppColors.textSecondary
-                        : AppColors.textLightSecondary,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: alignRight
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
+              children: [
+                Builder(builder: (context) {
+                  final isDark =
+                      Theme.of(context).brightness == Brightness.dark;
+                  return Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: isDark
+                          ? AppColors.textSecondary
+                          : AppColors.textLightSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  );
+                }),
+                const SizedBox(height: 2),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment:
+                      alignRight ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Text(
+                    CurrencyFormatter.format(amount, symbol: currency),
+                    maxLines: 1,
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                );
-              }),
-              const SizedBox(height: 2),
-              Text(
-                CurrencyFormatter.format(amount, symbol: currency),
-                style: TextStyle(
-                  color: color,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           if (alignRight) ...[
             const SizedBox(width: 10),

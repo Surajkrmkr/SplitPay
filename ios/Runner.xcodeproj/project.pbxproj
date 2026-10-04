@@ -22,6 +22,7 @@
 		624DA98CDB2ACD146AB0E2EF /* OverallBudgetWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01AF387DB80E5660937509A5 /* OverallBudgetWidget.swift */; };
 		651521AD535DAE08C520C6A0 /* InsightsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 484778B80CDA701AD935DFF8 /* InsightsWidget.swift */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
+		A21000000000000000000001 /* SplitPayAppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = A21000000000000000000002 /* SplitPayAppShortcuts.swift */; };
 		75386A17AB1C0A866910BAA1 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 460A4E0188B4188C29EC90F2 /* Pods_Runner.framework */; };
 		7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */; };
 		8DAEDA6627EA617718287260 /* RecentTransactionsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AB04845FDD824DAD272C09C /* RecentTransactionsWidget.swift */; };
@@ -100,6 +101,7 @@
 		671EC9C97324904E3E363352 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		A21000000000000000000002 /* SplitPayAppShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitPayAppShortcuts.swift; sourceTree = "<group>"; };
 		7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		7AB04845FDD824DAD272C09C /* RecentTransactionsWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentTransactionsWidget.swift; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
@@ -248,6 +250,7 @@
 				1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */,
 				1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */,
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
+				A21000000000000000000002 /* SplitPayAppShortcuts.swift */,
 				7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 				B7DE5D5D8D4BD7312B64522F /* GoogleService-Info.plist */,
@@ -575,6 +578,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
+				A21000000000000000000001 /* SplitPayAppShortcuts.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */,
 			);

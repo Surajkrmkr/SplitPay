@@ -22,6 +22,7 @@ import '../features/settings/notification_settings_screen.dart';
 import '../features/settings/category_management_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../features/main_shell/main_shell.dart';
+import '../features/shortcuts/shortcut_launch_screen.dart';
 import '../providers/auth_provider.dart';
 import '../providers/notification_provider.dart';
 import '../providers/settings_provider.dart';
@@ -113,6 +114,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/transactions',
         pageBuilder: (context, state) =>
             _detailPage(context, state, const TransactionsScreen()),
+      ),
+      GoRoute(
+        path: '/shortcut/add-expense',
+        pageBuilder: (context, state) => _detailPage(
+          context,
+          state,
+          const ShortcutLaunchScreen.addExpense(),
+        ),
+      ),
+      GoRoute(
+        path: '/shortcut/add-group-expense',
+        pageBuilder: (context, state) => _detailPage(
+          context,
+          state,
+          const ShortcutLaunchScreen.addGroupExpense(),
+        ),
       ),
       // Full analytics screen (accessible from home mini-analytics "Full report")
       GoRoute(
