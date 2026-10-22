@@ -4,7 +4,7 @@ class ApiConstants {
   // Override with --dart-define=API_BASE_URL=... for local/LAN development.
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://64.227.135.37:3000/api/v1',
+    defaultValue: 'https://splitpay-api.duckdns.org/api/v1',
   );
 
   // Auth
