@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:home_widget/home_widget.dart';
+import '../../data/models/custom_category.dart';
 import '../../data/models/transaction_model.dart';
 
 /// Pushes app data into shared storage (App Group on iOS, SharedPreferences
@@ -14,7 +15,8 @@ class HomeWidgetService {
   static const String appGroupId = 'group.com.splitpay.expensetracker';
 
   // Android AppWidgetProvider class names.
-  static const String androidOverallBudgetWidget = 'OverallBudgetWidgetProvider';
+  static const String androidOverallBudgetWidget =
+      'OverallBudgetWidgetProvider';
   static const String androidRecentTransactionsWidget =
       'RecentTransactionsWidgetProvider';
   static const String androidInsightsWidget = 'InsightsWidgetProvider';
@@ -25,12 +27,23 @@ class HomeWidgetService {
   static const String iosRecentTransactionsWidget = 'RecentTransactionsWidget';
   static const String iosInsightsWidget = 'InsightsWidget';
 
+  static String transactionLabel(
+    Transaction transaction,
+    List<CustomCategory> customCategories,
+  ) {
+    final note = transaction.note?.trim();
+    if (note != null && note.isNotEmpty) return note;
+    final key = transaction.customCategoryId ?? transaction.category.name;
+    return resolveCategoryDisplay(key, customCategories).label;
+  }
+
   static Future<void> updateWidgetData({
     required double balance,
     required double totalIncome,
     required double totalExpense,
     required String currency,
     required List<Transaction> recentTransactions,
+    List<CustomCategory> customCategories = const [],
     // Overall Budget widget.
     required bool hasBudgetData,
     required String budgetPeriodLabel,
@@ -62,10 +75,12 @@ class HomeWidgetService {
         '-$currency${totalExpense.toStringAsFixed(2)}',
       );
       await HomeWidget.saveWidgetData<String>('currency', currency);
-      await HomeWidget.saveWidgetData<String>('accent_color', _hex(accentColor));
+      await HomeWidget.saveWidgetData<String>(
+          'accent_color', _hex(accentColor));
 
       // ── Overall Budget widget ────────────────────────────────────────────
-      final budgetRemaining = (budgetLimit - budgetSpent).clamp(0.0, double.infinity);
+      final budgetRemaining =
+          (budgetLimit - budgetSpent).clamp(0.0, double.infinity);
       final budgetPercent = budgetLimit > 0
           ? ((budgetSpent / budgetLimit) * 100).clamp(0, 100).round()
           : 0;
@@ -74,7 +89,8 @@ class HomeWidgetService {
         'ob_has_data',
         hasBudgetData ? 'true' : 'false',
       );
-      await HomeWidget.saveWidgetData<String>('ob_period_label', budgetPeriodLabel);
+      await HomeWidget.saveWidgetData<String>(
+          'ob_period_label', budgetPeriodLabel);
       await HomeWidget.saveWidgetData<String>('ob_percent', '$budgetPercent');
       await HomeWidget.saveWidgetData<String>(
           'ob_spent', _grouped(budgetSpent));
@@ -93,7 +109,8 @@ class HomeWidgetService {
       await HomeWidget.saveWidgetData<String>(
           'in_month_total', monthTotal.toStringAsFixed(2));
       for (int i = 0; i < 5; i++) {
-        final value = i < monthBucketAmounts.length ? monthBucketAmounts[i] : 0.0;
+        final value =
+            i < monthBucketAmounts.length ? monthBucketAmounts[i] : 0.0;
         await HomeWidget.saveWidgetData<String>(
             'in_bucket$i', value.toStringAsFixed(2));
       }
@@ -111,15 +128,15 @@ class HomeWidgetService {
         final keyIndex = i + 1;
         if (i < recents.length) {
           final tx = recents[i];
-          final note = (tx.note != null && tx.note!.trim().isNotEmpty)
-              ? tx.note!.trim()
-              : (tx.customCategoryId != null ? 'Custom' : tx.category.name);
+          final note = transactionLabel(tx, customCategories);
           final prefix = tx.type == TransactionType.income ? '+' : '-';
           final amountStr = '$prefix$currency${tx.amount.toStringAsFixed(2)}';
 
           await HomeWidget.saveWidgetData<String>('tx${keyIndex}_note', note);
-          await HomeWidget.saveWidgetData<String>('tx${keyIndex}_amount', amountStr);
-          await HomeWidget.saveWidgetData<String>('tx${keyIndex}_type', tx.type.name);
+          await HomeWidget.saveWidgetData<String>(
+              'tx${keyIndex}_amount', amountStr);
+          await HomeWidget.saveWidgetData<String>(
+              'tx${keyIndex}_type', tx.type.name);
         } else {
           await HomeWidget.saveWidgetData<String>('tx${keyIndex}_note', '');
           await HomeWidget.saveWidgetData<String>('tx${keyIndex}_amount', '');
@@ -129,9 +146,7 @@ class HomeWidgetService {
 
       // Also save full JSON list for advanced widgets.
       final jsonList = recents.map((tx) {
-        final note = (tx.note != null && tx.note!.trim().isNotEmpty)
-            ? tx.note!.trim()
-            : (tx.customCategoryId != null ? 'Custom' : tx.category.name);
+        final note = transactionLabel(tx, customCategories);
         return {
           'id': tx.id,
           'amount': '$currency${tx.amount.toStringAsFixed(2)}',

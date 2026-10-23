@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'balance_card.dart';
 import 'group_overview_card.dart';
@@ -13,33 +12,12 @@ class DashboardCardsCarousel extends StatefulWidget {
 class _DashboardCardsCarouselState extends State<DashboardCardsCarousel> {
   static const _cardCount = 2;
   final _pageController = PageController();
-  Timer? _autoSlideTimer;
   int _currentPage = 0;
 
   @override
-  void initState() {
-    super.initState();
-    _autoSlideTimer = Timer.periodic(
-      const Duration(seconds: 6),
-      (_) => _showNextCard(),
-    );
-  }
-
-  @override
   void dispose() {
-    _autoSlideTimer?.cancel();
     _pageController.dispose();
     super.dispose();
-  }
-
-  void _showNextCard() {
-    if (!mounted || !_pageController.hasClients) return;
-    final nextPage = (_currentPage + 1) % _cardCount;
-    _pageController.animateToPage(
-      nextPage,
-      duration: const Duration(milliseconds: 650),
-      curve: Curves.easeInOutCubic,
-    );
   }
 
   void _goToPage(int page) {

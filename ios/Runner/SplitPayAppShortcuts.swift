@@ -12,6 +12,7 @@ struct AddExpenseShortcutIntent: AppIntent {
       throw ShortcutError.sharedStorageUnavailable
     }
     defaults.set("add-expense", forKey: "pendingAppShortcut")
+    NotificationCenter.default.post(name: Notification.Name("SplitPayShortcutPending"), object: nil)
     return .result()
   }
 }
@@ -27,6 +28,7 @@ struct AddGroupExpenseShortcutIntent: AppIntent {
       throw ShortcutError.sharedStorageUnavailable
     }
     defaults.set("add-group-expense", forKey: "pendingAppShortcut")
+    NotificationCenter.default.post(name: Notification.Name("SplitPayShortcutPending"), object: nil)
     return .result()
   }
 }

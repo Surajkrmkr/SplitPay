@@ -4,7 +4,7 @@ import '../core/constants/app_colors.dart';
 import '../core/services/home_widget_service.dart';
 import '../data/models/transaction_model.dart';
 import 'budget_provider.dart';
-import 'settings_provider.dart' show currencyProvider;
+import 'settings_provider.dart' show currencyProvider, customCategoriesProvider;
 import 'theme_provider.dart';
 import 'transaction_provider.dart';
 
@@ -20,6 +20,7 @@ final homeWidgetSyncProvider = Provider<void>((ref) {
   final income = ref.watch(totalIncomeProvider);
   final expense = ref.watch(totalExpenseProvider);
   final currency = ref.watch(currencyProvider);
+  final customCategories = ref.watch(customCategoriesProvider);
   final txs = ref.watch(transactionProvider);
   final pending = ref.watch(pendingDeletesProvider);
   final recents = txs.where((t) => !pending.contains(t.id)).take(5).toList();
@@ -63,6 +64,7 @@ final homeWidgetSyncProvider = Provider<void>((ref) {
     totalExpense: expense,
     currency: currency,
     recentTransactions: recents,
+    customCategories: customCategories,
     hasBudgetData: hasBudgetData,
     budgetPeriodLabel: periodLabel,
     budgetSpent: summary.totalSpent,
@@ -74,6 +76,16 @@ final homeWidgetSyncProvider = Provider<void>((ref) {
 });
 
 const _monthAbbrev = [
-  'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-  'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
+  'JAN',
+  'FEB',
+  'MAR',
+  'APR',
+  'MAY',
+  'JUN',
+  'JUL',
+  'AUG',
+  'SEP',
+  'OCT',
+  'NOV',
+  'DEC',
 ];

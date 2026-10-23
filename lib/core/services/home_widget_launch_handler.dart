@@ -39,11 +39,17 @@ String? homeWidgetRouteFor(Uri? uri) {
 class HomeWidgetLaunchHandler {
   static StreamSubscription<Uri?>? _subscription;
   static GoRouter? _router;
+  static String? _pendingShortcutRoute;
   static final _lifecycleObserver = _ShortcutLifecycleObserver();
 
   static Future<void> init(GoRouter router) async {
+    _router?.routerDelegate.removeListener(_flushPendingShortcut);
     _router = router;
+    router.routerDelegate.addListener(_flushPendingShortcut);
     WidgetsBinding.instance.addObserver(_lifecycleObserver);
+    _shortcutChannel.setMethodCallHandler((call) async {
+      if (call.method == 'shortcutPending') await consumePendingShortcut();
+    });
 
     // Cold start — the app process was launched by the widget tap.
     try {
@@ -71,12 +77,33 @@ class HomeWidgetLaunchHandler {
         'takePendingShortcut',
       );
       final route = shortcut == null ? null : _shortcutRoutes[shortcut];
-      if (route != null) _router?.go(route);
+      if (route != null) {
+        _pendingShortcutRoute = route;
+        _flushPendingShortcut();
+      }
     } on PlatformException catch (error) {
       debugPrint('Unable to retrieve pending iOS App Shortcut: $error');
     } on MissingPluginException {
       // Native shortcut support is not available in widget/unit test hosts.
     }
+  }
+
+  static void _flushPendingShortcut() {
+    if (_pendingShortcutRoute == null || _router == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final router = _router;
+      final route = _pendingShortcutRoute;
+      if (router == null || route == null) return;
+      final location = router.routerDelegate.currentConfiguration.uri.path;
+      if (location == '/splash' ||
+          location == '/login' ||
+          location == '/onboarding') {
+        return;
+      }
+      _pendingShortcutRoute = null;
+      router.go(route);
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
   }
 
   static void _navigate(GoRouter router, Uri? uri) {
@@ -88,6 +115,9 @@ class HomeWidgetLaunchHandler {
     _subscription?.cancel();
     _subscription = null;
     WidgetsBinding.instance.removeObserver(_lifecycleObserver);
+    _shortcutChannel.setMethodCallHandler(null);
+    _router?.routerDelegate.removeListener(_flushPendingShortcut);
+    _pendingShortcutRoute = null;
     _router = null;
   }
 }

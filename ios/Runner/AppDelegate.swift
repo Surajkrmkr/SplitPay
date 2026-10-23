@@ -11,6 +11,7 @@ import UserNotifications
   private let sharedImagesGroup = "group.com.splitpay.expensetracker"
   private let pendingSharedImagesKey = "pendingSharedImageNames"
   private let pendingAppShortcutKey = "pendingAppShortcut"
+  private var appShortcutObserver: NSObjectProtocol?
   private var sharedImagesEventSink: FlutterEventSink?
 
   override func application(
@@ -76,6 +77,16 @@ import UserNotifications
       name: "com.splitpay.expensetracker/app_shortcuts",
       binaryMessenger: engineBridge.applicationRegistrar.messenger()
     )
+    if let appShortcutObserver {
+      NotificationCenter.default.removeObserver(appShortcutObserver)
+    }
+    appShortcutObserver = NotificationCenter.default.addObserver(
+      forName: Notification.Name("SplitPayShortcutPending"),
+      object: nil,
+      queue: .main
+    ) { _ in
+      appShortcutsChannel.invokeMethod("shortcutPending", arguments: nil)
+    }
     appShortcutsChannel.setMethodCallHandler { [weak self] call, result in
       guard call.method == "takePendingShortcut" else {
         result(FlutterMethodNotImplemented)

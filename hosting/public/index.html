@@ -1,10 +1,13 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#f5faf7">
-    <meta name="description" content="Join your group on SplitPay and make shared expenses easy.">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f5faf7" />
+    <meta
+      name="description"
+      content="Join your group on SplitPay and make shared expenses easy."
+    />
     <title>Join your group · SplitPay</title>
     <style>
       :root {
@@ -19,7 +22,9 @@
         --line: #e5eee9;
       }
 
-      * { box-sizing: border-box; }
+      * {
+        box-sizing: border-box;
+      }
       body {
         min-height: 100vh;
         min-height: 100svh;
@@ -37,7 +42,7 @@
 
       .page {
         width: min(100%, 940px);
-        animation: arrive 650ms cubic-bezier(.2,.75,.25,1) both;
+        animation: arrive 650ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
       }
 
       header {
@@ -54,13 +59,21 @@
         box-shadow: 0 5px 14px #0c8e6925;
       }
 
-      .brand-name { font-size: 17px; font-weight: 750; letter-spacing: -.4px; }
-      .brand-caption { margin-top: 2px; color: var(--muted); font-size: 11px; }
+      .brand-name {
+        font-size: 17px;
+        font-weight: 750;
+        letter-spacing: -0.4px;
+      }
+      .brand-caption {
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 11px;
+      }
 
       main {
         position: relative;
         display: grid;
-        grid-template-columns: 1fr .86fr;
+        grid-template-columns: 1fr 0.86fr;
         gap: 36px;
         align-items: center;
         padding: clamp(28px, 6vw, 62px);
@@ -68,7 +81,9 @@
         border: 1px solid #ffffff;
         border-radius: 30px;
         background: #ffffffed;
-        box-shadow: 0 28px 80px #244b3817, 0 2px 8px #244b380a;
+        box-shadow:
+          0 28px 80px #244b3817,
+          0 2px 8px #244b380a;
       }
 
       main::before {
@@ -83,7 +98,10 @@
         pointer-events: none;
       }
 
-      .intro, .invite-card { position: relative; }
+      .intro,
+      .invite-card {
+        position: relative;
+      }
       .eyebrow {
         display: inline-flex;
         align-items: center;
@@ -116,7 +134,9 @@
         line-height: 1.02;
       }
 
-      h1 span { color: var(--green); }
+      h1 span {
+        color: var(--green);
+      }
       .lead {
         max-width: 390px;
         margin: 0;
@@ -149,11 +169,19 @@
         background: #fff;
         box-shadow: 0 12px 32px #1a4d3510;
         text-align: center;
-        animation: card-arrive 720ms 100ms cubic-bezier(.2,.75,.25,1) both;
+        animation: card-arrive 720ms 100ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
       }
 
-      .card-heading { margin: 0; font-size: 14px; font-weight: 700; }
-      .card-subheading { margin: 6px 0 15px; color: var(--muted); font-size: 12px; }
+      .card-heading {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 700;
+      }
+      .card-subheading {
+        margin: 6px 0 15px;
+        color: var(--muted);
+        font-size: 12px;
+      }
 
       .invite-code {
         display: inline-flex;
@@ -172,7 +200,10 @@
         letter-spacing: 3px;
       }
 
-      .actions { display: grid; gap: 9px; }
+      .actions {
+        display: grid;
+        gap: 9px;
+      }
       .button {
         display: flex;
         min-height: 47px;
@@ -190,11 +221,18 @@
         font-weight: 700;
         text-decoration: none;
         cursor: pointer;
-        transition: transform 160ms ease, box-shadow 160ms ease;
+        transition:
+          transform 160ms ease,
+          box-shadow 160ms ease;
       }
 
-      .button:hover { transform: translateY(-2px); box-shadow: 0 10px 19px #0da67835; }
-      .button:active { transform: translateY(0); }
+      .button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 19px #0da67835;
+      }
+      .button:active {
+        transform: translateY(0);
+      }
       .button.secondary {
         border-color: var(--line);
         color: #4e6056;
@@ -202,38 +240,90 @@
         box-shadow: none;
       }
 
-      .button[hidden] { display: none; }
-      .button svg { width: 17px; height: 17px; }
-      #status { min-height: 34px; margin: 11px 4px 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
-      .fine-print { margin: 17px 0 0; color: #98a59d; font-size: 10px; }
-      #invite-code[hidden] { display: none; }
+      .button[hidden] {
+        display: none;
+      }
+      .button svg {
+        width: 17px;
+        height: 17px;
+      }
+      #status {
+        min-height: 34px;
+        margin: 11px 4px 0;
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.5;
+      }
+      .fine-print {
+        margin: 17px 0 0;
+        color: #98a59d;
+        font-size: 10px;
+      }
+      #invite-code[hidden] {
+        display: none;
+      }
 
       @keyframes arrive {
-        from { opacity: 0; transform: translateY(14px); }
-        to { opacity: 1; transform: translateY(0); }
+        from {
+          opacity: 0;
+          transform: translateY(14px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
       @keyframes card-arrive {
-        from { opacity: 0; transform: translateY(12px) scale(.985); }
-        to { opacity: 1; transform: translateY(0) scale(1); }
+        from {
+          opacity: 0;
+          transform: translateY(12px) scale(0.985);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
       }
 
       @media (max-width: 700px) {
-        body { padding: 24px 14px; }
-        header { margin-left: 5px; }
-        main { grid-template-columns: 1fr; gap: 26px; padding: 30px 23px 23px; border-radius: 25px; }
-        main::before { top: -240px; left: -80px; }
-        h1 { margin-top: 18px; font-size: clamp(39px, 12vw, 52px); }
-        .lead { font-size: 14px; }
-        .benefits { margin-top: 20px; }
-        .invite-card { padding: 22px 18px 17px; }
+        body {
+          padding: 24px 14px;
+        }
+        header {
+          margin-left: 5px;
+        }
+        main {
+          grid-template-columns: 1fr;
+          gap: 26px;
+          padding: 30px 23px 23px;
+          border-radius: 25px;
+        }
+        main::before {
+          top: -240px;
+          left: -80px;
+        }
+        h1 {
+          margin-top: 18px;
+          font-size: clamp(39px, 12vw, 52px);
+        }
+        .lead {
+          font-size: 14px;
+        }
+        .benefits {
+          margin-top: 20px;
+        }
+        .invite-card {
+          padding: 22px 18px 17px;
+        }
       }
 
       @media (prefers-reduced-motion: reduce) {
-        *, *::before, *::after {
-          animation-duration: .01ms !important;
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
           animation-iteration-count: 1 !important;
           scroll-behavior: auto !important;
-          transition-duration: .01ms !important;
+          transition-duration: 0.01ms !important;
         }
       }
     </style>
@@ -241,7 +331,7 @@
   <body>
     <div class="page">
       <header>
-        <img class="brand-icon" src="/assets/splitpay-icon.png" alt="">
+        <img class="brand-icon" src="/assets/splitpay-icon.png" alt="" />
         <div>
           <div class="brand-name">SplitPay</div>
           <div class="brand-caption">Shared spending, made simple</div>
@@ -251,8 +341,11 @@
       <main>
         <section class="intro" aria-labelledby="headline">
           <div class="eyebrow">A LITTLE BETTER TOGETHER</div>
-          <h1 id="headline">Good times.<br><span>Fair splits.</span></h1>
-          <p class="lead" id="intro">You’ve been invited to join a group on SplitPay. Keep shared expenses simple and see who owes what, without the awkward math.</p>
+          <h1 id="headline">Good times.<br /><span>Fair splits.</span></h1>
+          <p class="lead" id="intro">
+            You’ve been invited to join a group on SplitPay. Keep shared
+            expenses simple and see who owes what, without the awkward math.
+          </p>
           <div class="benefits" aria-label="SplitPay features">
             <span class="benefit">Shared expenses</span>
             <span class="benefit">Clear balances</span>
@@ -263,24 +356,62 @@
         <section class="invite-card" aria-label="Group invite">
           <p class="card-heading">Your invite is ready</p>
           <p class="card-subheading">Use this code to join your group</p>
-          <div class="invite-code" id="invite-code" aria-label="Invite code"></div>
+          <div
+            class="invite-code"
+            id="invite-code"
+            aria-label="Invite code"
+          ></div>
           <div class="actions">
             <button class="button" id="share-invite" type="button" hidden>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.7 10.7 6.6-4.4m-6.6 7 6.6 4.4"/></svg>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                aria-hidden="true"
+              >
+                <circle cx="18" cy="5" r="3" />
+                <circle cx="6" cy="12" r="3" />
+                <circle cx="18" cy="19" r="3" />
+                <path d="m8.7 10.7 6.6-4.4m-6.6 7 6.6 4.4" />
+              </svg>
               Share SplitPay invite
             </button>
-            <button class="button secondary" id="copy-link" type="button">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>
-              Copy invite link
+            <button class="button secondary" id="copy-code" type="button">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                aria-hidden="true"
+              >
+                <rect x="8" y="8" width="12" height="12" rx="2" />
+                <path
+                  d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"
+                />
+              </svg>
+              Copy code
             </button>
-            <a class="button" id="store-link" href="#">
+            <a class="button" id="open-link" href="#" hidden
+              >Open invite in SplitPay</a
+            >
+            <a class="button secondary" id="store-link" href="#">
               <span id="store-label">Get SplitPay</span>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                aria-hidden="true"
+              >
+                <path d="M7 17 17 7M7 7h10v10" />
+              </svg>
             </a>
-            <a class="button secondary" id="open-link" href="#" hidden>Open invite in SplitPay</a>
           </div>
           <p id="status" aria-live="polite"></p>
-          <p class="fine-print">Your invite code is private. Share it only with your group.</p>
+          <p class="fine-print">
+            Your invite code is private. Share it only with your group.
+          </p>
         </section>
       </main>
     </div>
@@ -289,15 +420,18 @@
       const segments = window.location.pathname.split("/").filter(Boolean);
       let code = "";
       try {
-        code = segments.length === 2 && segments[0] === "invite"
-          ? decodeURIComponent(segments[1]).toUpperCase()
-          : "";
+        code =
+          segments.length === 2 && segments[0] === "invite"
+            ? decodeURIComponent(segments[1]).toUpperCase()
+            : "";
       } catch {
         code = "";
       }
 
-      const appStoreUrl = "https://apps.apple.com/us/app/splitpay-bills-expenses/id6787626074";
-      const playStoreUrl = "https://play.google.com/store/apps/details?id=com.splitpay.expensetracker";
+      const appStoreUrl =
+        "https://apps.apple.com/us/app/splitpay-bills-expenses/id6787626074";
+      const playStoreUrl =
+        "https://play.google.com/store/apps/details?id=com.splitpay.expensetracker";
       const isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       const isAndroid = /Android/i.test(navigator.userAgent);
       const storeUrl = isIos ? appStoreUrl : playStoreUrl;
@@ -312,14 +446,19 @@
       storeLink.href = storeUrl;
 
       if (!code) {
-        document.getElementById("intro").textContent = "This invite link is incomplete. Ask your friend to send it again.";
-        document.querySelector(".card-heading").textContent = "Invite unavailable";
-        document.querySelector(".card-subheading").textContent = "A valid group code is needed to continue.";
+        document.getElementById("intro").textContent =
+          "This invite link is incomplete. Ask your friend to send it again.";
+        document.querySelector(".card-heading").textContent =
+          "Invite unavailable";
+        document.querySelector(".card-subheading").textContent =
+          "A valid group code is needed to continue.";
         statusElement.textContent = "";
-        document.getElementById("copy-link").hidden = true;
+        document.getElementById("copy-code").hidden = true;
         storeLink.hidden = true;
       } else {
-        openLink.href = inviteUrl;
+        openLink.href = isAndroid
+          ? `intent://${window.location.host}/invite/${encodeURIComponent(code)}#Intent;scheme=https;package=com.splitpay.expensetracker;end`
+          : `dimeflow:///invite/${encodeURIComponent(code)}`;
         openLink.hidden = !(isIos || isAndroid);
         const shareButton = document.getElementById("share-invite");
         shareButton.hidden = typeof navigator.share !== "function";
@@ -332,25 +471,30 @@
             });
           } catch (error) {
             if (error.name !== "AbortError") {
-              statusElement.textContent = "Sharing didn’t work. Copy the invite link instead.";
+              statusElement.textContent =
+                "Sharing didn’t work. Copy the invite code instead.";
             }
           }
         });
-        document.getElementById("copy-link").addEventListener("click", async () => {
-          try {
-            await navigator.clipboard.writeText(inviteUrl);
-            statusElement.textContent = "Invite link copied. Send it to your group.";
-          } catch {
-            statusElement.textContent = "Copy isn’t available here. You can copy the invite from your browser’s address bar.";
-          }
-        });
+        document
+          .getElementById("copy-code")
+          .addEventListener("click", async () => {
+            try {
+              await navigator.clipboard.writeText(code);
+              statusElement.textContent =
+                "Invite code copied. Send it to your group.";
+            } catch {
+              statusElement.textContent =
+                "Copy isn’t available here. Select and copy the invite code shown above.";
+            }
+          });
 
         if (isIos || isAndroid) {
-          document.getElementById("store-label").textContent =
-            isIos ? "Get it on the App Store" : "Get it on Google Play";
+          document.getElementById("store-label").textContent = isIos
+            ? "Get it on the App Store"
+            : "Get it on Google Play";
           statusElement.textContent =
-            `Opening ${isIos ? "the App Store" : "Google Play"}… Keep this code to join after installing.`;
-          window.setTimeout(() => window.location.replace(storeUrl), 1400);
+            "Open the invite in SplitPay, or get the app if it isn't installed.";
         } else {
           statusElement.textContent =
             "Open this page on your phone to install SplitPay and join the group.";

@@ -4,8 +4,12 @@ Group invites use `https://splitpay-c7905.web.app/invite/<CODE>`. Firebase
 Hosting supplies this HTTPS domain, so a custom domain is not required. An
 installed app opens the invite directly; the invite screen previews the group
 and lets an authenticated user join. If the app is missing, the landing page
-shows the code and sends iOS users to the App Store and Android users to Google
-Play. After installation, open the invite link again or enter its displayed
+shows the code and offers an explicit Open button, plus App Store and Google
+Play installation links. It never automatically redirects to a store: browsers
+cannot reliably detect whether the app is installed. The Open button uses the
+registered iOS URL scheme or an Android intent targeting SplitPay, so it also
+works when the browser does not hand off the original HTTPS link. After
+installation, open the invite link again or enter its displayed
 code. Store installation does not preserve the original invite automatically;
 deferred deep links require a separate provider/service.
 
