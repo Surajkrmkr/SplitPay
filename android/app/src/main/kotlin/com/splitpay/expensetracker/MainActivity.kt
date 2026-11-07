@@ -1,6 +1,8 @@
 package com.splitpay.expensetracker
 
+import android.content.ComponentName
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
@@ -26,14 +28,55 @@ class MainActivity : FlutterFragmentActivity() {
         getSharedPreferences("shared_image_import", MODE_PRIVATE)
     }
     private var shareEventSink: EventChannel.EventSink? = null
+    private var pendingIconKey: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         removeExpiredSharedImages()
     }
 
+    // Swapping launcher aliases can restart the app on some launchers, so wait
+    // until the user has left it.
+    override fun onStop() {
+        super.onStop()
+        pendingIconKey?.let(::applyLauncherIcon)
+        pendingIconKey = null
+    }
+
+    private fun applyLauncherIcon(iconKey: String) {
+        if (iconKey !in ICON_ALIASES) return
+        val pm = packageManager
+        val aliasPackage = MainActivity::class.java.`package`!!.name
+        // Enable the target first so there is never a moment with no launcher entry.
+        ICON_ALIASES.withIndex().sortedByDescending { it.value == iconKey }.forEach { (index, alias) ->
+            val component = ComponentName(packageName, "$aliasPackage.$alias")
+            val current = pm.getComponentEnabledSetting(component)
+            val enabledNow = current == PackageManager.COMPONENT_ENABLED_STATE_ENABLED ||
+                (current == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT && index == 0)
+            val enable = alias == iconKey
+            if (enabledNow == enable) return@forEach
+            pm.setComponentEnabledSetting(
+                component,
+                if (enable) PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+                else PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                PackageManager.DONT_KILL_APP,
+            )
+        }
+    }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            "com.splitpay.expensetracker/app_icon",
+        ).setMethodCallHandler { call, result ->
+            if (call.method == "setIcon") {
+                pendingIconKey = call.argument<String>("iconKey")
+                result.success(null)
+            } else {
+                result.notImplemented()
+            }
+        }
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
             "com.splitpay.expensetracker/timezone",
@@ -328,6 +371,8 @@ class MainActivity : FlutterFragmentActivity() {
     }
 
     companion object {
+        // First entry is the manifest default (enabled="true").
+        private val ICON_ALIASES = listOf("icon_default", "icon_diwali")
         private const val LOG_TAG = "SplitPayShare"
         private const val PENDING_IMAGES_KEY = "pending_paths"
         private const val PENDING_OMITTED_KEY = "pending_omitted_count"

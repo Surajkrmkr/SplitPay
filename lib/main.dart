@@ -14,6 +14,7 @@ import 'core/services/app_logger.dart';
 import 'core/storage/preferences_service.dart';
 import 'data/services/notification_service.dart';
 import 'data/services/reminder_service.dart';
+import 'shared/widgets/diwali_widgets.dart';
 
 void main() {
   // Funnel all debugPrint calls into AppLogger so they appear in the console.
@@ -80,4 +81,5 @@ Future<void> _init() async {
   Animate.restartOnHotReload = true;
 
   runApp(const ProviderScope(child: SplitPayApp()));
+  unawaited(Diwali.syncLauncherIcon());
 }

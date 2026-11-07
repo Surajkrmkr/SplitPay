@@ -13,6 +13,8 @@ import UserNotifications
   private let pendingAppShortcutKey = "pendingAppShortcut"
   private var appShortcutObserver: NSObjectProtocol?
   private var sharedImagesEventSink: FlutterEventSink?
+  // nil means no change requested; .some(nil) means the primary icon.
+  private var pendingIconName: String??
 
   override func application(
     _ application: UIApplication,
@@ -44,6 +46,27 @@ import UserNotifications
     Messaging.messaging().apnsToken = deviceToken
   }
 
+  override func applicationDidBecomeActive(_ application: UIApplication) {
+    super.applicationDidBecomeActive(application)
+    applyPendingIcon()
+  }
+
+  // iOS only allows icon changes while the app is active, and shows a system
+  // alert each time, so only call it when the icon actually differs.
+  private func applyPendingIcon() {
+    guard let wanted = pendingIconName,
+          UIApplication.shared.applicationState == .active
+    else { return }
+    pendingIconName = nil
+    let app = UIApplication.shared
+    guard app.supportsAlternateIcons, app.alternateIconName != wanted else { return }
+    app.setAlternateIconName(wanted) { error in
+      if let error {
+        NSLog("[AppIcon] Could not change icon: %@", error.localizedDescription)
+      }
+    }
+  }
+
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
 
@@ -71,6 +94,29 @@ import UserNotifications
       } else {
         result(FlutterMethodNotImplemented)
       }
+    }
+
+    let appIconChannel = FlutterMethodChannel(
+      name: "com.splitpay.expensetracker/app_icon",
+      binaryMessenger: engineBridge.applicationRegistrar.messenger()
+    )
+    appIconChannel.setMethodCallHandler { [weak self] call, result in
+      guard call.method == "setIcon" else {
+        result(FlutterMethodNotImplemented)
+        return
+      }
+      let key = (call.arguments as? [String: Any])?["iconKey"] as? String
+      let iconName: String?
+      switch key {
+      case "icon_diwali": iconName = "AppIcon-Diwali"
+      case "icon_default": iconName = nil
+      default:
+        result(FlutterError(code: "unknown_icon", message: "Unknown icon key.", details: nil))
+        return
+      }
+      self?.pendingIconName = .some(iconName)
+      self?.applyPendingIcon()
+      result(nil)
     }
 
     let appShortcutsChannel = FlutterMethodChannel(

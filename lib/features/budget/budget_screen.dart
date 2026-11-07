@@ -8,6 +8,7 @@ import '../../providers/budget_provider.dart';
 import '../../providers/home_widget_sync_provider.dart';
 import '../../shared/widgets/app_ad_banner.dart';
 import '../../shared/widgets/app_search_bar.dart';
+import '../../shared/widgets/diwali_widgets.dart';
 import '../../shared/widgets/empty_state.dart';
 import 'add_budget_sheet.dart';
 import 'widgets/budget_card.dart';
@@ -56,9 +57,11 @@ class BudgetScreen extends ConsumerWidget {
                   const SizedBox(height: 16),
 
                   // ── Header ──
-                  _Header(
-                      onAdd: () => requireAuth(
-                          context, ref, () => _openAddSheet(context))),
+                  DiwaliSparkles(
+                    child: _Header(
+                        onAdd: () => requireAuth(
+                            context, ref, () => _openAddSheet(context))),
+                  ),
 
                   const SizedBox(height: 20),
 
@@ -265,11 +268,19 @@ class _Header extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(
-              'Budget',
-              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+            child: Row(
+              children: [
+                Text(
+                  'Budget',
+                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+                if (Diwali.active) ...[
+                  const SizedBox(width: 8),
+                  const DiwaliDiya(size: 26),
+                ],
+              ],
             ),
           ),
           // Add-budget action — mirrors the chip styling used by AppBackButton

@@ -33,10 +33,6 @@
               android:resource="@style/NormalTheme"
               />
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
-            <intent-filter>
                 <action android:name="android.intent.action.SEND"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <data android:mimeType="image/*"/>
@@ -56,6 +52,29 @@
                     android:pathPrefix="/invite/" />
             </intent-filter>
         </activity>
+        <!-- Launcher entries; MainActivity toggles these to swap the app icon. -->
+        <activity-alias
+            android:name=".icon_default"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@mipmap/launcher_icon"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".icon_diwali"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/launcher_icon_diwali"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
         <!-- Default FCM notification icon (white silhouette) and accent color.
              Used when the FCM payload doesn't specify one — e.g. data-only or
              background messages. -->

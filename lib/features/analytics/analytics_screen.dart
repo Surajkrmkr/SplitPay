@@ -9,6 +9,7 @@ import '../../data/models/transaction_model.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../shared/widgets/app_ad_banner.dart';
+import '../../shared/widgets/diwali_widgets.dart';
 import '../../shared/widgets/empty_state.dart';
 import 'widgets/monthly_trend.dart';
 import 'widgets/spending_pie_chart.dart';
@@ -45,7 +46,7 @@ class AnalyticsScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 16),
-                  _Header(),
+                  DiwaliSparkles(child: _Header()),
                   const SizedBox(height: 20),
                   const _InsightsRow(),
                   const SizedBox(height: 20),
@@ -110,6 +111,10 @@ class _Header extends StatelessWidget {
                   fontWeight: FontWeight.w800,
                 ),
           ),
+          if (Diwali.active) ...[
+            const SizedBox(width: 8),
+            const DiwaliDiya(size: 26),
+          ],
         ],
       ),
     ).animate().fadeIn(duration: 400.ms);

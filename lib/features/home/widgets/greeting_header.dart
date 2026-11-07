@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/notification_provider.dart';
+import '../../../shared/widgets/diwali_widgets.dart';
 
 String greetingForLocalTime(DateTime localTime) {
   final hour = localTime.hour;
@@ -65,57 +66,75 @@ class _GreetingHeaderState extends ConsumerState<GreetingHeader>
     final primary = Theme.of(context).colorScheme.primary;
     final user = ref.watch(currentUserProvider);
     final firstName = user?.name.split(' ').first ?? 'there';
+    final festive = Diwali.active;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '$_greeting, $firstName',
-                  style: TextStyle(
-                    color: isDark
-                        ? AppColors.textSecondary
-                        : AppColors.textLightSecondary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ).animate().fadeIn(duration: 500.ms),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Text(
-                      'Dashboard',
-                      style:
-                          Theme.of(context).textTheme.headlineLarge?.copyWith(
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: -0.5,
-                              ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '✦',
-                      style: TextStyle(
-                        color: primary,
-                        fontSize: 18,
-                      ),
-                    ),
-                  ],
-                ).animate().fadeIn(delay: 100.ms, duration: 500.ms).slideX(
-                      begin: -0.1,
-                      end: 0,
-                      delay: 100.ms,
-                      duration: 500.ms,
-                      curve: Curves.easeOutCubic,
-                    ),
-              ],
+    final title = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'Dashboard',
+          style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
+              ),
+        ),
+        const SizedBox(width: 6),
+        if (festive)
+          const DiwaliDiya(size: 26)
+        else
+          Text(
+            '✦',
+            style: TextStyle(
+              color: primary,
+              fontSize: 18,
             ),
           ),
-          const NotificationBell(),
-        ],
+      ],
+    );
+
+    return DiwaliSparkles(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '$_greeting, $firstName',
+                    style: TextStyle(
+                      color: isDark
+                          ? AppColors.textSecondary
+                          : AppColors.textLightSecondary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ).animate().fadeIn(duration: 500.ms),
+                  const SizedBox(height: 2),
+                  (festive
+                          // Pull the light string's inset back so the title
+                          // stays aligned with the greeting above it.
+                          ? Transform.translate(
+                              offset: const Offset(-Diwali.lightsInset, 0),
+                              child: DiwaliLights(child: title),
+                            )
+                          : title)
+                      .animate()
+                      .fadeIn(delay: 100.ms, duration: 500.ms)
+                      .slideX(
+                        begin: -0.1,
+                        end: 0,
+                        delay: 100.ms,
+                        duration: 500.ms,
+                        curve: Curves.easeOutCubic,
+                      ),
+                ],
+              ),
+            ),
+            const NotificationBell(),
+          ],
+        ),
       ),
     );
   }

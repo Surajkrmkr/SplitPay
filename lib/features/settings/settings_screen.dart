@@ -20,6 +20,7 @@ import '../../core/services/update_service.dart';
 import 'import_data_screen.dart';
 import '../transactions/sms_import_screen.dart';
 import '../../shared/utils/guest_guard.dart';
+import '../../shared/widgets/diwali_widgets.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -40,7 +41,7 @@ class SettingsScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 16),
-                  _Header(),
+                  DiwaliSparkles(child: _Header()),
                   const SizedBox(height: 24),
                   _ProfileCard(isDark: isDark),
                   const SizedBox(height: 24),
@@ -480,11 +481,19 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Text(
-        'Profile',
-        style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
+      child: Row(
+        children: [
+          Text(
+            'Profile',
+            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+          ),
+          if (Diwali.active) ...[
+            const SizedBox(width: 8),
+            const DiwaliDiya(size: 26),
+          ],
+        ],
       ),
     ).animate().fadeIn(duration: 400.ms);
   }
