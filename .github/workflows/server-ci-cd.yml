@@ -1,4 +1,4 @@
-name: Server CI/CD (DigitalOcean Droplet)
+name: Server CI/CD (Railway)
 
 on:
   push:
@@ -43,23 +43,27 @@ jobs:
       - name: Build TypeScript
         run: npm run build
 
-  deploy-to-droplet:
-    name: Deploy to DigitalOcean Droplet
+  deploy-to-railway:
+    name: Deploy to Railway
     needs: ci-build
     if: github.event_name == 'push' && github.ref == 'refs/heads/splitpay-BE-prod'
     runs-on: ubuntu-latest
+    env:
+      # Project token for Railway project "SplitPay", environment "production".
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
     steps:
-      - name: Deploy to Droplet via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DROPLET_HOST }}
-          username: ${{ secrets.DROPLET_USER }}
-          key: ${{ secrets.DROPLET_SSH_KEY }}
-          script: |
-            cd /opt/apps/repos/SplitPay/server
-            git fetch origin splitpay-BE-prod
-            git clean -fd
-            git checkout -f -B splitpay-BE-prod origin/splitpay-BE-prod
-            git reset --hard origin/splitpay-BE-prod
-            docker compose up -d --build
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli@5.71.0
+
+      # `railway up` skips files matched by .gitignore, and server/.gitignore
+      # lists prisma/schema.prisma (tracked anyway), which the Docker build needs.
+      # The runner's checkout is throwaway, so drop the ignore file here.
+      - name: Drop .gitignore so the upload includes prisma/schema.prisma
+        run: rm -f .gitignore
+
+      - name: Deploy to Railway
+        run: railway up --service api --environment production --ci
