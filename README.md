@@ -11,6 +11,7 @@
 
 Designed with modern glassmorphism aesthetics, fluid micro-animations, and AI-assisted data entry (on-device ML Kit OCR & SMS parsing), SplitPay makes tracking personal spending and settling shared group expenses effortless.
 
+
 ---
 
 ## 📸 App Screenshots
